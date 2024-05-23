@@ -5,6 +5,7 @@ import 'package:flutter/widgets.dart';
 import 'package:skillhub/appwrite/auth_api.dart';
 import 'package:skillhub/appwrite/saved_data.dart';
 import 'package:skillhub/colors.dart';
+import 'package:skillhub/controllers/events_container.dart';
 import 'package:skillhub/pages/Staggered/addSkillPage.dart';
 import 'package:skillhub/appwrite/database_api.dart';
 import 'package:skillhub/pages/homePages/skills_detail.dart';
@@ -79,20 +80,12 @@ void initState() {
           ]),
         ),
         ),
-        SliverList(delegate: SliverChildBuilderDelegate((context, index)=> ListTile(
-           onTap: () => 
-             // logoutUser();
-              Navigator.of(context).pushReplacement(
-                MaterialPageRoute(builder: (context) => SkillDetails(data: skills[index])),
-              ),
-            
-          leading:Text("${index +1}", style:TextStyle(color: BaseColors().baseTextColor, fontSize:20,)),
-          title: Text(skills[index].data["firstName"], style: TextStyle(color: BaseColors().baseTextColor , fontSize:20, ),
+         SliverList(
+            delegate: SliverChildBuilderDelegate(
+              (context, index) => EventContainer(data: skills[index]),
+              childCount: skills.length,
+            ),
           ),
-          subtitle: Text(skills[index].data["location"], style: TextStyle(color: Theme.of(context).primaryColor,)),
-        ), childCount: skills.length
-        )
-        ),
         ],
        
       ),
