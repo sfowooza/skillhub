@@ -159,4 +159,64 @@ Future rsvpEvent(List participants, String documentId) async {
     return false;
   }
 }
+
+// list all event created by the user
+
+Future manageSkills() async {
+  final userId = SavedData.getUserId();
+  try {
+    final data = await databases.listDocuments(
+        databaseId: APPWRITE_DATABASE_ID,
+        collectionId: COLLECTION_DB_ID,
+        queries: [Query.equal("createdBy", userId)]);
+    return data.documents;
+  } catch (e) {
+    print(e);
+  }
+}
+// update the edited event
+
+Future<void> updateSkill(
+    String name,
+    String message,
+    String description,
+    RegistrationFields registrationFields,
+    String docID) async {
+  return await databases
+      .updateDocument(
+          databaseId: APPWRITE_DATABASE_ID,
+          collectionId: COLLECTION_DB_ID,
+          documentId: docID,
+          data: {
+            'text': message,
+      'datetime': DateTime.now().toString(),
+      'description': description,
+      'firstName': registrationFields.firstName,
+      'lastName': registrationFields.lastName,
+      'phoneNumber': registrationFields.phoneNumber,
+      'location': registrationFields.location,
+      'email': registrationFields.email,
+      'selectedCategory': registrationFields.selectedCategory,
+      'selectedSubcategory': registrationFields.selectedSubcategory,
+      'participants': registrationFields.participants,
+      'createdBy': registrationFields.createdBy,
+      'inSoleBusiness':registrationFields.inSoleBusiness,
+      'image':registrationFields.image,
+          })
+      .then((value) => print("Skill Updated"))
+      .catchError((e) => print(e));
+}
+Future deleteSkill(String docID) async {
+  try {
+    final response = await databases.deleteDocument(
+        databaseId: APPWRITE_DATABASE_ID,
+        collectionId: COLLECTION_DB_ID,
+        documentId: docID);
+
+    print(response);
+  } catch (e) {
+    print(e);
+  }
+}
+
 }

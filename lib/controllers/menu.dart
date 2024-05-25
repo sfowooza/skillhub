@@ -19,10 +19,10 @@ class _MenuState extends State<Menu> with SingleTickerProviderStateMixin {
 
   static const _menuTitles = [
     'Service Providers',
-    'Products',
-    'Job Offerings',
-    'CVs',
-    'Sign Out',
+    'Products Listing',
+    'Job Listings',
+    'OpenCVs',
+    'More Info',
   ];
 
   static const _initialDelayTime = Duration(milliseconds: 50);
@@ -125,7 +125,7 @@ class _MenuState extends State<Menu> with SingleTickerProviderStateMixin {
         GestureDetector(
           onTap: () {
             // Handle menu item tap here
-            if (_menuTitles[i] == 'Sign Out') {
+            if (_menuTitles[i] == 'More Info') {
               authApi.signOut(context);
             } else {
               Navigator.of(context).pushNamed(

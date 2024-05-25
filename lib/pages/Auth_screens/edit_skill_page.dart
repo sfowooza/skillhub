@@ -17,17 +17,34 @@ import 'package:provider/provider.dart';
 import 'package:file_picker/file_picker.dart';
 
 
-class SkillsPage extends StatefulWidget {
-  const SkillsPage({Key? key}) : super(key: key);
+class EditSkillsPage extends StatefulWidget {
+  final String image, description, docID,datetime, location, firstName,lastName,email, phoneNumber,selectedCategory,selectedSubcategory, message;
+  final bool inSoleBusiness;
+  const EditSkillsPage(
+      {super.key,
+      required this.image,
+      required this.firstName,
+      required this.lastName,
+      required this.description,
+      required this.location,
+      required this.datetime,
+      required this.message,
+      required this.email,
+      required this.phoneNumber,
+      required this.selectedCategory,
+      required this.selectedSubcategory,
+      required this.docID,
+      required this.inSoleBusiness});
 
   @override
-  _SkillsPageState createState() => _SkillsPageState();
+  _EditSkillsPageState createState() => _EditSkillsPageState();
 }
 
-class _SkillsPageState extends State<SkillsPage> {
+class _EditSkillsPageState extends State<EditSkillsPage> with SingleTickerProviderStateMixin {
   late Client client;
   late DatabaseAPI database;
   late Storage storage;
+  bool _isSoleBusiness = true;
   TextEditingController messageTextController = TextEditingController();
   TextEditingController descriptionTextController = TextEditingController();
   final TextEditingController _datetimeController = TextEditingController();
@@ -36,9 +53,17 @@ class _SkillsPageState extends State<SkillsPage> {
   bool isUploading = false;
   late String selectedCategory;
   late String selectedSubcategory;
+  late String phoneNumber;
+  late String email;
+  late String image;
+  late String createdBy;
+  late String lastName;
+  late String firstName;
+  late String location;
+    
 
    FilePickerResult? _filePickerResult;
-  bool _isSoleBusiness = true;
+
    String userName = "User";
  // Storage storage = Storage(client);
  late AuthAPI auth;
@@ -54,7 +79,23 @@ class _SkillsPageState extends State<SkillsPage> {
     userId = SavedData.getUserId();
     auth =appwrite;
     client =appwrite.client;
-    storage =Storage(client);
+    storage =Storage(client); 
+    
+    messageTextController.text = widget.message?? '';
+    descriptionTextController.text = widget.description?? '';
+ final provider = Provider.of<RegistrationFormProvider>(context, listen: false);
+
+  provider?.firstName = widget.firstName?? '';
+  provider?.lastName = widget.lastName?? '';
+  provider?.phoneNumber = widget.phoneNumber?? '';
+  provider?.email = widget.email?? '';
+  provider?.datetime = widget.datetime ?? '';
+  provider?.image = widget.image?? '';
+  provider?.description = widget.description?? '';
+  provider?.selectedCategory = widget.selectedCategory?? '';
+  provider?.selectedSubcategory = widget.selectedSubcategory?? '';
+  provider?.location = widget.location?? '';
+  provider?.inSoleBusiness = widget.inSoleBusiness?? false;
   // Initialize the database
   database = DatabaseAPI(auth: auth);
   }
@@ -231,23 +272,12 @@ Future<String?> uploadEventImage() async {
                                                       ),
                                                     )
                                                   
-                                                      :  Column(
-                                                        mainAxisAlignment: MainAxisAlignment.center,
-                                                        children: [
-                              Icon(
-                                Icons.add_a_photo_outlined,
-                                size: 42,
-                                color: Colors.black,
-                              ),
-                              SizedBox(
-                                height: 8,
-                              ),
-                              Text("Add Your Biz Image",
-                                  style: TextStyle(
-                                      color: Colors.black,
-                                      fontWeight: FontWeight.w600)),
-                                                        ],
-                                                      ),
+                                                      :  ClipRRect(
+                          borderRadius: BorderRadius.circular(8),
+                          child: Image.network(
+                            "https://coffee.avodahsystems.com/v1/storage/buckets/664baa5800325ff306fb/files/${widget.image}/view?project=6648f3ff003ca1aedbec",
+                            fit: BoxFit.fill,
+                          ))
                               ),
                             ),
                             SizedBox(height: 8,),
@@ -293,7 +323,7 @@ Future<String?> uploadEventImage() async {
                                 if (value == null || value.isEmpty) {
                                   return 'Please enter your first name';
                                 }
-                                return null;
+                                return '';
                               },
                               onChanged: (value) {
                                 context
@@ -304,12 +334,13 @@ Future<String?> uploadEventImage() async {
                             TextFormField(
                               decoration:
                                   const InputDecoration(labelText: 'Last Name',prefixIcon: Icon(Icons.people_outlined)),
-                              validator: (value) {
-                                if (value == null || value.isEmpty) {
-                                  return 'Please enter your last name';
-                                }
-                                return null;
-                              },
+                            validator: (value) {
+  if (value == null || value.isEmpty) {
+    return 'Please enter your first name';
+  }
+  return '';
+},
+
                               onChanged: (value) {
                                 context
                                     .read<RegistrationFormProvider>()
@@ -329,7 +360,7 @@ Future<String?> uploadEventImage() async {
                                 if (!emailRegex.hasMatch(value)) {
                                   return 'Please enter a valid email address';
                                 }
-                                return null;
+                                return '';
                               },
                               onChanged: (value) {
                                 context.read<RegistrationFormProvider>().email =
@@ -359,7 +390,7 @@ Future<String?> uploadEventImage() async {
                                 if (value == null || value.isEmpty) {
                                   return 'Please Type your Message';
                                 }
-                                return null;
+                                return '';
                               },
                             ),
                             const SizedBox(height: 20),
@@ -373,7 +404,7 @@ Future<String?> uploadEventImage() async {
                                 if (value == null || value.isEmpty) {
                                   return 'Please Type a Short Business Or Skill Description';
                                 }
-                                return null;
+                                return '';
                               },
                             ),
                             const SizedBox(height: 20),
@@ -384,7 +415,7 @@ Future<String?> uploadEventImage() async {
                                 if (value == null || value.isEmpty) {
                                   return 'Please enter Location';
                                 }
-                                return null;
+                                return '';
                               },
                               onChanged: (value) {
                                 context
@@ -403,7 +434,7 @@ Future<String?> uploadEventImage() async {
                                 if (value == null || value.isEmpty) {
                                   return 'Please enter DOB';
                                 }
-                                return null;
+                                return '';
                               },
                               onTap: () {
                                 _selectDateTime(context);
