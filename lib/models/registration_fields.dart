@@ -8,7 +8,7 @@ class RegistrationFields {
   String selectedCategory;
   String selectedSubcategory;
   String location;
-  List<dynamic> participants;
+  List<dynamic>? participants;
   String createdBy;
   bool inSoleBusiness;
   String image;
@@ -24,13 +24,13 @@ class RegistrationFields {
     required this.selectedSubcategory,
     required this.location,
     required this.image,
-    required this.participants,
+    this.participants,
     required this.createdBy,
     required this.inSoleBusiness,
   });
 
   Map<String, dynamic> toJson(RegistrationFields registrationFields) {
-    return {
+    final json = {
       'firstName': firstName,
       'lastName': lastName,
       'phoneNumber': phoneNumber,
@@ -39,11 +39,16 @@ class RegistrationFields {
       'description': description,
       'selectedCategory': selectedCategory,
       'selectedSubcategory': selectedSubcategory,
-      'participants': participants,
       'location': location,
       'createdBy': createdBy,
       'InSoleBusiness': inSoleBusiness,
       'image': image,
     };
+
+    if (participants != null) {
+      json['participants'] = participants!;
+    }
+
+    return json;
   }
 }

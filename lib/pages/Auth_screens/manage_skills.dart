@@ -76,7 +76,7 @@ class _ManageSkillsState extends State<ManageSkills> {
                                   userCreatedSkills[index].data["inSoleBusiness"],
                               docID: userCreatedSkills[index].$id, 
                               lastName: userCreatedSkills[index].data["lastName"],
-                              message: userCreatedSkills[index].data["message"],
+                              message: userCreatedSkills[index].data["message"]??'',
                               email: userCreatedSkills[index].data["email"],
                               phoneNumber: userCreatedSkills[index].data["phoneNumber"],
                               selectedCategory: userCreatedSkills[index].data["selectedCategory"],

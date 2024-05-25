@@ -54,7 +54,7 @@ class _RSVPEventsState extends State<RSVPEvents> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text("RSVP Events")),
+      appBar: AppBar(title: Text("RSVP Endorsements")),
       body: isLoading
           ? Center(child: CircularProgressIndicator())
           : ListView.builder(
@@ -68,7 +68,7 @@ class _RSVPEventsState extends State<RSVPEvents> {
                               SkillDetails(data: userSkills[index]))),
                   title: Text(
                     userSkills[index].data["firstName"],
-                    style: TextStyle(color: BaseColors().baseTextColor),
+                    style: TextStyle(color: Theme.of(context).primaryColor),
                   ),
                   subtitle: Text(
                     userSkills[index].data["location"],

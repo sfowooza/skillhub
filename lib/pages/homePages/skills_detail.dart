@@ -170,7 +170,7 @@ class _SkillDetailsState extends State<SkillDetails> {
                     )),
                 SizedBox(height: 8),
                 Text(
-                  "${widget.data.data["participants"].length} people are liking this!.",
+                  "${widget.data.data["participants"].length} person(s) like this!.",
                   style: TextStyle(
                       color: BaseColors().customTheme.primaryColor,
                       fontWeight: FontWeight.w500,
@@ -190,7 +190,7 @@ class _SkillDetailsState extends State<SkillDetails> {
                   height: 8,
                 ),
                 Text(
-                  "Event Type : ${widget.data.data["isInPerson"] == true ? "In Person" : "Virtual"}",
+                  "Skill Type : ${widget.data.data["isInPerson"] == true ? "In Person" : "Virtual"}",
                   style: TextStyle(color: BaseColors().baseTextColor,),
                 ),
                 SizedBox(

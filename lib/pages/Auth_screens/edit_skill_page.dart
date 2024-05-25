@@ -18,23 +18,25 @@ import 'package:file_picker/file_picker.dart';
 
 
 class EditSkillsPage extends StatefulWidget {
-  final String image, description, docID,datetime, location, firstName,lastName,email, phoneNumber,selectedCategory,selectedSubcategory, message;
+  final String image, description, docID, datetime, location, firstName, lastName, email, phoneNumber, selectedCategory, selectedSubcategory, message;
   final bool inSoleBusiness;
-  const EditSkillsPage(
-      {super.key,
-      required this.image,
-      required this.firstName,
-      required this.lastName,
-      required this.description,
-      required this.location,
-      required this.datetime,
-      required this.message,
-      required this.email,
-      required this.phoneNumber,
-      required this.selectedCategory,
-      required this.selectedSubcategory,
-      required this.docID,
-      required this.inSoleBusiness});
+
+  const EditSkillsPage({
+    Key? key,
+    required this.image,
+    required this.firstName,
+    required this.lastName,
+    required this.description,
+    required this.location,
+    required this.datetime,
+    required this.message,
+    required this.email,
+    required this.phoneNumber,
+    required this.selectedCategory,
+    required this.selectedSubcategory,
+    required this.docID,
+    required this.inSoleBusiness,
+  }) : super(key: key);
 
   @override
   _EditSkillsPageState createState() => _EditSkillsPageState();
@@ -81,21 +83,25 @@ class _EditSkillsPageState extends State<EditSkillsPage> with SingleTickerProvid
     client =appwrite.client;
     storage =Storage(client); 
     
-    messageTextController.text = widget.message?? '';
-    descriptionTextController.text = widget.description?? '';
- final provider = Provider.of<RegistrationFormProvider>(context, listen: false);
+   // Set initial values for text fields
+    messageTextController.text = widget.message;
+    descriptionTextController.text = widget.description;
+    _datetimeController.text = widget.datetime;
 
-  provider?.firstName = widget.firstName?? '';
-  provider?.lastName = widget.lastName?? '';
-  provider?.phoneNumber = widget.phoneNumber?? '';
-  provider?.email = widget.email?? '';
-  provider?.datetime = widget.datetime ?? '';
-  provider?.image = widget.image?? '';
-  provider?.description = widget.description?? '';
-  provider?.selectedCategory = widget.selectedCategory?? '';
-  provider?.selectedSubcategory = widget.selectedSubcategory?? '';
-  provider?.location = widget.location?? '';
-  provider?.inSoleBusiness = widget.inSoleBusiness?? false;
+    // Update RegistrationFormProvider with initial values
+    final provider = Provider.of<RegistrationFormProvider>(context, listen: false);
+    provider.firstName = widget.firstName;
+    provider.lastName = widget.lastName;
+    provider.phoneNumber = widget.phoneNumber;
+    provider.email = widget.email;
+    provider.selectedCategory = widget.selectedCategory;
+    provider.selectedSubcategory = widget.selectedSubcategory;
+    provider.location = widget.location;
+    provider.inSoleBusiness = widget.inSoleBusiness;
+
+    // Set initial value for the dropdowns
+    provider.notifyListeners();
+
   // Initialize the database
   database = DatabaseAPI(auth: auth);
   }
@@ -146,40 +152,6 @@ Future<String?> uploadEventImage() async {
   }
 }
 
-
-  // Future <void> createSkill() async {
-  //   if (!_formKey.currentState!.validate()) {
-  //     return;
-  //   }
-    
-  //   try {
-  //     await database.createSkill(
-  //       message: messageTextController.text,
-  //       description: descriptionTextController.text,
-  //       registrationFields: RegistrationFields(
-  //         firstName: '',
-  //         lastName: '',
-  //         phoneNumber: '',
-  //         email: '',
-  //         description: '',
-  //         selectedCategory: '',
-  //         selectedSubcategory: '',
-  //         createdBy: '',
-  //         datetime: _datetimeController.text, // Make sure this is correctly set
-  //         location: '',
-  //         participants: [],
-  //         inSoleBusiness: false, //
-  //         image:'',
-  //       ),
-  //     );
-  //     const snackbar = SnackBar(content: Text('Skill added!'));
-  //     ScaffoldMessenger.of(context).showSnackBar(snackbar);
-  //     messageTextController.clear();
-  //     descriptionTextController.clear();
-  //   } on AppwriteException catch (e) {
-  //     showAlert(title: 'Error', text: e.message.toString());
-  //   }
-  // }
 
   Future<void> _selectDateTime(BuildContext context) async {
     final DateTime? pickedDate = await showDatePicker(
@@ -315,42 +287,43 @@ Future<String?> uploadEventImage() async {
                                       }).toList()
                                     : [],
                               ),
-                            TextFormField(
-                               initialValue: userName,
+                               TextFormField(
+                              initialValue: provider.firstName,
                               decoration: const InputDecoration(
-                                  labelText: 'First Name',prefixIcon: Icon(Icons.people_outlined)),
+                                  labelText: 'First Name',
+                                  prefixIcon: Icon(Icons.people_outlined)),
                               validator: (value) {
                                 if (value == null || value.isEmpty) {
                                   return 'Please enter your first name';
                                 }
-                                return '';
+                                return null;
                               },
                               onChanged: (value) {
-                                context
-                                    .read<RegistrationFormProvider>()
-                                    .firstName = value;
+                                provider.firstName = value;
                               },
                             ),
-                            TextFormField(
-                              decoration:
-                                  const InputDecoration(labelText: 'Last Name',prefixIcon: Icon(Icons.people_outlined)),
-                            validator: (value) {
-  if (value == null || value.isEmpty) {
-    return 'Please enter your first name';
-  }
-  return '';
-},
-
+                             const SizedBox(height: 16),
+                                 TextFormField(
+                              initialValue: provider.lastName,
+                              decoration: const InputDecoration(
+                                  labelText: 'Last Name',
+                                  prefixIcon: Icon(Icons.people_outlined)),
+                              validator: (value) {
+                                if (value == null || value.isEmpty) {
+                                  return 'Please enter your last name';
+                                }
+                                return null;
+                              },
                               onChanged: (value) {
-                                context
-                                    .read<RegistrationFormProvider>()
-                                    .lastName = value;
+                                provider.lastName = value;
                               },
                             ),
                             const SizedBox(height: 16),
                             TextFormField(
-                              decoration:
-                                  const InputDecoration(labelText: 'Email'),
+                              initialValue: provider.email,
+                              decoration: const InputDecoration(
+                                  labelText: 'Email',
+                                  prefixIcon: Icon(Icons.email_outlined)),
                               validator: (value) {
                                 if (value == null || value.isEmpty) {
                                   return 'Please enter your email address';
@@ -363,21 +336,19 @@ Future<String?> uploadEventImage() async {
                                 return '';
                               },
                               onChanged: (value) {
-                                context.read<RegistrationFormProvider>().email =
+                                provider.email =
                                     value;
                               },
                             ),
                             const SizedBox(height: 8),
-                            IntlPhoneField(
+                             IntlPhoneField(
+                              initialValue: provider.phoneNumber,
                               decoration: const InputDecoration(
-                                labelText: 'Phone Number', prefixIcon: Icon(Icons.phone_rounded),
-                                border: OutlineInputBorder(),
-                              ),
+                                  labelText: 'Phone Number',
+                                  prefixIcon: Icon(Icons.phone)),
                               initialCountryCode: 'UG',
                               onChanged: (phone) {
-                                context
-                                    .read<RegistrationFormProvider>()
-                                    .phoneNumber = phone.completeNumber;
+                                provider.phoneNumber = phone.completeNumber;
                               },
                             ),
                             const SizedBox(height: 8),
@@ -408,19 +379,19 @@ Future<String?> uploadEventImage() async {
                               },
                             ),
                             const SizedBox(height: 20),
-                            TextFormField(
+                              TextFormField(
+                              initialValue: provider.location,
                               decoration: const InputDecoration(
-                                  labelText: 'Location',prefixIcon: Icon(Icons.location_on_outlined),),
+                                  labelText: 'Location',
+                                  prefixIcon: Icon(Icons.location_on)),
                               validator: (value) {
                                 if (value == null || value.isEmpty) {
-                                  return 'Please enter Location';
+                                  return 'Please enter the location';
                                 }
-                                return '';
+                                return null;
                               },
                               onChanged: (value) {
-                                context
-                                    .read<RegistrationFormProvider>()
-                                    .location = value;
+                                provider.location = value;
                               },
                             ),
                             const SizedBox(height: 20),
