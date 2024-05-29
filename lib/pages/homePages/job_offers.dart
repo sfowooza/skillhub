@@ -1,5 +1,6 @@
 import 'package:appwrite/appwrite.dart';
 import 'package:appwrite/models.dart';
+import 'package:carousel_slider/carousel_slider.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/widgets.dart';
 import 'package:provider/provider.dart';
@@ -7,6 +8,7 @@ import 'package:skillhub/appwrite/auth_api.dart';
 import 'package:skillhub/appwrite/saved_data.dart';
 import 'package:skillhub/colors.dart';
 import 'package:skillhub/controllers/events_container.dart';
+import 'package:skillhub/controllers/popular_item.dart';
 import 'package:skillhub/pages/Auth_screens/profile_page.dart';
 import 'package:skillhub/pages/Staggered/addSkillPage.dart';
 import 'package:skillhub/appwrite/database_api.dart';
@@ -37,10 +39,10 @@ void initState() {
     database = DatabaseAPI(auth: auth);
   userName = SavedData.getUserName().split(" ")[0];
   refresh();
-  // database.getAllSkills().then((value) => setState(() {
-  //   skills = value;
-  //   isLoading = false;
-  // }));
+  database.getAllSkills().then((value) => setState(() {
+    skills = value;
+    isLoading = false;
+  }));
 }
   void refresh() {
     database.getAllSkills().then((value) {
@@ -83,10 +85,74 @@ void initState() {
                   fontWeight: FontWeight.w600,
                 ),
               ),
+                isLoading
+                      ? const SizedBox()
+                      : CarouselSlider(
+  options: CarouselOptions(
+    autoPlay: true,
+    autoPlayInterval: const Duration(seconds: 5),
+    aspectRatio: 16 / 9,
+    viewportFraction: 0.99,
+    enlargeCenterPage: true,
+    scrollDirection: Axis.horizontal,
+  ),
+  items: skills.map((skill) {
+    return EventContainer(
+      data: skill,
+    );
+  }).toList(),
+),
+
+                  const SizedBox(height: 16),
+                  Text(
+                    "Popular Skills ",
+                    style: TextStyle(
+                      color: BaseColors().customTheme.primaryColor,
+                      fontSize: 24,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
             ],
           ),
         ),
       ),
+        SliverList(
+            delegate: SliverChildListDelegate([
+              Padding(
+                padding: const EdgeInsets.all(8.0),
+                child: Container(
+                  color: Color.fromARGB(255, 25, 44, 53),
+                  child: isLoading
+                      ? const SizedBox()
+                      : Column(
+                          children: [
+                            for (int i = 0; i < skills.length && i < 5; i++) ...[
+                              PopularItem(
+                                eventData: skills[i],
+                                index: i + 1,
+                              ),
+                              const Divider(),
+                            ],
+                          ],
+                        ),
+                ),
+              )
+            ]),
+          ),
+          SliverToBoxAdapter(
+            child: Padding(
+              padding:
+                  const EdgeInsets.only(bottom: 2, top: 8, left: 6, right: 6),
+              child: Text(
+                "All Skills",
+                style: TextStyle(
+                  color: BaseColors().customTheme.primaryColor,
+                  fontSize: 24,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+          ),
       SliverList(
         delegate: SliverChildBuilderDelegate(
           (context, index) => EventContainer(data: skills[index]),

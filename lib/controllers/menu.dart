@@ -22,7 +22,7 @@ class _MenuState extends State<Menu> with SingleTickerProviderStateMixin {
     'Products Listing',
     'Job Listings',
     'OpenCVs',
-    'More Info',
+    'FAQs',
   ];
 
   static const _initialDelayTime = Duration(milliseconds: 50);

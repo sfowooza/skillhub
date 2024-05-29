@@ -68,9 +68,9 @@ class _ExpandableFabState extends State<ExpandableFab> with SingleTickerProvider
                   onPressed: () {
                     showUploadVideoDialog(context);
                   },
-                  tooltip: 'Upload Video',
+                  tooltip: 'RSVP Endorsements',
                   child: Icon(Icons.phone_callback_outlined),
-                  heroTag: 'uploadVideo',
+                  heroTag: 'RSVP Endorsements',
                 ),
               ),
              SizedBox(height: 16),

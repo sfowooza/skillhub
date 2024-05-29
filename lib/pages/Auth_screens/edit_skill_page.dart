@@ -492,6 +492,70 @@ class _EditSkillsPageState extends State<EditSkillsPage> {
                               },
                               child: const Text('Update Skill'),
                             ),
+                                        SizedBox(
+              height: 12,
+            ),
+            Text(
+              "Danger Zone",
+              style: TextStyle(
+                  color: Color.fromARGB(255, 243, 138, 136),
+                  fontWeight: FontWeight.w600,
+                  fontSize: 20),
+            ),
+            SizedBox(
+              height: 8,
+            ),
+            SizedBox(
+              height: 50,
+              width: double.infinity,
+              child: MaterialButton(
+                color: Color.fromARGB(255, 243, 138, 136),
+                onPressed: () {
+                  showDialog(
+                      context: context,
+                      builder: (context) => AlertDialog(
+                            title: Text(
+                              "Are you Sure ?",
+                              style: TextStyle(color: Color.fromARGB(255, 131, 84, 175)),
+                            ),
+                            content: Text(
+                              "Your event will be deleted",
+                              style: TextStyle(color: BaseColors().baseTextColor),
+                            ),
+                            actions: [
+                              TextButton(
+                                  onPressed: () {
+                                    database.deleteSkill(widget.docID)
+                                        .then((value) async {
+                                      await storage.deleteFile(
+                                          bucketId: "664baa5800325ff306fb",
+                                          fileId: widget.image);
+                                      ScaffoldMessenger.of(context)
+                                          .showSnackBar(SnackBar(
+                                              content: Text(
+                                                  "Skill Deleted Successfully. ")));
+                                      Navigator.pop(context);
+                                      Navigator.pop(context);
+                                    });
+                                  },
+                                  child: Text("Yes")),
+                              TextButton(
+                                  onPressed: () {
+                                    Navigator.pop(context);
+                                  },
+                                  child: Text("No")),
+                            ],
+                          ));
+                },
+                child: Text(
+                  "Delete Skill",
+                  style: TextStyle(
+                      color: Colors.black,
+                      fontWeight: FontWeight.w900,
+                      fontSize: 20),
+                ),
+              ),
+            ),
                           ],
                         )
                       : const Center(),
