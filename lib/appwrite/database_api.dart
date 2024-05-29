@@ -177,7 +177,7 @@ Future manageSkills() async {
 // update the edited event
 
 Future<void> updateSkill(
-    String name,
+    //String name,
     String message,
     String description,
     RegistrationFields registrationFields,
@@ -189,7 +189,8 @@ Future<void> updateSkill(
           documentId: docID,
           data: {
             'text': message,
-      'datetime': DateTime.now().toString(),
+     'datetime': registrationFields.datetime,
+     // 'message': message,
       'description': description,
       'firstName': registrationFields.firstName,
       'lastName': registrationFields.lastName,
@@ -206,6 +207,7 @@ Future<void> updateSkill(
       .then((value) => print("Skill Updated"))
       .catchError((e) => print(e));
 }
+
 Future deleteSkill(String docID) async {
   try {
     final response = await databases.deleteDocument(

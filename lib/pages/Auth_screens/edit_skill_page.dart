@@ -1,5 +1,6 @@
-import 'dart:io';
+// File: edit_skills_page.dart
 
+import 'dart:io';
 import 'package:skillhub/appwrite/auth_api.dart';
 import 'package:skillhub/appwrite/database_api.dart';
 import 'package:skillhub/appwrite/saved_data.dart';
@@ -9,67 +10,49 @@ import 'package:skillhub/pages/Staggered/job_offers.dart';
 import 'package:skillhub/pages/homePages/job_offers.dart';
 import 'package:skillhub/pages/nav_tabs/expendableFab.dart';
 import 'package:skillhub/providers/registration_form_providers.dart';
-import 'package:skillhub/models/registration_fields.dart';
 import 'package:flutter/material.dart';
 import 'package:appwrite/appwrite.dart';
 import 'package:intl_phone_field/intl_phone_field.dart';
 import 'package:provider/provider.dart';
 import 'package:file_picker/file_picker.dart';
 
-
 class EditSkillsPage extends StatefulWidget {
-  final String image, description, docID, datetime, location, firstName, lastName, email, phoneNumber, selectedCategory, selectedSubcategory, message;
+  final String image, firstName, lastName, email, phoneNumber, message, selectedCategory, selectedSubcategory, location, description, datetime, docID;
   final bool inSoleBusiness;
-
-  const EditSkillsPage({
-    Key? key,
-    required this.image,
-    required this.firstName,
-    required this.lastName,
-    required this.description,
-    required this.location,
-    required this.datetime,
-    required this.message,
-    required this.email,
-    required this.phoneNumber,
-    required this.selectedCategory,
-    required this.selectedSubcategory,
-    required this.docID,
-    required this.inSoleBusiness,
-  }) : super(key: key);
+  const EditSkillsPage({Key? key, required this.image, required this.firstName, required this.lastName, required this.email, required this.phoneNumber, required this.message, required this.selectedCategory, required this.selectedSubcategory, required this.description, required this.datetime, required this.docID, required this.inSoleBusiness, required this.location}) : super(key: key);
 
   @override
   _EditSkillsPageState createState() => _EditSkillsPageState();
 }
 
-class _EditSkillsPageState extends State<EditSkillsPage> with SingleTickerProviderStateMixin {
+class _EditSkillsPageState extends State<EditSkillsPage> {
   late Client client;
   late DatabaseAPI database;
   late Storage storage;
-  bool _isSoleBusiness = true;
   TextEditingController messageTextController = TextEditingController();
   TextEditingController descriptionTextController = TextEditingController();
   final TextEditingController _datetimeController = TextEditingController();
+  TextEditingController firstNameTextController = TextEditingController();
+  TextEditingController lastNameTextController = TextEditingController();
+  TextEditingController emailTextController = TextEditingController();
+  TextEditingController phoneNumberTextController = TextEditingController();
+  TextEditingController locationTextController = TextEditingController();
   AuthStatus authStatus = AuthStatus.uninitialized;
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
   bool isUploading = false;
   late String selectedCategory;
   late String selectedSubcategory;
-  late String phoneNumber;
-  late String email;
-  late String image;
-  late String createdBy;
-  late String lastName;
   late String firstName;
+  late String lastName;
+  late String email;
+  late String phoneNumber;
   late String location;
-    
+  late bool docID;
 
-   FilePickerResult? _filePickerResult;
-
-   String userName = "User";
- // Storage storage = Storage(client);
- late AuthAPI auth;
-
+  FilePickerResult? _filePickerResult;
+  bool inSoleBusiness = true;
+  String userName = "User";
+  late AuthAPI auth;
   String userId = "";
 
   @override
@@ -79,79 +62,85 @@ class _EditSkillsPageState extends State<EditSkillsPage> with SingleTickerProvid
     authStatus = appwrite.status;
     userName = SavedData.getUserName().split(" ")[0];
     userId = SavedData.getUserId();
-    auth =appwrite;
-    client =appwrite.client;
-    storage =Storage(client); 
-    
-   // Set initial values for text fields
+    auth = appwrite;
+    client = appwrite.client;
+    storage = Storage(client);
+
+   _datetimeController.text = widget.datetime;
     messageTextController.text = widget.message;
     descriptionTextController.text = widget.description;
-    _datetimeController.text = widget.datetime;
+    firstNameTextController.text = widget.firstName;
+    lastNameTextController.text = widget.lastName;
+    emailTextController.text = widget.email;
+    phoneNumberTextController.text = widget.phoneNumber;
+    locationTextController.text = widget.location;
 
-    // Update RegistrationFormProvider with initial values
-    final provider = Provider.of<RegistrationFormProvider>(context, listen: false);
-    provider.firstName = widget.firstName;
-    provider.lastName = widget.lastName;
-    provider.phoneNumber = widget.phoneNumber;
-    provider.email = widget.email;
-    provider.selectedCategory = widget.selectedCategory;
-    provider.selectedSubcategory = widget.selectedSubcategory;
-    provider.location = widget.location;
-    provider.inSoleBusiness = widget.inSoleBusiness;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final provider = Provider.of<RegistrationFormProvider>(context, listen: false);
+      provider.selectedCategory = widget.selectedCategory;
+      provider.selectedSubcategory = widget.selectedSubcategory;
+      provider.inSoleBusiness = widget.inSoleBusiness;
+      provider.firstName = widget.firstName;
+      provider.lastName = widget.lastName;
+      provider.email = widget.email;
+      provider.phoneNumber = widget.phoneNumber;
+      provider.location = widget.location;
+      provider.image = widget.image;
+    });
 
-    // Set initial value for the dropdowns
-    provider.notifyListeners();
-
-  // Initialize the database
-  database = DatabaseAPI(auth: auth);
+    database = DatabaseAPI(auth: auth);
   }
 
-  
   @override
   void dispose() {
     super.dispose();
+    messageTextController.dispose();
+    descriptionTextController.dispose();
+    firstNameTextController.dispose();
+    lastNameTextController.dispose();
+    emailTextController.dispose();
+    phoneNumberTextController.dispose();
+    locationTextController.dispose();
+    _datetimeController.dispose();
   }
 
-    void _openFilePicker() async {
-    FilePickerResult? result =
-        await FilePicker.platform.pickFiles(type: FileType.image);
+  void _openFilePicker() async {
+    FilePickerResult? result = await FilePicker.platform.pickFiles(type: FileType.image);
     setState(() {
       _filePickerResult = result;
     });
   }
 
-  // Upload event image to storage bucket
-Future<String?> uploadEventImage() async {
-  setState(() {
-    isUploading = true;
-  });
-  try {
-    if (_filePickerResult != null && _filePickerResult!.files.isNotEmpty) {
-      PlatformFile file = _filePickerResult!.files.first;
-      final fileBytes = await File(file.path!).readAsBytes();
-      final inputFile = InputFile.fromBytes(bytes: fileBytes, filename: file.name);
-
-      final response = await storage.createFile(
-        bucketId: '664baa5800325ff306fb',
-        fileId: ID.unique(),
-        file: inputFile,
-      );
-      print(response.$id);
-      return response.$id; // Return the file ID or URL as provided by the storage service
-    } else {
-      print("Something went wrong");
-      return null;
-    }
-  } catch (e) {
-    print(e);
-    return null;
-  } finally {
+  Future<String?> uploadEventImage() async {
     setState(() {
-      isUploading = false;
+      isUploading = true;
     });
-  }
-}
+    try {
+      if (_filePickerResult != null && _filePickerResult!.files.isNotEmpty) {
+        PlatformFile file = _filePickerResult!.files.first;
+        final fileBytes = await File(file.path!).readAsBytes();
+        final inputFile = InputFile.fromBytes(bytes: fileBytes, filename: file.name);
 
+        final response = await storage.createFile(
+          bucketId: '664baa5800325ff306fb',
+          fileId: ID.unique(),
+          file: inputFile,
+        );
+        print(response.$id);
+        return response.$id;
+      } else {
+        print("Something went wrong");
+        return null;
+      }
+    } catch (e) {
+      print(e);
+      return null;
+    } finally {
+      setState(() {
+        isUploading = false;
+      });
+    }
+  }
 
   Future<void> _selectDateTime(BuildContext context) async {
     final DateTime? pickedDate = await showDatePicker(
@@ -178,8 +167,7 @@ Future<String?> uploadEventImage() async {
 
         setState(() {
           _datetimeController.text = selectedDateTime.toIso8601String();
-          context.read<RegistrationFormProvider>().datetime =
-              selectedDateTime.toIso8601String();
+          context.read<RegistrationFormProvider>().datetime = selectedDateTime.toIso8601String();
         });
       }
     }
@@ -209,9 +197,7 @@ Future<String?> uploadEventImage() async {
   Widget build(BuildContext context) {
     final provider = Provider.of<RegistrationFormProvider>(context);
     return Scaffold(
-      // appBar: AppBar(
-      //   title: const Text('Add Message'),
-      // ),
+      appBar: AppBar(title: Text("Update Skills")),
       floatingActionButton: ExpandableFab(),
       body: Center(
         child: Padding(
@@ -227,29 +213,29 @@ Future<String?> uploadEventImage() async {
                       ? Column(
                           children: [
                             GestureDetector(
-                               onTap: ()=>_openFilePicker(),
-                              child: Container(                          
-                                                width: double.infinity,
-                                                height: MediaQuery.of(context).size.height * .3,
-                                                decoration: BoxDecoration(
-                                                    color: BaseColors().kLightGreen,
-                                                    borderRadius: BorderRadius.circular(8)),
-                                               child: _filePickerResult != null
-                                                  ? ClipRRect(
-                                                      borderRadius: BorderRadius.circular(8),
-                                                      child: Image(
-                                                        image: FileImage(
-                                File(_filePickerResult!.files.first.path!)),
-                                                        fit: BoxFit.fill,
-                                                      ),
-                                                    )
-                                                  
-                                                      :  ClipRRect(
-                          borderRadius: BorderRadius.circular(8),
-                          child: Image.network(
-                            "https://coffee.avodahsystems.com/v1/storage/buckets/664baa5800325ff306fb/files/${widget.image}/view?project=6648f3ff003ca1aedbec",
-                            fit: BoxFit.fill,
-                          ))
+                              onTap: () => _openFilePicker(),
+                              child: Container(
+                                width: double.infinity,
+                                height: MediaQuery.of(context).size.height * .3,
+                                decoration: BoxDecoration(
+                                    color: BaseColors().kLightGreen,
+                                    borderRadius: BorderRadius.circular(8)),
+                                child: _filePickerResult != null
+                                    ? ClipRRect(
+                                        borderRadius: BorderRadius.circular(8),
+                                        child: Image(
+                                          image: FileImage(
+                                              File(_filePickerResult!.files.first.path!)),
+                                          fit: BoxFit.fill,
+                                        ),
+                                      )
+                                    : ClipRRect(
+                                        borderRadius: BorderRadius.circular(8),
+                                        child: Image.network(
+                                          "https://coffee.avodahsystems.com/v1/storage/buckets/664baa5800325ff306fb/files/${widget.image}/view?project=6648f3ff003ca1aedbec",
+                                          fit: BoxFit.fill,
+                                        ),
+                                      ),
                               ),
                             ),
                             SizedBox(height: 8,),
@@ -257,7 +243,7 @@ Future<String?> uploadEventImage() async {
                               value: provider.selectedCategory,
                               hint: const Text('Select Category'),
                               onChanged: (value) {
-                                provider.selectedCategory = value;
+                                provider.selectedCategory = value!;
                                 provider.selectedSubcategory = null;
                               },
                               items: provider.subcategories.keys
@@ -274,11 +260,10 @@ Future<String?> uploadEventImage() async {
                                 value: provider.selectedSubcategory,
                                 hint: const Text('Select Subcategory'),
                                 onChanged: (value) {
-                                  provider.selectedSubcategory = value;
+                                  provider.selectedSubcategory = value!;
                                 },
                                 items: provider.selectedCategory != null
-                                    ? provider.subcategories[
-                                            provider.selectedCategory!]!
+                                    ? provider.subcategories[provider.selectedCategory!]!
                                         .map((String subcategory) {
                                         return DropdownMenuItem<String>(
                                           value: subcategory,
@@ -287,8 +272,8 @@ Future<String?> uploadEventImage() async {
                                       }).toList()
                                     : [],
                               ),
-                               TextFormField(
-                              initialValue: provider.firstName,
+                            TextFormField(
+                              controller: firstNameTextController,
                               decoration: const InputDecoration(
                                   labelText: 'First Name',
                                   prefixIcon: Icon(Icons.people_outlined)),
@@ -302,9 +287,9 @@ Future<String?> uploadEventImage() async {
                                 provider.firstName = value;
                               },
                             ),
-                             const SizedBox(height: 16),
-                                 TextFormField(
-                              initialValue: provider.lastName,
+                            const SizedBox(height: 8),
+                            TextFormField(
+                              controller: lastNameTextController,
                               decoration: const InputDecoration(
                                   labelText: 'Last Name',
                                   prefixIcon: Icon(Icons.people_outlined)),
@@ -320,7 +305,7 @@ Future<String?> uploadEventImage() async {
                             ),
                             const SizedBox(height: 16),
                             TextFormField(
-                              initialValue: provider.email,
+                              controller: emailTextController,
                               decoration: const InputDecoration(
                                   labelText: 'Email',
                                   prefixIcon: Icon(Icons.email_outlined)),
@@ -333,16 +318,15 @@ Future<String?> uploadEventImage() async {
                                 if (!emailRegex.hasMatch(value)) {
                                   return 'Please enter a valid email address';
                                 }
-                                return '';
+                                return null;
                               },
                               onChanged: (value) {
-                                provider.email =
-                                    value;
+                                provider.email = value;
                               },
                             ),
                             const SizedBox(height: 8),
-                             IntlPhoneField(
-                              initialValue: provider.phoneNumber,
+                            IntlPhoneField(
+                              controller: phoneNumberTextController,
                               decoration: const InputDecoration(
                                   labelText: 'Phone Number',
                                   prefixIcon: Icon(Icons.phone)),
@@ -355,32 +339,34 @@ Future<String?> uploadEventImage() async {
                             TextFormField(
                               controller: messageTextController,
                               decoration: const InputDecoration(
-                                hintText: 'Type a Skill Bio', prefixIcon: Icon(Icons.event_outlined),
+                                hintText: 'Type a Skill Bio',
+                                prefixIcon: Icon(Icons.event_outlined),
                               ),
                               validator: (value) {
                                 if (value == null || value.isEmpty) {
                                   return 'Please Type your Message';
                                 }
-                                return '';
+                                return null;
                               },
                             ),
                             const SizedBox(height: 20),
                             TextFormField(
-                              maxLines:4,
+                              maxLines: 4,
                               controller: descriptionTextController,
                               decoration: const InputDecoration(
-                                hintText: 'Type a Business Description', prefixIcon: Icon(Icons.description_outlined),
+                                hintText: 'Type a Business Description',
+                                prefixIcon: Icon(Icons.description_outlined),
                               ),
                               validator: (value) {
                                 if (value == null || value.isEmpty) {
                                   return 'Please Type a Short Business Or Skill Description';
                                 }
-                                return '';
+                                return null;
                               },
                             ),
                             const SizedBox(height: 20),
-                              TextFormField(
-                              initialValue: provider.location,
+                            TextFormField(
+                             controller: locationTextController,
                               decoration: const InputDecoration(
                                   labelText: 'Location',
                                   prefixIcon: Icon(Icons.location_on)),
@@ -405,7 +391,7 @@ Future<String?> uploadEventImage() async {
                                 if (value == null || value.isEmpty) {
                                   return 'Please enter DOB';
                                 }
-                                return '';
+                                return null;
                               },
                               onTap: () {
                                 _selectDateTime(context);
@@ -415,95 +401,96 @@ Future<String?> uploadEventImage() async {
                             const SizedBox(height: 16),
                             Row(
                               children: [
-                                Text("In a Sole Business",style:TextStyle(color: Theme.of(context).primaryColor, fontSize:20 )),
+                                Text("In a Sole Business", style: TextStyle(color: Theme.of(context).primaryColor, fontSize: 20)),
                                 Spacer(),
-                                Switch(value: _isSoleBusiness, onChanged: (value){
+                                Switch(value: inSoleBusiness, onChanged: (value) {
                                   setState(() {
-                                    _isSoleBusiness = value; 
+                                    inSoleBusiness = value;
                                   });
-                                
+                                  provider.inSoleBusiness = value;
                                 }),
                               ],
                             ),
-                            SizedBox(height:20),
+                            SizedBox(height: 20),
                             ElevatedButton(
-   onPressed: () async {
-  final registrationFormProvider = context.read<RegistrationFormProvider>();
-  if (registrationFormProvider.firstName!.isEmpty ||
-      registrationFormProvider.lastName!.isEmpty ||
-      registrationFormProvider.phoneNumber!.isEmpty ||
-      registrationFormProvider.email!.isEmpty ||
-      registrationFormProvider.selectedCategory!.isEmpty ||
-      registrationFormProvider.selectedSubcategory!.isEmpty ||
-      descriptionTextController.text.isEmpty ||
-      registrationFormProvider.datetime!.isEmpty ||
-      registrationFormProvider.location!.isEmpty) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text("First Name, Last Name, Phone Number, Email, Category, Subcategory, Description, Date & Time, and Location are required.")
-      )
-    );
-  } else if (_formKey.currentState!.validate()) {
-    uploadEventImage().then((value) {
-      if (value != null) {
-        database.createSkill(
-          message: messageTextController.text,
-          description: descriptionTextController.text,
-          registrationFields: RegistrationFields(
-            selectedCategory: registrationFormProvider.selectedCategory!,
-            selectedSubcategory: registrationFormProvider.selectedSubcategory!,
-            firstName: registrationFormProvider.firstName!,
-            lastName: registrationFormProvider.lastName!,
-            phoneNumber: registrationFormProvider.phoneNumber!,
-            email: registrationFormProvider.email!,
-            description: descriptionTextController.text,
-            createdBy: userId,
-            datetime: registrationFormProvider.datetime!,
-            location: registrationFormProvider.location!,
-            participants: [],
-            inSoleBusiness: false,
-            image: value, // Assign the uploaded file ID or URL to the registrationFields
-          ),
-        ).then((value) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text("Event Created !!"))
-          );
-          Navigator.pop(context);
-
-          showDialog(
-            context: context,
-            builder: (BuildContext context) {
-              return AlertDialog(
-                title: const Text('Success'),
-                content: const Text('Business Skill Added'),
-                actions: [
-                  TextButton(
-                    onPressed: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => const JobOffersStaggeredPage(title: '',)
-                        ),
-                      );
-                    },
-                    child: const Text('OK'),
-                  ),
-                ],
-              );
-            },
-          );
-        });
-      } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text("Image upload failed"))
-        );
-      }
-    });
-  }
-},
-
-
-                              child: const Text('Submit'),
+                              onPressed: () async {
+                                final registrationFormProvider = context.read<RegistrationFormProvider>();
+                                // if (registrationFormProvider.firstName!.isEmpty ||
+                                //     registrationFormProvider.lastName!.isEmpty ||
+                                //     registrationFormProvider.phoneNumber!.isEmpty ||
+                                //     registrationFormProvider.email!.isEmpty ||
+                                //     registrationFormProvider.selectedCategory!.isEmpty ||
+                                //     registrationFormProvider.selectedSubcategory!.isEmpty ||
+                                //     descriptionTextController.text!.isEmpty ||
+                                //     registrationFormProvider.datetime!.isEmpty ||
+                                //     registrationFormProvider.location!.isEmpty) {
+                                //   // if (mounted) {
+                                //   //   ScaffoldMessenger.of(context).showSnackBar(
+                                //   //     SnackBar(
+                                //   //       content: Text("First Name, Last Name, Phone Number, Email, Category, Subcategory, Description, Date & Time, and Location are required."),
+                                //   //     ),
+                                //   //   );
+                                //   // }
+                                // } else
+                                 if (_formKey.currentState!.validate()) { 
+                                      database.updateSkill(
+                                        messageTextController.text,
+                                        descriptionTextController.text,
+                                        RegistrationFields(
+                                          selectedCategory: registrationFormProvider.selectedCategory!,
+                                          selectedSubcategory: registrationFormProvider.selectedSubcategory!,
+                                          firstName: registrationFormProvider.firstName!,
+                                          lastName: registrationFormProvider.lastName!,
+                                          phoneNumber: registrationFormProvider.phoneNumber!,
+                                          email: registrationFormProvider.email!,
+                                          description: descriptionTextController.text,
+                                          createdBy: userId,
+                                          datetime: _datetimeController.text,
+                                          location: registrationFormProvider.location!,
+                                          participants: [],
+                                          inSoleBusiness: inSoleBusiness,
+                                          image: widget.image,
+                                        ),
+                                        widget.docID,
+                                      ).then((value) {
+                                        ScaffoldMessenger.of(context).showSnackBar(
+                                          SnackBar(content: Text("Skill Updated!!")),
+                                        );
+                                        Navigator.pop(context);
+                                      });
+                                  
+                                } else {
+                                    uploadEventImage().then((value) {
+                                    if (value != null) {
+                                      database.updateSkill(
+                                        messageTextController.text,
+                                        descriptionTextController.text,
+                                        RegistrationFields(
+                                          selectedCategory: registrationFormProvider.selectedCategory!,
+                                          selectedSubcategory: registrationFormProvider.selectedSubcategory!,
+                                          firstName: registrationFormProvider.firstName!,
+                                          lastName: registrationFormProvider.lastName!,
+                                          phoneNumber: registrationFormProvider.phoneNumber!,
+                                          email: registrationFormProvider.email!,
+                                          description: descriptionTextController.text,
+                                          createdBy: userId,
+                                          datetime: _datetimeController.text,
+                                          location: registrationFormProvider.location!,
+                                          participants: [],
+                                          inSoleBusiness: inSoleBusiness,
+                                          image: value,
+                                        ),
+                                        widget.docID,
+                                      ).then((value) {
+                                        ScaffoldMessenger.of(context).showSnackBar(
+                                          SnackBar(content: Text("Skill Updated!!")),
+                                        );
+                                        Navigator.pop(context);
+                                      });
+                                  }});
+                                }
+                              },
+                              child: const Text('Update Skill'),
                             ),
                           ],
                         )

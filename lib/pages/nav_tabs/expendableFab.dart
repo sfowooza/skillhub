@@ -69,7 +69,7 @@ class _ExpandableFabState extends State<ExpandableFab> with SingleTickerProvider
                     showUploadVideoDialog(context);
                   },
                   tooltip: 'Upload Video',
-                  child: Icon(Icons.video_call),
+                  child: Icon(Icons.phone_callback_outlined),
                   heroTag: 'uploadVideo',
                 ),
               ),
@@ -82,7 +82,7 @@ class _ExpandableFabState extends State<ExpandableFab> with SingleTickerProvider
                     showSignOutDialog(context);
                   },
                   tooltip: 'Logout',
-                  child: Icon(Icons.image),
+                  child: Icon(Icons.logout_outlined),
                   heroTag: 'signOut',
                 ),
               ),
@@ -95,7 +95,7 @@ class _ExpandableFabState extends State<ExpandableFab> with SingleTickerProvider
                     showUploadImageDialog(context);
                   },
                   tooltip: 'Upload Image',
-                  child: Icon(Icons.image),
+                  child: Icon(Icons.update_outlined),
                   heroTag: 'uploadImage',
                 ),
               ),

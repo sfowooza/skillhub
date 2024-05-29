@@ -105,41 +105,6 @@ Future<String?> uploadEventImage() async {
   }
 }
 
-
-  // Future <void> createSkill() async {
-  //   if (!_formKey.currentState!.validate()) {
-  //     return;
-  //   }
-    
-  //   try {
-  //     await database.createSkill(
-  //       message: messageTextController.text,
-  //       description: descriptionTextController.text,
-  //       registrationFields: RegistrationFields(
-  //         firstName: '',
-  //         lastName: '',
-  //         phoneNumber: '',
-  //         email: '',
-  //         description: '',
-  //         selectedCategory: '',
-  //         selectedSubcategory: '',
-  //         createdBy: '',
-  //         datetime: _datetimeController.text, // Make sure this is correctly set
-  //         location: '',
-  //         participants: [],
-  //         inSoleBusiness: false, //
-  //         image:'',
-  //       ),
-  //     );
-  //     const snackbar = SnackBar(content: Text('Skill added!'));
-  //     ScaffoldMessenger.of(context).showSnackBar(snackbar);
-  //     messageTextController.clear();
-  //     descriptionTextController.clear();
-  //   } on AppwriteException catch (e) {
-  //     showAlert(title: 'Error', text: e.message.toString());
-  //   }
-  // }
-
   Future<void> _selectDateTime(BuildContext context) async {
     final DateTime? pickedDate = await showDatePicker(
       context: context,
@@ -242,7 +207,7 @@ Future<String?> uploadEventImage() async {
                               SizedBox(
                                 height: 8,
                               ),
-                              Text("Add Your Biz Image",
+                              Text("Upload Logo Or Biz Image",
                                   style: TextStyle(
                                       color: Colors.black,
                                       fontWeight: FontWeight.w600)),
