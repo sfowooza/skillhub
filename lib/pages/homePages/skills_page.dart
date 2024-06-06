@@ -284,7 +284,7 @@ Future<String?> uploadEventImage() async {
                             const SizedBox(height: 16),
                             TextFormField(
                               decoration:
-                                  const InputDecoration(labelText: 'Email'),
+                                  const InputDecoration(labelText: 'Email',prefixIcon: Icon(Icons.email_outlined),),
                               validator: (value) {
                                 if (value == null || value.isEmpty) {
                                   return 'Please enter your email address';
