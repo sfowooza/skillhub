@@ -39,7 +39,7 @@ class EventContainer extends StatelessWidget {
                     BlendMode.darken,
                   ),
                   child: Image.network(
-                    "https://coffee.avodahsystems.com/v1/storage/buckets/664baa5800325ff306fb/files/${data.data["image"]}/view?project=6648f3ff003ca1aedbec",
+                    "https://skillhub.avodahsystems.com/v1/storage/buckets/665a5bb500243dbb9967/files/${data.data["image"]}/view?project=665a50350038457d0eb9",
                     fit: BoxFit.cover,
                   ),
                 ),

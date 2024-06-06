@@ -2,6 +2,7 @@ import 'package:appwrite/appwrite.dart';
 import 'package:appwrite/enums.dart';
 import 'package:skillhub/appwrite/auth_api.dart';
 import 'package:skillhub/pages/Auth_screens/forgot_password_page.dart';
+import 'package:skillhub/pages/Staggered/category_staggered_page.dart';
 import 'package:skillhub/pages/Staggered/job_offers.dart';
 import 'package:skillhub/pages/Auth_screens/register_page.dart';
 import 'package:flutter/material.dart';
@@ -10,6 +11,7 @@ import 'package:provider/provider.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import 'package:skillhub/colors.dart';
+import 'package:skillhub/pages/homePages/skills_page.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({Key? key}) : super(key: key);
@@ -210,7 +212,7 @@ signInWithProvider(OAuthProvider provider) {
                     Navigator.push(
                       context,
                       MaterialPageRoute(
-                          builder: (context) => const JobOffersStaggeredPage(title: 'Offers',)),
+                          builder: (context) => const MyHomeCategoryPage()),
                     );
                   },
                   child: const Text(
@@ -237,7 +239,7 @@ onPressed: () {
       Future.delayed(Duration(seconds: 2), () {
         Navigator.push(
           context,
-          MaterialPageRoute(builder: (context) => const JobOffersStaggeredPage(title: 'Job Offers',))
+          MaterialPageRoute(builder: (context) => SkillsPage())
         );
       });
     } else {
@@ -247,6 +249,7 @@ onPressed: () {
   });
 },
 
+//const JobOffersStaggeredPage(title: 'Job Offers',)
   ),
 ),
 

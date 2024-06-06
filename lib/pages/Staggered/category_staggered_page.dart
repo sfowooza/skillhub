@@ -1,18 +1,16 @@
-// my_home_page.dart
-import 'package:skillhub/pages/Auth_screens/login_page.dart';
-import 'package:skillhub/pages/Auth_screens/register_page.dart';
-import 'package:skillhub/controllers/custom_widgets.dart';
+
 import 'package:flutter/material.dart';
+import 'package:skillhub/controllers/custom_widgets.dart';
 import 'package:skillhub/pages/homePages/home_cards/category_homePage.dart';
 
-class MyHomePage extends StatefulWidget {
-  const MyHomePage({Key? key, required String title});
+class MyHomeCategoryPage extends StatefulWidget {
+  const MyHomeCategoryPage({Key? key});
 
   @override
-  _MyHomePageState createState() => _MyHomePageState();
+  _MyHomeCategoryPageState createState() => _MyHomeCategoryPageState();
 }
 
-class _MyHomePageState extends State<MyHomePage>
+class _MyHomeCategoryPageState extends State<MyHomeCategoryPage>
     with SingleTickerProviderStateMixin {
   late AnimationController _drawerSlideController;
 

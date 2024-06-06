@@ -52,7 +52,11 @@ Future getAllSkills() async {
    
   // }}
 
-
+   Future<DocumentList> getMessages() {
+    return databases.listDocuments(
+      databaseId: APPWRITE_DATABASE_ID,
+      collectionId: COLLECTION_DB_ID,);
+  }
 
 //create method to create documents to database
   Future<Document> createSkill({

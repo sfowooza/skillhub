@@ -85,7 +85,7 @@ Future<String?> uploadEventImage() async {
       final inputFile = InputFile.fromBytes(bytes: fileBytes, filename: file.name);
 
       final response = await storage.createFile(
-        bucketId: '664baa5800325ff306fb',
+        bucketId: '665a5bb500243dbb9967',
         fileId: ID.unique(),
         file: inputFile,
       );
@@ -429,7 +429,7 @@ Future<String?> uploadEventImage() async {
           ),
         ).then((value) {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text("Event Created !!"))
+            SnackBar(content: Text("Skill Created !!"))
           );
           Navigator.pop(context);
 

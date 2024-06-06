@@ -122,7 +122,7 @@ class _EditSkillsPageState extends State<EditSkillsPage> {
         final inputFile = InputFile.fromBytes(bytes: fileBytes, filename: file.name);
 
         final response = await storage.createFile(
-          bucketId: '664baa5800325ff306fb',
+          bucketId: '665a5bb500243dbb9967',
           fileId: ID.unique(),
           file: inputFile,
         );
@@ -232,7 +232,7 @@ class _EditSkillsPageState extends State<EditSkillsPage> {
                                     : ClipRRect(
                                         borderRadius: BorderRadius.circular(8),
                                         child: Image.network(
-                                          "https://coffee.avodahsystems.com/v1/storage/buckets/664baa5800325ff306fb/files/${widget.image}/view?project=6648f3ff003ca1aedbec",
+                                          "https://skillhub.avodahsystems.com/v1/storage/buckets/665a5bb500243dbb9967/files/${widget.image}/view?project=665a50350038457d0eb9",
                                           fit: BoxFit.fill,
                                         ),
                                       ),
@@ -528,7 +528,7 @@ class _EditSkillsPageState extends State<EditSkillsPage> {
                                     database.deleteSkill(widget.docID)
                                         .then((value) async {
                                       await storage.deleteFile(
-                                          bucketId: "664baa5800325ff306fb",
+                                          bucketId: "665a5bb500243dbb9967",
                                           fileId: widget.image);
                                       ScaffoldMessenger.of(context)
                                           .showSnackBar(SnackBar(

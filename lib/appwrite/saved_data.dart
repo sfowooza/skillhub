@@ -38,4 +38,9 @@ class SavedData {
   static String getUserEmail() {
     return preferences!.getString("email") ?? "";
   }
+
+static bool isLoggedIn() {
+  return getUserId().isNotEmpty;
+}
+
 }

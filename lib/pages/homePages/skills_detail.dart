@@ -55,8 +55,10 @@ class _SkillDetailsState extends State<SkillDetails> {
 
   @override
   Widget build(BuildContext context) {
+    final isAuthenticated = Provider.of<AuthAPI>(context).status == AuthStatus.authenticated;
+
     return Scaffold(
-      floatingActionButton: ExpandableFab(),
+      floatingActionButton: isAuthenticated ? ExpandableFab() : null,
       body: SingleChildScrollView(
         child: Column(children: [
           Stack(children: [
@@ -68,7 +70,7 @@ class _SkillDetailsState extends State<SkillDetails> {
                 colorFilter: ColorFilter.mode(
                     Colors.black.withOpacity(0.3), BlendMode.darken),
                 child: Image.network(
-                  "https://coffee.avodahsystems.com/v1/storage/buckets/664baa5800325ff306fb/files/${widget.data.data["image"]}/view?project=6648f3ff003ca1aedbec",
+                  "https://skillhub.avodahsystems.com/v1/storage/buckets/665a5bb500243dbb9967/files/${widget.data.data["image"]}/view?project=665a50350038457d0eb9",
                   fit: BoxFit.cover,
                 ),
               ),
@@ -164,7 +166,7 @@ class _SkillDetailsState extends State<SkillDetails> {
                 ),
                 Text(widget.data.data["description"],
                     style: TextStyle(
-                          fontSize: 20,
+                      fontSize: 20,
                       fontWeight: FontWeight.w400,
                       color: BaseColors().baseTextColor,
                     )),
@@ -218,60 +220,61 @@ class _SkillDetailsState extends State<SkillDetails> {
                 SizedBox(
                   height: 8,
                 ),
-                isRSVPedEvent
-                    ? SizedBox(
-                        height: 50,
-                        width: double.infinity,
-                        child: MaterialButton(
-                          color: BaseColors().baseTextColor,
-                          onPressed: () {
-                            ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-                                content: Text("You are attending this event.")));
-                          },
-                          child: Text(
-                            "Attending Event",
-                            style: TextStyle(
-                                color: Colors.white,
-                                fontWeight: FontWeight.w900,
-                                fontSize: 20),
+                if (isAuthenticated) 
+                  isRSVPedEvent
+                      ? SizedBox(
+                          height: 50,
+                          width: double.infinity,
+                          child: MaterialButton(
+                            color: BaseColors().baseTextColor,
+                            onPressed: () {
+                              ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                                  content: Text("You are attending this event.")));
+                            },
+                            child: Text(
+                              "Attending Event",
+                              style: TextStyle(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.w900,
+                                  fontSize: 20),
+                            ),
                           ),
-                        ),
-                      )
-                    : SizedBox(
-                        height: 50,
-                        width: double.infinity,
-                        child: MaterialButton(
-                          color: BaseColors().baseTextColor,
-                          onPressed: () {
-                            database
-                                .rsvpEvent(
-                                    widget.data.data["participants"],
-                                    widget.data.$id)
-                                .then((value) {
-                              if (value) {
-                                setState(() {
-                                  isRSVPedEvent = true;
-                                });
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                    SnackBar(
-                                        content: Text("RSVP Successful !!!")));
-                              } else {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                    SnackBar(
-                                        content: Text(
-                                            "Something went wrong. Try Again.")));
-                              }
-                            });
-                          },
-                          child: Text(
-                            "Liking this? Click",
-                            style: TextStyle(
-                                color: Theme.of(context).primaryColor,
-                                fontWeight: FontWeight.w900,
-                                fontSize: 20),
+                        )
+                      : SizedBox(
+                          height: 50,
+                          width: double.infinity,
+                          child: MaterialButton(
+                            color: BaseColors().baseTextColor,
+                            onPressed: () {
+                              database
+                                  .rsvpEvent(
+                                      widget.data.data["participants"],
+                                      widget.data.$id)
+                                  .then((value) {
+                                if (value) {
+                                  setState(() {
+                                    isRSVPedEvent = true;
+                                  });
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                      SnackBar(
+                                          content: Text("RSVP Successful !!!")));
+                                } else {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                      SnackBar(
+                                          content: Text(
+                                              "Something went wrong. Try Again.")));
+                                }
+                              });
+                            },
+                            child: Text(
+                              "Liking this? Click",
+                              style: TextStyle(
+                                  color: Theme.of(context).primaryColor,
+                                  fontWeight: FontWeight.w900,
+                                  fontSize: 20),
+                            ),
                           ),
-                        ),
-                      )
+                        )
               ],
             ),
           ),

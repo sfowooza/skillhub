@@ -51,7 +51,7 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
       try {
         await account.createRecovery(
           email: nameController.text.trim(),
-          url: 'https://coffee.avodahsystems.com',
+          url: 'https://skillhub.avodahsystems.com',
         );
         showDialog(
           context: context,

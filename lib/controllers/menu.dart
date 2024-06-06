@@ -1,6 +1,7 @@
 import 'package:appwrite/appwrite.dart';
 import 'package:flutter/material.dart';
 import 'package:skillhub/appwrite/auth_api.dart';
+import 'package:skillhub/pages/Auth_screens/login_page.dart';
 
 
 class Menu extends StatefulWidget {
@@ -22,7 +23,7 @@ class _MenuState extends State<Menu> with SingleTickerProviderStateMixin {
     'Products Listing',
     'Job Listings',
     'OpenCVs',
-    'FAQs',
+    'Login',
   ];
 
   static const _initialDelayTime = Duration(milliseconds: 50);
@@ -124,14 +125,28 @@ class _MenuState extends State<Menu> with SingleTickerProviderStateMixin {
       listItems.add(
         GestureDetector(
           onTap: () {
-            // Handle menu item tap here
-            if (_menuTitles[i] == 'More Info') {
-              authApi.signOut(context);
-            } else {
-              Navigator.of(context).pushNamed(
-                  '/${_menuTitles[i].toLowerCase().replaceAll(' ', '_')}');
-            }
-          },
+  // Handle menu item tap here
+  if (_menuTitles[i] == 'Login') {
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => LoginPage()),
+    );
+  } else {
+    Navigator.of(context).pushNamed(
+      '/${_menuTitles[i].toLowerCase().replaceAll(' ', '_')}',
+    );
+  }
+},
+
+          // onTap: () {
+          //   // Handle menu item tap here
+          //   if (_menuTitles[i] == 'Login') {
+          //     authApi.signOut(context);
+          //   } else {
+          //     Navigator.of(context).pushNamed(
+          //         '/${_menuTitles[i].toLowerCase().replaceAll(' ', '_')}');
+          //   }
+          // },
           child: AnimatedBuilder(
             animation: _staggeredController,
             builder: (context, child) {
