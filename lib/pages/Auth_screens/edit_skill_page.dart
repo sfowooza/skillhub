@@ -1,6 +1,7 @@
-// File: edit_skills_page.dart
-
 import 'dart:io';
+import 'package:flutter/services.dart';
+import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:location/location.dart';
 import 'package:skillhub/appwrite/auth_api.dart';
 import 'package:skillhub/appwrite/database_api.dart';
 import 'package:skillhub/appwrite/saved_data.dart';
@@ -37,6 +38,7 @@ class _EditSkillsPageState extends State<EditSkillsPage> {
   TextEditingController emailTextController = TextEditingController();
   TextEditingController phoneNumberTextController = TextEditingController();
   TextEditingController locationTextController = TextEditingController();
+  TextEditingController _gmaplocationController = TextEditingController();
   AuthStatus authStatus = AuthStatus.uninitialized;
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
   bool isUploading = false;
@@ -48,6 +50,8 @@ class _EditSkillsPageState extends State<EditSkillsPage> {
   late String phoneNumber;
   late String location;
   late bool docID;
+  double? latitude;
+  double? longitude;
 
   FilePickerResult? _filePickerResult;
   bool inSoleBusiness = true;
@@ -66,7 +70,7 @@ class _EditSkillsPageState extends State<EditSkillsPage> {
     client = appwrite.client;
     storage = Storage(client);
 
-   _datetimeController.text = widget.datetime;
+    _datetimeController.text = widget.datetime;
     messageTextController.text = widget.message;
     descriptionTextController.text = widget.description;
     firstNameTextController.text = widget.firstName;
@@ -74,6 +78,7 @@ class _EditSkillsPageState extends State<EditSkillsPage> {
     emailTextController.text = widget.email;
     phoneNumberTextController.text = widget.phoneNumber;
     locationTextController.text = widget.location;
+    _gmaplocationController.text = widget.location;
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final provider = Provider.of<RegistrationFormProvider>(context, listen: false);
@@ -173,25 +178,56 @@ class _EditSkillsPageState extends State<EditSkillsPage> {
     }
   }
 
-  showAlert({required String title, required String text}) {
-    showDialog(
-      context: context,
-      builder: (context) {
-        return AlertDialog(
-          title: Text(title),
-          content: Text(text),
-          actions: [
-            ElevatedButton(
-              onPressed: () {
-                Navigator.pop(context);
-              },
-              child: const Text('Ok'),
-            )
-          ],
-        );
-      },
+  void _openMapScreen() async {
+    final result = await Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => MapScreen()),
     );
+
+    if (result != null) {
+      setState(() {
+        _gmaplocationController.text = result;
+        // Extract the latitude and longitude from the result
+        List<String> coordinates = result.split(', ');
+        latitude = double.parse(coordinates[0]);
+        longitude = double.parse(coordinates[1]);
+      });
+    }
   }
+
+Future<void> _updateSkill(String value) async {
+  final registrationFormProvider = context.read<RegistrationFormProvider>();
+
+  await database.updateSkill(
+    messageTextController.text,
+    descriptionTextController.text,
+    latitude ?? 0.0, // latitude
+    longitude ?? 0.0, // longitude
+    _gmaplocationController.text, // gmaplocation
+    RegistrationFields(
+      selectedCategory: registrationFormProvider.selectedCategory!,
+      selectedSubcategory: registrationFormProvider.selectedSubcategory!,
+      firstName: registrationFormProvider.firstName!,
+      lastName: registrationFormProvider.lastName!,
+      phoneNumber: registrationFormProvider.phoneNumber!,
+      email: registrationFormProvider.email!,
+      description: descriptionTextController.text,
+      createdBy: userId,
+      datetime: _datetimeController.text,
+      location: registrationFormProvider.location!,
+      participants: [],
+      inSoleBusiness: inSoleBusiness,
+      image: value, // image
+    ),
+    widget.docID,
+  );
+
+  ScaffoldMessenger.of(context).showSnackBar(
+    SnackBar(content: Text("Skill Updated !!")),
+  );
+  Navigator.pop(context);
+}
+
 
   @override
   Widget build(BuildContext context) {
@@ -368,17 +404,32 @@ class _EditSkillsPageState extends State<EditSkillsPage> {
                             TextFormField(
                              controller: locationTextController,
                               decoration: const InputDecoration(
-                                  labelText: 'Location',
+                                  labelText: 'Physical Location',
                                   prefixIcon: Icon(Icons.location_on)),
                               validator: (value) {
                                 if (value == null || value.isEmpty) {
-                                  return 'Please enter the location';
+                                  return 'Please enter the Physical location';
                                 }
                                 return null;
                               },
                               onChanged: (value) {
                                 provider.location = value;
                               },
+                            ),
+                            GestureDetector(
+                              onTap: _openMapScreen,
+                              child: AbsorbPointer(
+                                child: TextFormField(
+                                  controller: _gmaplocationController,
+                                  decoration: InputDecoration(labelText: 'Google Map Location', prefixIcon: Icon(Icons.location_on)),
+                                  validator: (value) {
+                                    if (value == null || value.isEmpty) {
+                                      return 'Please select a Google Map location';
+                                    }
+                                    return null;
+                                  },
+                                ),
+                              ),
                             ),
                             const SizedBox(height: 20),
                             TextFormField(
@@ -415,147 +466,83 @@ class _EditSkillsPageState extends State<EditSkillsPage> {
                             ElevatedButton(
                               onPressed: () async {
                                 final registrationFormProvider = context.read<RegistrationFormProvider>();
-                                // if (registrationFormProvider.firstName!.isEmpty ||
-                                //     registrationFormProvider.lastName!.isEmpty ||
-                                //     registrationFormProvider.phoneNumber!.isEmpty ||
-                                //     registrationFormProvider.email!.isEmpty ||
-                                //     registrationFormProvider.selectedCategory!.isEmpty ||
-                                //     registrationFormProvider.selectedSubcategory!.isEmpty ||
-                                //     descriptionTextController.text!.isEmpty ||
-                                //     registrationFormProvider.datetime!.isEmpty ||
-                                //     registrationFormProvider.location!.isEmpty) {
-                                //   // if (mounted) {
-                                //   //   ScaffoldMessenger.of(context).showSnackBar(
-                                //   //     SnackBar(
-                                //   //       content: Text("First Name, Last Name, Phone Number, Email, Category, Subcategory, Description, Date & Time, and Location are required."),
-                                //   //     ),
-                                //   //   );
-                                //   // }
-                                // } else
-                                 if (_formKey.currentState!.validate()) { 
-                                      database.updateSkill(
-                                        messageTextController.text,
-                                        descriptionTextController.text,
-                                        RegistrationFields(
-                                          selectedCategory: registrationFormProvider.selectedCategory!,
-                                          selectedSubcategory: registrationFormProvider.selectedSubcategory!,
-                                          firstName: registrationFormProvider.firstName!,
-                                          lastName: registrationFormProvider.lastName!,
-                                          phoneNumber: registrationFormProvider.phoneNumber!,
-                                          email: registrationFormProvider.email!,
-                                          description: descriptionTextController.text,
-                                          createdBy: userId,
-                                          datetime: _datetimeController.text,
-                                          location: registrationFormProvider.location!,
-                                          participants: [],
-                                          inSoleBusiness: inSoleBusiness,
-                                          image: widget.image,
-                                        ),
-                                        widget.docID,
-                                      ).then((value) {
-                                        ScaffoldMessenger.of(context).showSnackBar(
-                                          SnackBar(content: Text("Skill Updated!!")),
-                                        );
-                                        Navigator.pop(context);
-                                      });
-                                  
-                                } else {
-                                    uploadEventImage().then((value) {
+                                if (_formKey.currentState!.validate()) {
+                                  if (_filePickerResult != null) {
+                                    String? value = await uploadEventImage();
                                     if (value != null) {
-                                      database.updateSkill(
-                                        messageTextController.text,
-                                        descriptionTextController.text,
-                                        RegistrationFields(
-                                          selectedCategory: registrationFormProvider.selectedCategory!,
-                                          selectedSubcategory: registrationFormProvider.selectedSubcategory!,
-                                          firstName: registrationFormProvider.firstName!,
-                                          lastName: registrationFormProvider.lastName!,
-                                          phoneNumber: registrationFormProvider.phoneNumber!,
-                                          email: registrationFormProvider.email!,
-                                          description: descriptionTextController.text,
-                                          createdBy: userId,
-                                          datetime: _datetimeController.text,
-                                          location: registrationFormProvider.location!,
-                                          participants: [],
-                                          inSoleBusiness: inSoleBusiness,
-                                          image: value,
-                                        ),
-                                        widget.docID,
-                                      ).then((value) {
-                                        ScaffoldMessenger.of(context).showSnackBar(
-                                          SnackBar(content: Text("Skill Updated!!")),
-                                        );
-                                        Navigator.pop(context);
-                                      });
-                                  }});
+                                      await _updateSkill(value);
+                                    } else {
+                                      ScaffoldMessenger.of(context).showSnackBar(
+                                        SnackBar(content: Text("Image upload failed")),
+                                      );
+                                    }
+                                  } else {
+                                    await _updateSkill(widget.image);
+                                  }
                                 }
                               },
                               child: const Text('Update Skill'),
                             ),
-                                        SizedBox(
-              height: 12,
-            ),
-            Text(
-              "Danger Zone",
-              style: TextStyle(
-                  color: Color.fromARGB(255, 243, 138, 136),
-                  fontWeight: FontWeight.w600,
-                  fontSize: 20),
-            ),
-            SizedBox(
-              height: 8,
-            ),
-            SizedBox(
-              height: 50,
-              width: double.infinity,
-              child: MaterialButton(
-                color: Color.fromARGB(255, 243, 138, 136),
-                onPressed: () {
-                  showDialog(
-                      context: context,
-                      builder: (context) => AlertDialog(
-                            title: Text(
-                              "Are you Sure ?",
-                              style: TextStyle(color: Color.fromARGB(255, 131, 84, 175)),
+                            SizedBox(height: 12),
+                            Text(
+                              "Danger Zone",
+                              style: TextStyle(
+                                  color: Color.fromARGB(255, 243, 138, 136),
+                                  fontWeight: FontWeight.w600,
+                                  fontSize: 20),
                             ),
-                            content: Text(
-                              "Your event will be deleted",
-                              style: TextStyle(color: BaseColors().baseTextColor),
+                            SizedBox(height: 8),
+                            SizedBox(
+                              height: 50,
+                              width: double.infinity,
+                              child: MaterialButton(
+                                color: Color.fromARGB(255, 243, 138, 136),
+                                onPressed: () {
+                                  showDialog(
+                                      context: context,
+                                      builder: (context) => AlertDialog(
+                                            title: Text(
+                                              "Are you Sure ?",
+                                              style: TextStyle(color: Color.fromARGB(255, 131, 84, 175)),
+                                            ),
+                                            content: Text(
+                                              "Your event will be deleted",
+                                              style: TextStyle(color: BaseColors().baseTextColor),
+                                            ),
+                                            actions: [
+                                              TextButton(
+                                                  onPressed: () {
+                                                    database.deleteSkill(widget.docID)
+                                                        .then((value) async {
+                                                      await storage.deleteFile(
+                                                          bucketId: "665a5bb500243dbb9967",
+                                                          fileId: widget.image);
+                                                      ScaffoldMessenger.of(context)
+                                                          .showSnackBar(SnackBar(
+                                                              content: Text(
+                                                                  "Skill Deleted Successfully.")));
+                                                      Navigator.pop(context);
+                                                      Navigator.pop(context);
+                                                    });
+                                                  },
+                                                  child: Text("Yes")),
+                                              TextButton(
+                                                  onPressed: () {
+                                                    Navigator.pop(context);
+                                                  },
+                                                  child: Text("No")),
+                                            ],
+                                          ));
+                                },
+                                child: Text(
+                                  "Delete Skill",
+                                  style: TextStyle(
+                                      color: Colors.black,
+                                      fontWeight: FontWeight.w900,
+                                      fontSize: 20),
+                                ),
+                              ),
                             ),
-                            actions: [
-                              TextButton(
-                                  onPressed: () {
-                                    database.deleteSkill(widget.docID)
-                                        .then((value) async {
-                                      await storage.deleteFile(
-                                          bucketId: "665a5bb500243dbb9967",
-                                          fileId: widget.image);
-                                      ScaffoldMessenger.of(context)
-                                          .showSnackBar(SnackBar(
-                                              content: Text(
-                                                  "Skill Deleted Successfully. ")));
-                                      Navigator.pop(context);
-                                      Navigator.pop(context);
-                                    });
-                                  },
-                                  child: Text("Yes")),
-                              TextButton(
-                                  onPressed: () {
-                                    Navigator.pop(context);
-                                  },
-                                  child: Text("No")),
-                            ],
-                          ));
-                },
-                child: Text(
-                  "Delete Skill",
-                  style: TextStyle(
-                      color: Colors.black,
-                      fontWeight: FontWeight.w900,
-                      fontSize: 20),
-                ),
-              ),
-            ),
                           ],
                         )
                       : const Center(),
@@ -565,6 +552,175 @@ class _EditSkillsPageState extends State<EditSkillsPage> {
           ),
         ),
       ),
+    );
+  }
+}
+
+class MapScreen extends StatefulWidget {
+  @override
+  _MapScreenState createState() => _MapScreenState();
+}
+
+class _MapScreenState extends State<MapScreen> {
+  GoogleMapController? mapController;
+  Location gmaplocation = Location(); // Create a Location instance
+  Set<Marker> markers = {};
+  LatLng? userLatLng; // Store user's location coordinates
+  bool isLoading = true;
+
+  bool _showCopyText = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _getUserLocation();
+    _toggleCopyText();
+  }
+
+  void _onMapCreated(GoogleMapController controller) {
+    mapController = controller;
+    if (userLatLng != null) {
+      mapController?.animateCamera(CameraUpdate.newLatLngZoom(userLatLng!, 14.0));
+    }
+  }
+
+  Future<void> _getUserLocation() async {
+    final userLocation = await gmaplocation.getLocation();
+    userLatLng = LatLng(userLocation.latitude!, userLocation.longitude!);
+    setState(() {
+      markers.add(Marker(
+        markerId: MarkerId('userLocation'),
+        position: userLatLng!,
+        infoWindow: InfoWindow(title: 'Your Location'),
+      ));
+      isLoading = false;
+    });
+    if (mapController != null) {
+      mapController?.animateCamera(CameraUpdate.newLatLngZoom(userLatLng!, 14.0));
+    }
+  }
+
+  void _onMapTapped(LatLng tappedPoint) async {
+    String? locationName = await _showDialog(context);
+    if (locationName != null && locationName.isNotEmpty) {
+      setState(() {
+        markers.add(Marker(
+          markerId: MarkerId(tappedPoint.toString()),
+          position: tappedPoint,
+          infoWindow: InfoWindow(title: locationName),
+        ));
+      });
+      _copyCoordinatesToClipboard(tappedPoint);
+    }
+  }
+
+  Future<String?> _showDialog(BuildContext context) {
+    TextEditingController controller = TextEditingController();
+    return showDialog<String>(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text('Enter Location Name'),
+          content: TextField(
+            controller: controller,
+            decoration: InputDecoration(hintText: 'Location Name'),
+          ),
+          actions: <Widget>[
+            TextButton(
+              child: Text('CANCEL'),
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+            ),
+            TextButton(
+              child: Text('OK'),
+              onPressed: () {
+                Navigator.of(context).pop(controller.text);
+              },
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  void _copyCoordinatesToClipboard(LatLng latLng) {
+    String coordinates = '${latLng.latitude}, ${latLng.longitude}';
+    Clipboard.setData(ClipboardData(text: coordinates));
+    Navigator.pop(context, coordinates);
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('Coordinates copied to clipboard')),
+    );
+  }
+
+  void _toggleCopyText() {
+    Future.delayed(Duration(seconds: 3), () {
+      setState(() {
+        _showCopyText = !_showCopyText;
+      });
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: Text('Map Screen'),
+      ),
+      body: isLoading
+          ? Center(child: CircularProgressIndicator())
+          : Stack(
+              children: [
+                GoogleMap(
+                  onMapCreated: _onMapCreated,
+                  initialCameraPosition: CameraPosition(
+                    target: userLatLng ?? LatLng(0, 0), // Default to user's location if available
+                    zoom: 14.0,
+                  ),
+                  markers: markers,
+                  myLocationEnabled: true,
+                  onTap: _onMapTapped,
+                ),
+                Positioned(
+                  right: 16.0,
+                  top: MediaQuery.of(context).size.height / 2 - 28.0,
+                  child: Column(
+                    children: [
+                      AnimatedContainer(
+                        duration: Duration(milliseconds: 1200),
+                        curve: Curves.easeInOut,
+                        width: _showCopyText ? 145 : 0,
+                        height: 40,
+                        padding: EdgeInsets.only(left: 5),
+                        child: Row(
+                          children: [
+                            Text(
+                              'Copy Pin Point',
+                              style: TextStyle(color: Colors.white),
+                            ),
+                            Icon(Icons.arrow_downward, color: Colors.white),
+                          ],
+                        ),
+                        decoration: BoxDecoration(
+                          color: Color.fromARGB(137, 145, 11, 172),
+                          borderRadius: BorderRadius.circular(8.0),
+                        ),
+                      ),
+                      SizedBox(height: 8),
+                      FloatingActionButton(
+                        onPressed: () {
+                          if (userLatLng != null) {
+                            _copyCoordinatesToClipboard(userLatLng!);
+                          }
+                        },
+                        tooltip: 'Copy Coordinates',
+                        child: Icon(Icons.copy),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
     );
   }
 }

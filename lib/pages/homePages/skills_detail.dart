@@ -4,11 +4,15 @@ import 'package:flutter/material.dart';
 import 'package:skillhub/appwrite/saved_data.dart';
 import 'package:skillhub/colors.dart';
 import 'package:skillhub/controllers/formart_datetime.dart';
+import 'package:skillhub/pages/gmap/view_location.dart';
+import 'package:skillhub/pages/gmap/view_whatsapp_link.dart';
 import 'package:skillhub/pages/nav_tabs/expendableFab.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:skillhub/appwrite/database_api.dart';
 import 'package:provider/provider.dart';
 import 'package:skillhub/appwrite/auth_api.dart';
+import 'package:star_rating/star_rating.dart';
+import 'package:share_plus/share_plus.dart';
 
 class SkillDetails extends StatefulWidget {
   final Document data;
@@ -145,7 +149,13 @@ class _SkillDetailsState extends State<SkillDetails> {
             )
           ]),
           Padding(
-            padding: const EdgeInsets.all(8.0),
+            //padding: const EdgeInsets.all(16.0),
+            padding: const EdgeInsets.only(
+              top: 16.0,
+              bottom: 8.0,
+              left: 8.0,
+              right: 16.0, // Change this value to the desired right padding
+              ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -159,7 +169,14 @@ class _SkillDetailsState extends State<SkillDetails> {
                           fontWeight: FontWeight.bold),
                     ),
                   ),
-                  Icon(Icons.share)
+                InkWell(
+                  onTap: () async {
+                    final String text = 'Check out this skill on SkillHub: ${widget.data.data["firstName"]}';
+                    await Share.share(text);
+                  },
+                  child: Icon(Icons.share),
+                )
+
                 ]),
                 SizedBox(
                   height: 8,
@@ -209,14 +226,67 @@ class _SkillDetailsState extends State<SkillDetails> {
                   "Location : ${widget.data.data["location"]}",
                   style: TextStyle(color: Theme.of(context).primaryColor),
                 ),
+                              SizedBox(height: 8),
+              Row(
+                children: [
+                  StarRating(
+                    rating: 3, // Set the initial rating here
+                    color: Colors.orange,
+                              
+                  ),
+                  Text("Ratings"),
+                ],
+              ),
                 SizedBox(height: 8),
-                ElevatedButton.icon(
-                    onPressed: () {
-                      _launchUrl(
-                          "https://www.google.com/maps/search/?api=1&query=${widget.data.data["location"]}");
-                    },
-                    icon: const Icon(Icons.map),
-                    label: const Text("Open in Google Maps")),
+          Row(
+  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+  children: [
+    OutlinedButton.icon(
+      onPressed: () {
+        _launchUrl(
+            "https://www.google.com/maps/search/?api=1&query=${widget.data.data["location"]}");
+      },
+      icon: const Icon(Icons.map, color: Colors.purple),
+      label: const Text("Open in Google Maps", style: TextStyle(color: Colors.purple)),
+      style: OutlinedButton.styleFrom(
+        side: BorderSide(width: 1, color: Colors.purple),
+        foregroundColor: Colors.purple,
+      ),
+    ),
+    SizedBox(width: 8), // Use SizedBox.width for horizontal space in a Row
+    OutlinedButton(
+      onPressed: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (context) => ViewLocation()),
+        );
+      },
+      style: OutlinedButton.styleFrom(
+        side: BorderSide(width: 1, color: Colors.purple),
+        foregroundColor: Colors.purple,
+      ),
+      child: Text('View Location'),
+    ),
+  ],
+),
+    SizedBox(width: 8), // Use SizedBox.width for horizontal space in a Row
+    OutlinedButton(
+      onPressed: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (context) => ViewWhatsappLink()),
+        );
+      },
+      style: OutlinedButton.styleFrom(
+        side: BorderSide(width: 1, color: Colors.lightGreen),
+        foregroundColor: Colors.purple,
+      ),
+      child: Text('View WhatsApp Catalogue'),
+    ),
+
+              // Adding a view Location form Gmap 
+ 
+
                 SizedBox(
                   height: 8,
                 ),

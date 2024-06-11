@@ -58,38 +58,62 @@ Future getAllSkills() async {
       collectionId: COLLECTION_DB_ID,);
   }
 
-//create method to create documents to database
-  Future<Document> createSkill({
-    required String message,
-    required String description,
-    required RegistrationFields registrationFields,
-    //required String image,
-  }) async {
-    final data = {
-      'text': message,
-      'datetime': DateTime.now().toString(),
-      'user_id': auth.userid,
-      'description': description,
-      'firstName': registrationFields.firstName,
-      'lastName': registrationFields.lastName,
-      'phoneNumber': registrationFields.phoneNumber,
-      'location': registrationFields.location,
-      'email': registrationFields.email,
-      'selectedCategory': registrationFields.selectedCategory,
-      'selectedSubcategory': registrationFields.selectedSubcategory,
-      'participants': registrationFields.participants,
-      'createdBy': registrationFields.createdBy,
-      'inSoleBusiness':registrationFields.inSoleBusiness,
-      'image':registrationFields.image,
-    };
 
+// create method to create documents to database
+
+
+Future<Document> createSkill({
+  required String message,
+  required String description,
+  required String gmaplocation,
+  required RegistrationFields registrationFields,
+  required double latitude,
+  required double longitude,
+}) async {
+  if (latitude < -90 || latitude > 90) {
+    throw ArgumentError('Latitude must be between -90 and 90 degrees.');
+  }
+  if (longitude < -180 || longitude > 180) {
+    throw ArgumentError('Longitude must be between -180 and 180 degrees.');
+  }
+
+  final data = {
+    'text': message,
+    'datetime': DateTime.now().toString(),
+    'user_id': auth.userid,
+    'description': description,
+    'firstName': registrationFields.firstName,
+    'lastName': registrationFields.lastName,
+    'phoneNumber': registrationFields.phoneNumber,
+    'location': registrationFields.location,
+    'email': registrationFields.email,
+    'selectedCategory': registrationFields.selectedCategory,
+    'selectedSubcategory': registrationFields.selectedSubcategory,
+    'participants': registrationFields.participants,
+    'createdBy': registrationFields.createdBy,
+    'inSoleBusiness': registrationFields.inSoleBusiness,
+    'image': registrationFields.image,
+    'gmap_location': gmaplocation,
+    'lat': latitude,
+    'long': longitude,
+  };
+
+  try {
     return await databases.createDocument(
       databaseId: APPWRITE_DATABASE_ID,
       collectionId: COLLECTION_DB_ID,
       documentId: ID.unique(),
       data: data,
     );
+  } catch (e) {
+    // Log the error for more details
+    print('Error creating document: $e');
+    rethrow; // Optionally rethrow the error after logging it
   }
+}
+
+
+
 
   Future<dynamic> deleteMessage({required String id}) async {
     // Get the document to check the user_id
@@ -184,8 +208,11 @@ Future<void> updateSkill(
     //String name,
     String message,
     String description,
+    double? latitude,
+    double? longitude,
+    String gmaplocation,
     RegistrationFields registrationFields,
-    String docID) async {
+    String docID,) async {
   return await databases
       .updateDocument(
           databaseId: APPWRITE_DATABASE_ID,
@@ -196,6 +223,8 @@ Future<void> updateSkill(
      'datetime': registrationFields.datetime,
      // 'message': message,
       'description': description,
+      'lat': latitude,
+      'long': longitude,
       'firstName': registrationFields.firstName,
       'lastName': registrationFields.lastName,
       'phoneNumber': registrationFields.phoneNumber,
@@ -207,6 +236,7 @@ Future<void> updateSkill(
       'createdBy': registrationFields.createdBy,
       'inSoleBusiness':registrationFields.inSoleBusiness,
       'image':registrationFields.image,
+      'gmap_location': gmaplocation,
           })
       .then((value) => print("Skill Updated"))
       .catchError((e) => print(e));
