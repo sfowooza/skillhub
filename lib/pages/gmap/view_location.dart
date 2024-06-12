@@ -1,8 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:appwrite/appwrite.dart';
+import 'package:appwrite/models.dart' as models;
+import 'package:skillhub/constants/constants.dart';
 
 class ViewLocation extends StatefulWidget {
+  final String documentId;
+
+  const ViewLocation({Key? key, required this.documentId}) : super(key: key);
+
   @override
   _ViewLocationState createState() => _ViewLocationState();
 }
@@ -17,41 +23,58 @@ class _ViewLocationState extends State<ViewLocation> {
   void initState() {
     super.initState();
 
-    // Initialize the Appwrite client
     client = Client()
-        .setEndpoint('https://skillhub.avodahsystems.com/v1') // Replace with your Appwrite endpoint
-        .setProject('665a50350038457d0eb9') // Replace with your project ID
-        .setSelfSigned(status: true); // Only use for self-signed certificates
-
+        .setEndpoint(APPWRITE_URL)
+        .setProject(APPWRITE_PROJECT_ID)
+        .setSelfSigned(status: true);
     account = Account(client);
     databases = Databases(client);
 
-    // Fetch location data
     _locationData = getLocationData();
   }
 
   Future<Map<String, dynamic>> getLocationData() async {
     try {
-      print("Fetching location data...");
-      final response = await databases.listDocuments(
-        databaseId: '665a51130023590b5e21', // Replace with your database ID
-        collectionId: '665a5516000b61b3093f', // Replace with your collection ID
+      final response = await databases.getDocument(
+        databaseId: APPWRITE_DATABASE_ID,
+        collectionId: COLLECTION_DB_ID,
+        documentId: widget.documentId,
       );
-      print("Response: ${response.documents}");
 
-      if (response.documents.isNotEmpty) {
-        // Assuming the location data is stored in the 'firstName', 'lat', and 'long' fields
-        final document = response.documents.first.data;
-        print("Document data: $document");
-        final firstName = document['firstName'] ?? 'Unknown';
-        final latitude = document['lat']?.toDouble() ?? 0.0;
-        final longitude = document['long']?.toDouble() ?? 0.0;
-        return {'firstName': firstName, 'lat': latitude, 'long': longitude};
-      } else {
-        throw Exception('No documents found in the collection');
+      final document = response.data;
+      final firstName = document['firstName'] ?? 'Unknown';
+      final latRaw = document['lat'];
+      final longRaw = document['long'];
+
+      double? latitude;
+      double? longitude;
+
+      if (latRaw != null) {
+        if (latRaw is String) {
+          latitude = double.tryParse(latRaw);
+        } else if (latRaw is num) {
+          latitude = latRaw.toDouble();
+        } else {
+          latitude = null;
+        }
       }
+
+      if (longRaw != null) {
+        if (longRaw is String) {
+          longitude = double.tryParse(longRaw);
+        } else if (longRaw is num) {
+          longitude = longRaw.toDouble();
+        } else {
+          longitude = null;
+        }
+      }
+
+      if (latitude == null || longitude == null) {
+        throw Exception('Latitude or Longitude is null');
+      }
+
+      return {'firstName': firstName, 'lat': latitude, 'long': longitude};
     } catch (e) {
-      print("Error fetching location data: $e");
       throw Exception('Failed to fetch location data: $e');
     }
   }
@@ -72,7 +95,6 @@ class _ViewLocationState extends State<ViewLocation> {
           } else if (!snapshot.hasData || snapshot.data == null) {
             return Center(child: Text('No location data available'));
           } else {
-            // Extract firstName, latitude, and longitude from the Map<String, dynamic>
             final String firstName = snapshot.data!['firstName'];
             final double latitude = snapshot.data!['lat'];
             final double longitude = snapshot.data!['long'];
@@ -95,7 +117,6 @@ class _ViewLocationState extends State<ViewLocation> {
                   style: TextStyle(fontSize: 20),
                 ),
                 SizedBox(height: 20),
-                // Display Google Map with the extracted latitude and longitude
                 Expanded(
                   child: GoogleMap(
                     initialCameraPosition: CameraPosition(

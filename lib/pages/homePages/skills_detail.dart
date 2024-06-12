@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:skillhub/appwrite/saved_data.dart';
 import 'package:skillhub/colors.dart';
 import 'package:skillhub/controllers/formart_datetime.dart';
+import 'package:skillhub/pages/Staggered/category_staggered_page.dart';
 import 'package:skillhub/pages/gmap/view_location.dart';
 import 'package:skillhub/pages/gmap/view_whatsapp_link.dart';
 import 'package:skillhub/pages/nav_tabs/expendableFab.dart';
@@ -28,6 +29,7 @@ class _SkillDetailsState extends State<SkillDetails> {
   String id = "";
 
   late DatabaseAPI database;
+  bool isHovering = false;
 
   @override
   void initState() {
@@ -144,18 +146,63 @@ class _SkillDetailsState extends State<SkillDetails> {
                         fontSize: 14,
                         fontWeight: FontWeight.w400),
                   ),
+                  SizedBox(
+                    width: 4,
+                  ),
+                  Icon(
+                    Icons.work_outlined,
+                    size: 18,
+                  ),
+                  SizedBox(width: 4),
+                  MouseRegion(
+                    cursor: SystemMouseCursors.click,
+                    onHover: (event) {
+                      setState(() {
+                        isHovering = true;
+                      });
+                    },
+                    onExit: (event) {
+                      setState(() {
+                        isHovering = false;
+                      });
+                    },
+                    child: GestureDetector(
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                              builder: (context) => MyHomeCategoryPage()),
+                        );
+                      },
+                      child: StatefulBuilder(
+                        builder: (context, setState) {
+                          return Text(
+                            "Category: ${widget.data.data["selectedCategory"]}",
+                            style: TextStyle(
+                              color:
+                                  isHovering ? Colors.purple : Colors.white,
+                              fontSize: 14,
+                              fontWeight: FontWeight.w400,
+                              decoration: isHovering
+                                  ? TextDecoration.underline
+                                  : TextDecoration.none,
+                            ),
+                          );
+                        },
+                      ),
+                    ),
+                  ),
                 ],
               ),
             )
           ]),
           Padding(
-            //padding: const EdgeInsets.all(16.0),
             padding: const EdgeInsets.only(
               top: 16.0,
               bottom: 8.0,
               left: 8.0,
               right: 16.0, // Change this value to the desired right padding
-              ),
+            ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -169,14 +216,14 @@ class _SkillDetailsState extends State<SkillDetails> {
                           fontWeight: FontWeight.bold),
                     ),
                   ),
-                InkWell(
-                  onTap: () async {
-                    final String text = 'Check out this skill on SkillHub: ${widget.data.data["firstName"]}';
-                    await Share.share(text);
-                  },
-                  child: Icon(Icons.share),
-                )
-
+                  InkWell(
+                    onTap: () async {
+                      final String text =
+                          'Check out this skill on SkillHub: ${widget.data.data["firstName"]}';
+                      await Share.share(text);
+                    },
+                    child: Icon(Icons.share),
+                  )
                 ]),
                 SizedBox(
                   height: 8,
@@ -201,16 +248,19 @@ class _SkillDetailsState extends State<SkillDetails> {
                 Text(
                   "More Info ",
                   style: TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
-                      color: BaseColors().customTheme.primaryColor,)
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                    color: BaseColors().customTheme.primaryColor,
+                  ),
                 ),
                 SizedBox(
                   height: 8,
                 ),
                 Text(
                   "Skill Type : ${widget.data.data["isInPerson"] == true ? "In Person" : "Virtual"}",
-                  style: TextStyle(color: BaseColors().baseTextColor,),
+                  style: TextStyle(
+                    color: BaseColors().baseTextColor,
+                  ),
                 ),
                 SizedBox(
                   height: 8,
@@ -226,71 +276,87 @@ class _SkillDetailsState extends State<SkillDetails> {
                   "Location : ${widget.data.data["location"]}",
                   style: TextStyle(color: Theme.of(context).primaryColor),
                 ),
-                              SizedBox(height: 8),
-              Row(
-                children: [
-                  StarRating(
-                    rating: 3, // Set the initial rating here
-                    color: Colors.orange,
-                              
-                  ),
-                  Text("Ratings"),
-                ],
-              ),
                 SizedBox(height: 8),
-          Row(
-  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-  children: [
-    OutlinedButton.icon(
-      onPressed: () {
-        _launchUrl(
-            "https://www.google.com/maps/search/?api=1&query=${widget.data.data["location"]}");
-      },
-      icon: const Icon(Icons.map, color: Colors.purple),
-      label: const Text("Open in Google Maps", style: TextStyle(color: Colors.purple)),
-      style: OutlinedButton.styleFrom(
-        side: BorderSide(width: 1, color: Colors.purple),
-        foregroundColor: Colors.purple,
-      ),
-    ),
-    SizedBox(width: 8), // Use SizedBox.width for horizontal space in a Row
-    OutlinedButton(
-      onPressed: () {
-        Navigator.push(
-          context,
-          MaterialPageRoute(builder: (context) => ViewLocation()),
-        );
-      },
-      style: OutlinedButton.styleFrom(
-        side: BorderSide(width: 1, color: Colors.purple),
-        foregroundColor: Colors.purple,
-      ),
-      child: Text('View Location'),
-    ),
-  ],
-),
-    SizedBox(width: 8), // Use SizedBox.width for horizontal space in a Row
-    OutlinedButton(
-      onPressed: () {
-        Navigator.push(
-          context,
-          MaterialPageRoute(builder: (context) => ViewWhatsappLink()),
-        );
-      },
-      style: OutlinedButton.styleFrom(
-        side: BorderSide(width: 1, color: Colors.lightGreen),
-        foregroundColor: Colors.purple,
-      ),
-      child: Text('View WhatsApp Catalogue'),
-    ),
-
-              // Adding a view Location form Gmap 
- 
-
+                Row(
+                  children: [
+                    StarRating(
+                      rating: 3,
+                      color: Colors.orange,
+                    ),
+                    Text("Ratings"),
+                  ],
+                ),
+                SizedBox(height: 8),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                  children: [
+                    OutlinedButton.icon(
+                      onPressed: () {
+                        _launchUrl(
+                            "https://www.google.com/maps/search/?api=1&query=${widget.data.data["location"]}");
+                      },
+                      icon: const Icon(Icons.map, color: Colors.purple),
+                      label: const Text("Open Place Name",
+                          style: TextStyle(color: Colors.purple)),
+                      style: OutlinedButton.styleFrom(
+                        side: BorderSide(width: 1, color: Colors.purple),
+                        foregroundColor: Colors.purple,
+                      ),
+                    ),
+                    SizedBox(width: 8),
+                    OutlinedButton(
+                      onPressed: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                              builder: (context) => ViewLocation(
+                                  documentId: widget.data.$id)),
+                        );
+                      },
+                      style: OutlinedButton.styleFrom(
+                        side: BorderSide(width: 1, color: Colors.purple),
+                        foregroundColor: Colors.purple,
+                      ),
+                      child: Text('View Location'),
+                    ),
+                  ],
+                ),
+                SizedBox(width: 8),
+                Center(
+                  child: OutlinedButton.icon(
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                            builder: (context) => ViewWhatsappLink()),
+                      );
+                    },
+                    style: OutlinedButton.styleFrom(
+                      side: BorderSide(
+                          width: 1, color: Color(0xFF25D366)), // WhatsApp green color
+                      foregroundColor: Colors.white,
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(30)),
+                    ),
+                    icon: Image.asset(
+                      'assets/logo_skillshub.png', // Replace with the path to your WhatsApp icon
+                      width: 24,
+                      height: 24,
+                      color: Colors.green,
+                    ),
+                    label: Text(
+                      'View WhatsApp Biz Catalogue',
+                      style: TextStyle(
+                          fontSize: 12,
+                          color: Colors.green,
+                          fontWeight: FontWeight.w600),
+                    ),
+                  ),
+                ),
                 SizedBox(
                   height: 8,
                 ),
-                if (isAuthenticated) 
+                if (isAuthenticated)
                   isRSVPedEvent
                       ? SizedBox(
                           height: 50,
@@ -298,8 +364,10 @@ class _SkillDetailsState extends State<SkillDetails> {
                           child: MaterialButton(
                             color: BaseColors().baseTextColor,
                             onPressed: () {
-                              ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-                                  content: Text("You are attending this event.")));
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                      content: Text(
+                                          "You are attending this event.")));
                             },
                             child: Text(
                               "Attending Event",
@@ -330,9 +398,8 @@ class _SkillDetailsState extends State<SkillDetails> {
                                           content: Text("RSVP Successful !!!")));
                                 } else {
                                   ScaffoldMessenger.of(context).showSnackBar(
-                                      SnackBar(
-                                          content: Text(
-                                              "Something went wrong. Try Again.")));
+                                      SnackBar(content: Text(
+                                          "Something went wrong. Try Again.")));
                                 }
                               });
                             },
