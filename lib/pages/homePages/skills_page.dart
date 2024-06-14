@@ -628,6 +628,11 @@ class _MapScreenState extends State<MapScreen> {
                   ),
                   markers: markers,
                   myLocationEnabled: true,
+                  //adding UI elements
+                  zoomGesturesEnabled: true,
+                  tiltGesturesEnabled: true,
+                  rotateGesturesEnabled: true,
+                  scrollGesturesEnabled: true,
                   onTap: _onMapTapped,
                 ),
                 Positioned(
