@@ -34,7 +34,7 @@ class AuthAPI extends ChangeNotifier {
 
   // Initialize the Appwrite client
   void init() {
-client.setEndpoint(APPWRITE_URL).setProject(APPWRITE_PROJECT_ID).setSelfSigned();
+    client.setEndpoint(APPWRITE_URL).setProject(APPWRITE_PROJECT_ID).setSelfSigned();
     loadUser();
   }
 
@@ -78,15 +78,15 @@ client.setEndpoint(APPWRITE_URL).setProject(APPWRITE_PROJECT_ID).setSelfSigned()
       _currentUser = await account.get();
       _status = AuthStatus.authenticated;
 
-  await database.getUserData();
-  SavedData.saveUserId(user.userId);
-    print('Login successful');
-    return true;
+      await database.getUserData();
+      SavedData.saveUserId(user.userId);
+      print('Login successful');
+      return true;
     } 
     on AppwriteException catch (e) {
-    print('AppwriteException: ${e.message}');
-    return false;
-  }finally {
+      print('AppwriteException: ${e.message}');
+      return false;
+    }finally {
       notifyListeners();
     }
   }
@@ -133,4 +133,13 @@ client.setEndpoint(APPWRITE_URL).setProject(APPWRITE_PROJECT_ID).setSelfSigned()
     }
   }
 
+  // New method for email verification
+    Future<dynamic> createEmailVerification({required String url}) async {
+    return await account.createVerification(url: url);
+  }
+
+  // New method for password recovery
+  Future<dynamic> createRecovery({required String email, required String url}) async {
+    return await account.createRecovery(email: email, url: url);
+  }
 }

@@ -1,0 +1,11 @@
+def PLUGIN_NAME = 'uni_links'
+
+android {
+    namespace "name.avioli.unilinks"  // Adding namespace for uni_links
+    compileSdkVersion 34
+    
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+}

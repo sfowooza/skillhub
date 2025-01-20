@@ -70,6 +70,8 @@ class _ManageSkillsState extends State<ManageSkills> {
                               description:
                                   userCreatedSkills[index].data["description"],
                               location: userCreatedSkills[index].data["location"],
+                                 gmaplocation: userCreatedSkills[index].data["gmaplocation"],
+                                    link: userCreatedSkills[index].data["link"],
                               datetime:
                                   userCreatedSkills[index].data["datetime"],
                               inSoleBusiness:

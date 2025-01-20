@@ -7,12 +7,8 @@ import 'package:skillhub/appwrite/auth_api.dart';
 import 'package:skillhub/appwrite/saved_data.dart';
 import 'package:skillhub/colors.dart';
 import 'package:skillhub/controllers/events_container.dart';
-import 'package:skillhub/controllers/popular_item.dart';
 import 'package:skillhub/pages/Auth_screens/login_page.dart';
-import 'package:skillhub/pages/Auth_screens/profile_page.dart';
-import 'package:skillhub/pages/Staggered/addSkillPage.dart';
 import 'package:skillhub/appwrite/database_api.dart';
-import 'package:skillhub/pages/homePages/skills_detail.dart';
 import 'package:skillhub/pages/nav_tabs/expendableFab.dart';
 
 class JobOffersPage extends StatefulWidget {
@@ -29,6 +25,8 @@ class _JobOffersPageState extends State<JobOffersPage> {
   String userName = "User";
   List<Document> skills = [];
   bool isLoading = true;
+  String selectedSubCategory = 'All';
+  String _selectedView = 'All Skills';  // Default selected view
 
   @override
   void initState() {
@@ -40,23 +38,54 @@ class _JobOffersPageState extends State<JobOffersPage> {
       userName = SavedData.getUserName().split(" ")[0];
     }
     refresh();
-    database.getAllSkills().then((value) => setState(() {
-      skills = value;
-      isLoading = false;
-    }));
   }
 
   void refresh() {
-    database.getAllSkills().then((value) {
-      skills = value;
-      isLoading = false;
-      setState(() {});
-    });
+    if (selectedSubCategory == 'All') {
+      database.getAllSkills().then((value) {
+        setState(() {
+          skills = value;
+          isLoading = false;
+        });
+      });
+    } else {
+      database.getSkillsBySubCategory(selectedSubCategory).then((value) {
+        setState(() {
+          skills = value;
+          isLoading = false;
+        });
+      });
+    }
+  }
+
+  List<Document> getFilteredItems() {
+    if (_selectedView == 'Popular Skills') {
+      return skills.take(5).toList();  // Replace with your actual logic to filter popular skills
+    } else if (_selectedView == 'New') {
+      return skills.reversed.toList();  // Replace with your actual logic to filter new skills
+    } else {
+      return skills;  // All Skills
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     final isAuthenticated = Provider.of<AuthAPI>(context).status == AuthStatus.authenticated;
+    final subCategories = [
+      'All',
+      'Mechanical',
+      'Electrical',
+      'Civil',
+      'AI',
+      'DataScience',
+      'GeneralMedicine',
+      'GraphicDesign',
+      'Animation',
+      'Illustration',
+      'Software',
+      'Pediatrics',
+      'Cardiology',
+    ];
 
     return Scaffold(
       body: CustomScrollView(
@@ -85,7 +114,7 @@ class _JobOffersPageState extends State<JobOffersPage> {
                               MaterialPageRoute(builder: (context) => LoginPage()),
                             );
                           },
-                          child: Text("Login"),
+                          child: const Text("Login"),
                         ),
                     ],
                   ),
@@ -115,46 +144,33 @@ class _JobOffersPageState extends State<JobOffersPage> {
                           }).toList(),
                         ),
                   const SizedBox(height: 16),
-                  Text(
-                    "Popular Skills ",
-                    style: TextStyle(
-                      color: BaseColors().customTheme.primaryColor,
-                      fontSize: 24,
-                      fontWeight: FontWeight.bold,
-                    ),
+                  DropdownButton<String>(
+                    value: selectedSubCategory,
+                    onChanged: (String? newValue) {
+                      setState(() {
+                        selectedSubCategory = newValue!;
+                        isLoading = true;
+                      });
+                      refresh();
+                    },
+                    items: subCategories.map<DropdownMenuItem<String>>((String value) {
+                      return DropdownMenuItem<String>(
+                        value: value,
+                        child: Text(value),
+                      );
+                    }).toList(),
                   ),
+                  const SizedBox(height: 16),
+                  _buildNavigationLinks(),
                 ],
               ),
             ),
-          ),
-          SliverList(
-            delegate: SliverChildListDelegate([
-              Padding(
-                padding: const EdgeInsets.all(8.0),
-                child: Container(
-                  color: Color.fromARGB(255, 25, 44, 53),
-                  child: isLoading
-                      ? const SizedBox()
-                      : Column(
-                          children: [
-                            for (int i = 0; i < skills.length && i < 5; i++) ...[
-                              PopularItem(
-                                eventData: skills[i],
-                                index: i + 1,
-                              ),
-                              const Divider(),
-                            ],
-                          ],
-                        ),
-                ),
-              )
-            ]),
           ),
           SliverToBoxAdapter(
             child: Padding(
               padding: const EdgeInsets.only(bottom: 2, top: 8, left: 6, right: 6),
               child: Text(
-                "All Skills",
+                _selectedView,
                 style: TextStyle(
                   color: BaseColors().customTheme.primaryColor,
                   fontSize: 24,
@@ -165,13 +181,44 @@ class _JobOffersPageState extends State<JobOffersPage> {
           ),
           SliverList(
             delegate: SliverChildBuilderDelegate(
-              (context, index) => EventContainer(data: skills[index]),
-              childCount: skills.length,
+              (context, index) => EventContainer(data: getFilteredItems()[index]),
+              childCount: getFilteredItems().length,
             ),
           ),
         ],
       ),
       floatingActionButton: isAuthenticated ? ExpandableFab() : null,
+    );
+  }
+
+  Widget _buildNavigationLinks() {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+      children: [
+        _buildNavigationLink('All Skills'),
+        _buildNavigationLink('Popular Skills'),
+        _buildNavigationLink('New'),
+      ],
+    );
+  }
+
+  Widget _buildNavigationLink(String view) {
+    return InkWell(
+      onTap: () {
+        setState(() {
+          _selectedView = view;
+        });
+      },
+      child: Padding(
+        padding: const EdgeInsets.all(2.0),
+        child: Text(
+          view,
+          style: TextStyle(
+            color: _selectedView == view ? Colors.blue : Colors.black,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+      ),
     );
   }
 }

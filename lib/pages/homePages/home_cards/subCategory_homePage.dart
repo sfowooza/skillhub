@@ -1,16 +1,12 @@
-
 import 'package:appwrite/appwrite.dart';
 import 'package:flutter/material.dart';
 import 'package:appwrite/models.dart';
-
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import 'package:skillhub/appwrite/auth_api.dart';
 import 'package:skillhub/appwrite/database_api.dart';
-
 import 'package:skillhub/pages/Staggered/job_offers.dart';
 import 'package:skillhub/providers/registration_form_providers.dart';
-
 
 class SubCategoryHomePage extends StatefulWidget {
   const SubCategoryHomePage({Key? key}) : super(key: key);
@@ -20,11 +16,11 @@ class SubCategoryHomePage extends StatefulWidget {
 }
 
 class _SubCategoryHomePageState extends State<SubCategoryHomePage> {
-  //final database = DatabaseAPI();
   Map<String, List<Document>> groupedMessages = {};
   String searchQuery = '';
+  List<String> filteredSubcategories = [];
 
-   Client client = Client();
+  Client client = Client();
   late final Account account;
   late final Databases databases;
   late final AuthAPI auth;
@@ -33,7 +29,7 @@ class _SubCategoryHomePageState extends State<SubCategoryHomePage> {
   @override
   void initState() {
     super.initState();
-     auth = AuthAPI(client: client);  // assuming that AuthAPI takes a Client as a parameter
+    auth = AuthAPI(client: client);
     databases = Databases(client);
     account = Account(client);
     database = DatabaseAPI(auth: auth);
@@ -78,7 +74,7 @@ class _SubCategoryHomePageState extends State<SubCategoryHomePage> {
         return 'https://images.pexels.com/photos/256219/pexels-photo-256219.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=750&w=1260';
       case 'DataScience':
         return 'https://images.pexels.com/photos/546819/pexels-photo-546819.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=750&w=1260';
-      case 'GeneralMedicine':
+      case 'General Medicine':
         return 'https://images.pexels.com/photos/4173230/pexels-photo-4173230.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=750&w=1260';
       case 'GraphicDesign':
         return 'https://images.pexels.com/photos/1029757/pexels-photo-1029757.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=750&w=1260';
@@ -93,47 +89,9 @@ class _SubCategoryHomePageState extends State<SubCategoryHomePage> {
       case 'Cardiology':
         return 'https://images.pexels.com/photos/4332678/pexels-photo-4332678.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=750&w=1260';
       default:
-        return 'https://images.pexels.com/photos/5222/snow-mountains-forest-winter.jpg?auto=compress&cs=tinysrgb&dpr=2&h=750&w=1260'; // Default image
+        return 'https://images.pexels.com/photos/5222/snow-mountains-forest-winter.jpg?auto=compress&cs=tinysrgb&dpr=2&h=750&w=1260';
     }
   }
-
-  // void _deleteMessage(String id) async {
-  //   try {
-  //     await database.deleteMessage(id: id);
-  //     setState(() {
-  //       for (var subCategory in groupedMessages.keys) {
-  //         groupedMessages[subCategory]!.removeWhere((element) => element.$id == id);
-  //         if (groupedMessages[subCategory]!.isEmpty) {
-  //           groupedMessages.remove(subCategory);
-  //         }
-  //       }
-  //     });
-  //     const snackbar = SnackBar(content: Text('Message deleted!'));
-  //     ScaffoldMessenger.of(context).showSnackBar(snackbar);
-  //   } catch (e) {
-  //     _showAlert(title: 'Error', text: e.toString());
-  //   }
-  // }
-
-  // void _showAlert({required String title, required String text}) {
-  //   showDialog(
-  //     context: context,
-  //     builder: (context) {
-  //       return AlertDialog(
-  //         title: Text(title),
-  //         content: Text(text),
-  //         actions: [
-  //           ElevatedButton(
-  //             onPressed: () {
-  //               Navigator.pop(context);
-  //             },
-  //             child: const Text('Ok'),
-  //           )
-  //         ],
-  //       );
-  //     },
-  //   );
-  // }
 
   void _viewMessage(Document message) {
     Navigator.push(
@@ -144,11 +102,25 @@ class _SubCategoryHomePageState extends State<SubCategoryHomePage> {
     );
   }
 
+  void filterSubcategories(String query, List<String> subcategories) {
+    setState(() {
+      searchQuery = query;
+      filteredSubcategories = subcategories
+          .where((subCategory) =>
+              subCategory.toLowerCase().contains(query.toLowerCase()))
+          .toList();
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     final formProvider = Provider.of<RegistrationFormProvider>(context);
     final selectedCategory = formProvider.selectedCategory;
     final subcategories = formProvider.subcategories[selectedCategory] ?? [];
+
+    if (filteredSubcategories.isEmpty && searchQuery.isEmpty) {
+      filteredSubcategories = subcategories;
+    }
 
     return Scaffold(
       appBar: AppBar(
@@ -161,9 +133,7 @@ class _SubCategoryHomePageState extends State<SubCategoryHomePage> {
             padding: const EdgeInsets.all(8.0),
             child: TextField(
               onChanged: (value) {
-                setState(() {
-                  searchQuery = value;
-                });
+                filterSubcategories(value, subcategories);
               },
               decoration: const InputDecoration(
                 labelText: 'Search',
@@ -173,16 +143,16 @@ class _SubCategoryHomePageState extends State<SubCategoryHomePage> {
             ),
           ),
           Expanded(
-            child: subcategories.isNotEmpty
+            child: filteredSubcategories.isNotEmpty
                 ? GridView.builder(
                     gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                       crossAxisCount: 2,
                       crossAxisSpacing: 8.0,
                       mainAxisSpacing: 8.0,
                     ),
-                    itemCount: subcategories.length,
+                    itemCount: filteredSubcategories.length,
                     itemBuilder: (context, index) {
-                      final subCategory = subcategories[index];
+                      final subCategory = filteredSubcategories[index];
                       final subCategoryEnum = formProvider.subcategoryEnumMapping[subCategory];
                       final imageUrl = getImageUrlForSubCategory(subCategoryEnum ?? '');
                       final messages = groupedMessages[subCategory] ?? [];
@@ -192,11 +162,6 @@ class _SubCategoryHomePageState extends State<SubCategoryHomePage> {
                           messageImageUrl: imageUrl,
                           category: subCategory,
                         ),
-                        // onDeletePressed: () {
-                        //   for (var message in messages) {
-                        //     _deleteMessage(message.$id);
-                        //   }
-                        // },
                         onViewMessage: () {
                           if (messages.isNotEmpty) {
                             _viewMessage(messages.first);
@@ -205,24 +170,10 @@ class _SubCategoryHomePageState extends State<SubCategoryHomePage> {
                       );
                     },
                   )
-                : const Center(child: CircularProgressIndicator()),
+                : const Center(child: Text('No matching subcategories found')),
           ),
         ],
       ),
-      // bottomNavigationBar: BottomNavigation(
-      //   onLoginPressed: () {
-      //     Navigator.push(
-      //       context,
-      //       MaterialPageRoute(builder: (context) => const LoginPage()),
-      //     );
-      //   },
-      //   onSignUpPressed: () {
-      //     Navigator.push(
-      //       context,
-      //       MaterialPageRoute(builder: (context) => const RegisterPage()),
-      //     );
-      //   },
-      // ),
     );
   }
 }
@@ -236,12 +187,10 @@ class ProductItem {
 
 class ProductCard extends StatelessWidget {
   final ProductItem productItem;
-  //final VoidCallback onDeletePressed;
   final VoidCallback onViewMessage;
 
   const ProductCard({
     required this.productItem,
-    //required this.onDeletePressed,
     required this.onViewMessage,
   });
 
@@ -282,20 +231,12 @@ class ProductCard extends StatelessWidget {
                     style: const TextStyle(
                       color: Colors.white,
                       fontWeight: FontWeight.bold,
-                    ),
+    ),
                     textAlign: TextAlign.center,
                   ),
                 ),
               ),
             ),
-            // Positioned(
-            //   top: 8,
-            //   right: 8,
-            //   child: IconButton(
-            //     icon: const Icon(Icons.delete, color: Colors.white),
-            //     onPressed: onDeletePressed,
-            //   ),
-            // ),
           ],
         ),
       ),

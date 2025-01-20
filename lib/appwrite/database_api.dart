@@ -40,6 +40,24 @@ Future getAllSkills() async {
   }
 }
 
+//list documents by selected sub category
+
+  Future<List<Document>> getSkillsBySubCategory(String subCategory) async {
+    try {
+      final data = await databases.listDocuments(
+        databaseId: APPWRITE_DATABASE_ID,
+        collectionId: COLLECTION_DB_ID,
+        queries: [
+          Query.equal('selectedSubcategory', subCategory),
+        ],
+      );
+      return data.documents;
+    } catch (e) {
+      print(e);
+      return [];
+    }
+  }
+
   // Future<DocumentList> getAllSkills() async{
   //   try{
   //      return await databases.listDocuments(
@@ -69,6 +87,7 @@ Future<Document> createSkill({
   required RegistrationFields registrationFields,
   required double latitude,
   required double longitude,
+  required String whatsappLinkController,
 }) async {
   if (latitude < -90 || latitude > 90) {
     throw ArgumentError('Latitude must be between -90 and 90 degrees.');
@@ -96,6 +115,7 @@ Future<Document> createSkill({
     'gmap_location': gmaplocation,
     'lat': latitude,
     'long': longitude,
+    'link': whatsappLinkController,
   };
 
   try {
@@ -211,6 +231,7 @@ Future<void> updateSkill(
     double? latitude,
     double? longitude,
     String gmaplocation,
+     String whatsappLinkController,
     RegistrationFields registrationFields,
     String docID,) async {
   return await databases
@@ -237,6 +258,7 @@ Future<void> updateSkill(
       'inSoleBusiness':registrationFields.inSoleBusiness,
       'image':registrationFields.image,
       'gmap_location': gmaplocation,
+       'link': whatsappLinkController,
           })
       .then((value) => print("Skill Updated"))
       .catchError((e) => print(e));

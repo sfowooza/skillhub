@@ -14,48 +14,63 @@ class RegisterPage extends StatefulWidget {
 }
 
 class _RegisterPageState extends State<RegisterPage> {
-    final _formKey = GlobalKey<FormState>();
+  final _formKey = GlobalKey<FormState>();
   final emailTextController = TextEditingController();
   final passwordTextController = TextEditingController();
+  final confirmPasswordTextController = TextEditingController();
   final usernameTextController = TextEditingController();
   bool loading = false;
   BaseColors baseColor = BaseColors();
   bool _passwordVisible = true;
   double iconSize = 19;
+  String? _verificationId;
 
-
- void createAccount() async {
-  showDialog(
+void createAccount() async {
+  if (_formKey.currentState!.validate()) {
+    showDialog(
       context: context,
       barrierDismissible: false,
       builder: (BuildContext context) {
         return const Dialog(
           backgroundColor: Colors.transparent,
           child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-              children: [
-                CircularProgressIndicator(),
-              ]),
+            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+            children: [
+              CircularProgressIndicator(),
+            ],
+          ),
         );
       });
-  try {
-    final AuthAPI appwrite = context.read<AuthAPI>();
-    await appwrite.createUser(
-      email: emailTextController.text,
-      password: passwordTextController.text,
-      username: usernameTextController.text,
-    );
-    Navigator.pop(context);
-    const snackbar = SnackBar(content: Text('Account created!'));
-    ScaffoldMessenger.of(context).showSnackBar(snackbar);
-    // Redirect to LoginPage
-    Navigator.pushNamed(context, '/login');
-  } on AppwriteException catch (e) {
-    Navigator.pop(context);
-    showAlert(title: 'Account creation failed', text: e.message.toString());
+
+    try {
+      final AuthAPI appwrite = context.read<AuthAPI>();
+      final user = await appwrite.createUser(
+        email: emailTextController.text,
+        password: passwordTextController.text,
+        username: usernameTextController.text,
+      );
+
+      // Create session to ensure verification can be sent
+      await appwrite.createEmailSession(
+        email: emailTextController.text,
+        password: passwordTextController.text,
+      );
+
+      // Send email verification with the correct URL host
+      await appwrite.createEmailVerification(
+        url: 'https://verify.skillhub.avodahsystems.com/verification',
+      );
+      
+      Navigator.pop(context);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Account created! Check your email for verification.')),
+      );
+    } on AppwriteException catch (e) {
+      Navigator.pop(context);
+      showAlert(title: 'Account creation failed', text: e.message.toString());
+    }
   }
 }
-
   showAlert({required String title, required String text}) {
     showDialog(
         context: context,
@@ -75,7 +90,6 @@ class _RegisterPageState extends State<RegisterPage> {
   }
 
   @override
-  @override
   Widget build(BuildContext context) {
     return Scaffold(
       body: Padding(
@@ -93,9 +107,7 @@ class _RegisterPageState extends State<RegisterPage> {
                   style: GoogleFonts.montserrat(
                     fontWeight: FontWeight.w500,
                     fontSize: 19,
-                    // Assuming you have defined baseColor elsewhere
-                    // color: baseColor.baseTextColor
-                    color: Colors.black, // Change to your desired color
+                    color: Colors.black, // Adjust color as needed
                   ),
                 ),
               ),
@@ -108,9 +120,7 @@ class _RegisterPageState extends State<RegisterPage> {
                     style: GoogleFonts.montserrat(
                       fontWeight: FontWeight.w800,
                       fontSize: 32,
-                      // Assuming you have defined baseColor elsewhere
-                      // color: baseColor.baseTextColor
-                      color: Colors.black, // Change to your desired color
+                      color: Colors.black, // Adjust color as needed
                     ),
                     children: [
                       TextSpan(
@@ -141,24 +151,7 @@ class _RegisterPageState extends State<RegisterPage> {
                 padding: const EdgeInsets.only(top: 17, bottom: 25, left: 12, right: 12),
                 child: Column(
                   children: [
-                    // TextFormField(
-                    //   controller: nameController,
-                    //   validator: (value) {
-                    //     if (value == null || value.isEmpty) {
-                    //       return 'Please enter your full names';
-                    //     }
-                    //     return null;
-                    //   },
-                    //   decoration: InputDecoration(
-                    //     labelText: 'Name',
-                    //     prefixIcon: Icon(
-                    //       Icons.person,
-                    //       size: iconSize,
-                    //     ),
-                    //   ),
-                    // ),
-                    // const SizedBox(height: 15),
-                        TextFormField(
+                    TextFormField(
                       controller: usernameTextController,
                       validator: (value) {
                         if (value == null || value.isEmpty) {
@@ -169,7 +162,7 @@ class _RegisterPageState extends State<RegisterPage> {
                       decoration: InputDecoration(
                         labelText: 'Username',
                         prefixIcon: Icon(
-                          Icons.email,
+                          Icons.person,
                           size: iconSize,
                         ),
                       ),
@@ -180,6 +173,9 @@ class _RegisterPageState extends State<RegisterPage> {
                       validator: (value) {
                         if (value == null || value.isEmpty) {
                           return 'Please enter your Email';
+                        }
+                        if (!value.contains('@')) {
+                          return 'Please enter a valid email address';
                         }
                         return null;
                       },
@@ -221,10 +217,13 @@ class _RegisterPageState extends State<RegisterPage> {
                     const SizedBox(height: 15),
                     TextFormField(
                       obscureText: !_passwordVisible,
-                      controller: passwordTextController,
+                      controller: confirmPasswordTextController,
                       validator: (value) {
                         if (value == null || value.isEmpty) {
-                          return 'Please enter your password';
+                          return 'Please confirm your password';
+                        }
+                        if (value != passwordTextController.text) {
+                          return 'Passwords do not match';
                         }
                         return null;
                       },
@@ -244,7 +243,7 @@ class _RegisterPageState extends State<RegisterPage> {
                         labelText: 'Confirm Password',
                         prefixIcon: Icon(Icons.lock, size: iconSize),
                       ),
-                    )
+                    ),
                   ],
                 ),
               ),
@@ -253,16 +252,15 @@ class _RegisterPageState extends State<RegisterPage> {
                 height: 57,
                 padding: const EdgeInsets.fromLTRB(10, 0, 10, 0),
                 child: ElevatedButton(
-  child: Text(
-    'Sign up',
-    style: GoogleFonts.montserrat(
-      fontWeight: FontWeight.w600,
-      fontSize: 21,
-    ),
-  ),
-  onPressed: createAccount, // Pass function reference without parentheses
-),
-
+                  child: Text(
+                    'Sign up',
+                    style: GoogleFonts.montserrat(
+                      fontWeight: FontWeight.w600,
+                      fontSize: 21,
+                    ),
+                  ),
+                  onPressed: createAccount,
+                ),
               ),
               const SizedBox(height: 10),
               Container(
@@ -272,9 +270,7 @@ class _RegisterPageState extends State<RegisterPage> {
                     const Text(
                       'Already have an account?',
                       style: TextStyle(
-                        // Assuming you have defined baseColor elsewhere
-                        // color: baseColor.baseTextColor
-                        color: Colors.black, // Change to your desired color
+                        color: Colors.black, // Adjust color as needed
                       ),
                     ),
                     TextButton(
@@ -283,9 +279,7 @@ class _RegisterPageState extends State<RegisterPage> {
                         style: GoogleFonts.montserrat(
                           fontWeight: FontWeight.w500,
                           fontSize: 17,
-                          // Assuming you have defined baseColor elsewhere
-                          // color: baseColor.baseTextColor
-                          color: Theme.of(context).primaryColor, // Change to your desired color
+                          color: Theme.of(context).primaryColor, // Adjust color as needed
                         ),
                       ),
                       onPressed: () {
@@ -302,5 +296,4 @@ class _RegisterPageState extends State<RegisterPage> {
       ),
     );
   }
-       
 }

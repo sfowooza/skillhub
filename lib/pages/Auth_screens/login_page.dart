@@ -23,42 +23,112 @@ class LoginPage extends StatefulWidget {
 class _LoginPageState extends State<LoginPage> {
   final emailTextController = TextEditingController();
   final passwordTextController = TextEditingController();
+  final _formKey = GlobalKey<FormState>();
   bool loading = false;
   BaseColors baseColor = BaseColors();
   bool _passwordVisible = true;
   double iconSize = 19;
 
-  signIn() async {
+signIn() async {
+  if (_formKey.currentState!.validate()) {
     showDialog(
-        context: context,
-        barrierDismissible: false,
-        builder: (BuildContext context) {
-          return const Dialog(
-            backgroundColor: Colors.transparent,
-            child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                children: [
-                  CircularProgressIndicator(),
-                ]),
-          );
-        });
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext context) {
+        return const Dialog(
+          backgroundColor: Colors.transparent,
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+            children: [
+              CircularProgressIndicator(),
+            ]
+          ),
+        );
+      }
+    );
 
     try {
       final AuthAPI appwrite = context.read<AuthAPI>();
-      await appwrite.createEmailSession(
+      
+      // First try to get current user to check verification
+      if (appwrite.status == AuthStatus.authenticated && !appwrite.currentUser.emailVerification) {
+        // User is logged in but email not verified
+        Navigator.pop(context); // Close loading dialog
+        
+        // Send new verification email
+        await appwrite.createEmailVerification(
+          url: 'https://verify.skillhub.avodahsystems.com/verification',
+        );
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Please verify your email. A new verification link has been sent.'),
+            duration: Duration(seconds: 5),
+          ),
+        );
+
+        // Sign out the unverified user
+        await appwrite.signOut(context);
+        return;
+      }
+
+      // Attempt login
+      final loginSuccess = await appwrite.createEmailSession(
         email: emailTextController.text,
         password: passwordTextController.text,
       );
-       Navigator.pop(context); // Close the dialog
-    Navigator.push(
-      context,
-      MaterialPageRoute(builder: (context) => const JobOffersStaggeredPage(title: 'Job Offers',)),
-    );
+
+      if (!loginSuccess) {
+        Navigator.pop(context);
+        return;
+      }
+
+      // Check verification status after login
+      if (!appwrite.currentUser.emailVerification) {
+        Navigator.pop(context); // Close loading dialog
+        
+        // Send verification email
+        await appwrite.createEmailVerification(
+          url: 'https://verify.skillhub.avodahsystems.com/verification',
+        );
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Please verify your email before logging in. Check your inbox for the verification link.'),
+            duration: Duration(seconds: 5),
+          ),
+        );
+
+        // Sign out since email isn't verified
+        await appwrite.signOut(context);
+        return;
+      }
+
+      // Email is verified - proceed with login
+      Navigator.pop(context); // Close loading dialog
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => const JobOffersStaggeredPage(title: 'Job Offers')
+        ),
+      );
+      
     } on AppwriteException catch (e) {
       Navigator.pop(context);
-      showAlert(title: 'Login failed', text: e.message.toString());
+      // Handle nullable message
+      final String errorMessage = e.message?.contains('Creation of a session is prohibited') == true
+          ? 'Please verify your email first. Check your inbox for the verification link.'
+          : e.message ?? 'An error occurred during login';
+      
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(errorMessage),
+          duration: const Duration(seconds: 5),
+        ),
+      );
     }
   }
+}
 
   showAlert({required String title, required String text}) {
     showDialog(
@@ -78,257 +148,210 @@ class _LoginPageState extends State<LoginPage> {
         });
   }
 
-signInWithProvider(OAuthProvider provider) {
-  try {
-    context.read<AuthAPI>().signInWithProvider(provider: provider);
-  } on AppwriteException catch (e) {
-    showAlert(title: 'Login failed', text: e.message.toString());
+  signInWithProvider(OAuthProvider provider) {
+    try {
+      context.read<AuthAPI>().signInWithProvider(provider: provider);
+    } on AppwriteException catch (e) {
+      showAlert(title: 'Login failed', text: e.message.toString());
+    }
   }
-}
-
-
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      // appBar: AppBar(
-      //   title: Text(
-      //     '🛠️ SkillsHub',
-      //     style: GoogleFonts.montserrat(
-      //         fontWeight: FontWeight.w500,
-      //         fontSize: 19,
-      //         color: baseColor.baseTextColor),
-      //   ),
-      // ),
       body: Padding(
         padding: const EdgeInsets.all(32.0),
         child: SingleChildScrollView(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Container(
-                margin: const EdgeInsets.only(top: 20),
-                alignment: Alignment.centerLeft,
-                padding: const EdgeInsets.all(10),
-                child: Text(
-                  '🛠️ SkillsHub',
-                  style: GoogleFonts.montserrat(
-                      fontWeight: FontWeight.w500,
-                      fontSize: 19,
-                      color: baseColor.baseTextColor),
-                ),
-              ),
-              Container(
-                alignment: Alignment.centerLeft,
-                padding: const EdgeInsets.all(10),
-                child: Text.rich(
-                  TextSpan(
-                    text: 'Sign in now to get ',
+          child: Form(
+            key: _formKey,
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Container(
+                  margin: const EdgeInsets.only(top: 20),
+                  alignment: Alignment.centerLeft,
+                  padding: const EdgeInsets.all(10),
+                  child: Text(
+                    '🛠️ SkillsHub',
                     style: GoogleFonts.montserrat(
-                        fontWeight: FontWeight.w800,
-                        fontSize: 32,
+                        fontWeight: FontWeight.w500,
+                        fontSize: 19,
                         color: baseColor.baseTextColor),
+                  ),
+                ),
+                Container(
+                  alignment: Alignment.centerLeft,
+                  padding: const EdgeInsets.all(10),
+                  child: Text.rich(
+                    TextSpan(
+                      text: 'Sign in now to get ',
+                      style: GoogleFonts.montserrat(
+                          fontWeight: FontWeight.w800,
+                          fontSize: 32,
+                          color: baseColor.baseTextColor),
+                      children: [
+                        TextSpan(
+                          text: 'started',
+                          style: GoogleFonts.montserrat(
+                              fontWeight: FontWeight.w800,
+                              fontSize: 32,
+                              color: Theme.of(context).primaryColor),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                Container(
+                  alignment: Alignment.centerLeft,
+                  padding: const EdgeInsets.all(10),
+                  child: Text(
+                    'SkillsHub connects you to local talent & Local Job Offers near you.',
+                    style: GoogleFonts.poppins(
+                        fontWeight: FontWeight.w400,
+                        fontSize: 16,
+                        color: Colors.grey),
+                  ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.only(top: 17, bottom: 25, left: 12, right: 12),
+                  child: Column(
                     children: [
-                      TextSpan(
-                        text: 'started',
-                        style: GoogleFonts.montserrat(
-                            fontWeight: FontWeight.w800,
-                            fontSize: 32,
-                            color: Theme.of(context).primaryColor),
+                      TextFormField(
+                        controller: emailTextController,
+                        validator: (value) {
+                          if (value == null || value.isEmpty) {
+                            return 'Please enter your email';
+                          }
+                          if (!value.contains('@')) {
+                            return 'Please enter a valid email address';
+                          }
+                          return null;
+                        },
+                        decoration: InputDecoration(
+                          labelText: 'Email',
+                          prefixIcon: Icon(
+                            Icons.email,
+                            size: iconSize,
+                          ),
+                        ),
                       ),
+                      const SizedBox(height: 15),
+                      TextFormField(
+                        obscureText: _passwordVisible,
+                        controller: passwordTextController,
+                        validator: (value) {
+                          if (value == null || value.isEmpty) {
+                            return 'Please enter your password';
+                          }
+                          return null;
+                        },
+                        decoration: InputDecoration(
+                            suffixIcon: IconButton(
+                              icon: Icon(
+                                size: iconSize,
+                                _passwordVisible
+                                    ? Icons.visibility
+                                    : Icons.visibility_off,
+                                color: Theme.of(context).primaryColorDark,
+                              ),
+                              onPressed: () {
+                                setState(() {
+                                  _passwordVisible = !_passwordVisible;
+                                });
+                              },
+                            ),
+                            labelText: 'Password',
+                            prefixIcon: Icon(Icons.lock, size: iconSize)),
+                      )
                     ],
                   ),
                 ),
-              ),
-              Container(
-                alignment: Alignment.centerLeft,
-                padding: const EdgeInsets.all(10),
-                child: Text(
-                  'SkillsHub connects you to local talent & Local Job Offers near you.',
-                  style: GoogleFonts.poppins(
-                      fontWeight: FontWeight.w400,
-                      fontSize: 16,
-                      color: Colors.grey),
+                Container(
+                  margin: const EdgeInsets.only(bottom: 67.0, left: 12),
+                  alignment: Alignment.centerLeft,
+                  child: TextButton(
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                            builder: (context) => ForgotPasswordPage()),
+                      );
+                    },
+                    child: const Text(
+                      'Forgot Password?',
+                    ),
+                  ),
                 ),
-              ),
-              Padding(
-                padding:
-                    const EdgeInsets.only(top: 17, bottom: 25, left: 12, right: 12),
-                child: Column(
-                  children: [
-                    TextFormField(
-                      controller: emailTextController,
-                      validator: (value) {
-                        if (value == null || value.isEmpty) {
-                          return 'Please enter your email';
-                        }
-                        return null;
-                      },
-                      decoration: InputDecoration(
-                        labelText: 'Email',
-                        prefixIcon: Icon(
-                          Icons.email,
-                          size: iconSize,
+                Container(
+                  height: 57,
+                  padding: const EdgeInsets.fromLTRB(10, 0, 10, 0),
+                  child: ElevatedButton(
+                    child: Text(
+                      'Login',
+                      style: GoogleFonts.montserrat(
+                          fontWeight: FontWeight.w600, fontSize: 21),
+                    ),
+                    onPressed: () => signIn(),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                Container(
+                  margin: const EdgeInsets.only(left: 12.0),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.start,
+                    children: <Widget>[
+                      Text(
+                        'Don\'t have an account?',
+                        style: TextStyle(color: baseColor.baseTextColor),
+                      ),
+                      TextButton(
+                        child: Text(
+                          'Sign Up',
+                          style: GoogleFonts.montserrat(
+                              fontWeight: FontWeight.w500, fontSize: 17),
                         ),
-                      ),
+                        onPressed: () {
+                          Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                  builder: (context) => const RegisterPage()));
+                        },
+                      )
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 16),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                  children: [
+                    ElevatedButton(
+                      onPressed: () => signInWithProvider(OAuthProvider.google),
+                      style: ElevatedButton.styleFrom(
+                          foregroundColor: Colors.black,
+                          backgroundColor: Colors.white),
+                      child:
+                          SvgPicture.asset('assets/google_icon.svg', width: 12),
                     ),
-                    const SizedBox(height: 15),
-                    TextFormField(
-                      obscureText: _passwordVisible,
-                      controller: passwordTextController,
-                      validator: (value) {
-                        if (value == null || value.isEmpty) {
-                          return 'Please enter your password';
-                        }
-                        return null;
-                      },
-                      decoration: InputDecoration(
-                          suffixIcon: IconButton(
-                            icon: Icon(
-                              size: iconSize,
-                              _passwordVisible
-                                  ? Icons.visibility
-                                  : Icons.visibility_off,
-                              color: Theme.of(context).primaryColorDark,
-                            ),
-                            onPressed: () {
-                              setState(() {
-                                _passwordVisible = !_passwordVisible;
-                              });
-                            },
-                          ),
-                          labelText: 'Password',
-                          prefixIcon: Icon(Icons.lock, size: iconSize)),
-                    )
+                    ElevatedButton(
+                      onPressed: () => signInWithProvider(OAuthProvider.apple),
+                      style: ElevatedButton.styleFrom(
+                          foregroundColor: Colors.black,
+                          backgroundColor: Colors.white),
+                      child: SvgPicture.asset('assets/apple_icon.svg', width: 12),
+                    ),
+                    ElevatedButton(
+                      onPressed: () => signInWithProvider(OAuthProvider.github),
+                      style: ElevatedButton.styleFrom(
+                          foregroundColor: Colors.black,
+                          backgroundColor: Colors.white),
+                      child:
+                          SvgPicture.asset('assets/github_icon.svg', width: 12),
+                    ),
                   ],
                 ),
-              ),
-              Container(
-                margin: const EdgeInsets.only(bottom: 67.0, left: 12),
-                alignment: Alignment.centerLeft,
-                child: TextButton(
-                  onPressed: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                          builder: (context) => const MyHomeCategoryPage()),
-                    );
-                  },
-                  child: const Text(
-                    'Forgot Password?',
-                  ),
-                ),
-              ),
-              Container(
-  height: 57,
-  padding: const EdgeInsets.fromLTRB(10, 0, 10, 0),
-  child: ElevatedButton(
-    child: Text(
-      'Login',
-      style: GoogleFonts.montserrat(
-        fontWeight: FontWeight.w600, fontSize: 21
-      ),
-    ),
-onPressed: () {
-  signIn().then((value) {
-    if (value) {
-      ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text("Login Successful !!!")));
-
-      Future.delayed(Duration(seconds: 2), () {
-        Navigator.push(
-          context,
-          MaterialPageRoute(builder: (context) => SkillsPage())
-        );
-      });
-    } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text("Login Failed Try Again.")));
-    }
-  });
-},
-
-//const JobOffersStaggeredPage(title: 'Job Offers',)
-  ),
-),
-
-              // Container(
-              //   height: 57,
-              //   padding: const EdgeInsets.fromLTRB(10, 0, 10, 0),
-              //   child: ElevatedButton(
-              //     child: Text(
-              //       'Login',
-              //       style: GoogleFonts.montserrat(
-              //           fontWeight: FontWeight.w600, fontSize: 21),
-              //     ),
-              //     onPressed: () => signIn(),
-              //   ),
-              // ),
-              const SizedBox(height: 16),
-              Container(
-                margin: const EdgeInsets.only(left: 12.0),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.start,
-                  children: <Widget>[
-                    Text(
-                      'Don\'t have an account?',
-                      style: TextStyle(color: baseColor.baseTextColor),
-                    ),
-                    TextButton(
-                      child: Text(
-                        'Sign Up',
-                        style: GoogleFonts.montserrat(
-                            fontWeight: FontWeight.w500, fontSize: 17),
-                      ),
-                      onPressed: () {
-                        Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                                builder: (context) => const RegisterPage()));
-                      },
-                    )
-                  ],
-                ),
-              ),
-              const SizedBox(height: 16),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                children: [
-                  ElevatedButton(
-                    onPressed: () => signInWithProvider(OAuthProvider.google),
-                    style: ElevatedButton.styleFrom(
-                        foregroundColor: Colors.black,
-                        backgroundColor: Colors.white),
-                    child:
-                        SvgPicture.asset('assets/google_icon.svg', width: 12),
-                  ),
-                  ElevatedButton(
-                    onPressed: () =>  signInWithProvider(OAuthProvider.apple),
-                    style: ElevatedButton.styleFrom(
-                        foregroundColor: Colors.black,
-                        backgroundColor: Colors.white),
-                    child: SvgPicture.asset('assets/apple_icon.svg', width: 12),
-                  ),
-                  ElevatedButton(
-                    onPressed: () => signInWithProvider(OAuthProvider.github),
-                    style: ElevatedButton.styleFrom(
-                        foregroundColor: Colors.black,
-                        backgroundColor: Colors.white),
-                    child:
-                        SvgPicture.asset('assets/github_icon.svg', width: 12),
-                  ),
-                  // ElevatedButton(
-                  //  onPressed: () => signInWithProvider(OAuthProvider.twitter),
-                  //   style: ElevatedButton.styleFrom(
-                  //       foregroundColor: Colors.black,
-                  //       backgroundColor: Colors.white),
-                  //   child:
-                  //       SvgPicture.asset('assets/twitter_icon.svg', width: 12),
-                  // )
-                ],
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),

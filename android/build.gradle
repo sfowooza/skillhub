@@ -1,12 +1,22 @@
-allprojects {
+buildscript {
+    ext.kotlin_version = '1.9.20'
+    ext.gradle_version = '8.2.1'
+
     repositories {
         google()
         mavenCentral()
     }
 
-        tasks.withType(JavaCompile) {
-        sourceCompatibility = '17'
-        targetCompatibility = '17'
+    dependencies {
+        classpath "com.android.tools.build:gradle:$gradle_version"
+        classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version"
+    }
+}
+
+allprojects {
+    repositories {
+        google()
+        mavenCentral()
     }
 }
 

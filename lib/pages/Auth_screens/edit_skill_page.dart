@@ -18,9 +18,9 @@ import 'package:provider/provider.dart';
 import 'package:file_picker/file_picker.dart';
 
 class EditSkillsPage extends StatefulWidget {
-  final String image, firstName, lastName, email, phoneNumber, message, selectedCategory, selectedSubcategory, location, description, datetime, docID;
+  final String image, firstName, lastName, email, phoneNumber, message, selectedCategory, selectedSubcategory, location, description, datetime, docID,link, gmaplocation;
   final bool inSoleBusiness;
-  const EditSkillsPage({Key? key, required this.image, required this.firstName, required this.lastName, required this.email, required this.phoneNumber, required this.message, required this.selectedCategory, required this.selectedSubcategory, required this.description, required this.datetime, required this.docID, required this.inSoleBusiness, required this.location}) : super(key: key);
+  const EditSkillsPage({Key? key, required this.image, required this.gmaplocation, required this.link, required this.firstName, required this.lastName, required this.email, required this.phoneNumber, required this.message, required this.selectedCategory, required this.selectedSubcategory, required this.description, required this.datetime, required this.docID, required this.inSoleBusiness, required this.location}) : super(key: key);
 
   @override
   _EditSkillsPageState createState() => _EditSkillsPageState();
@@ -38,7 +38,8 @@ class _EditSkillsPageState extends State<EditSkillsPage> {
   TextEditingController emailTextController = TextEditingController();
   TextEditingController phoneNumberTextController = TextEditingController();
   TextEditingController locationTextController = TextEditingController();
-  TextEditingController _gmaplocationController = TextEditingController();
+  final TextEditingController _gmaplocationController = TextEditingController();
+  final TextEditingController _whatsappLinkController = TextEditingController();
   AuthStatus authStatus = AuthStatus.uninitialized;
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
   bool isUploading = false;
@@ -78,7 +79,8 @@ class _EditSkillsPageState extends State<EditSkillsPage> {
     emailTextController.text = widget.email;
     phoneNumberTextController.text = widget.phoneNumber;
     locationTextController.text = widget.location;
-    _gmaplocationController.text = widget.location;
+    _gmaplocationController.text = widget.gmaplocation;
+    _whatsappLinkController.text = widget.link;
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final provider = Provider.of<RegistrationFormProvider>(context, listen: false);
@@ -204,6 +206,7 @@ Future<void> _updateSkill(String value) async {
     latitude ?? 0.0, // latitude
     longitude ?? 0.0, // longitude
     _gmaplocationController.text, // gmaplocation
+    _whatsappLinkController.text,
     RegistrationFields(
       selectedCategory: registrationFormProvider.selectedCategory!,
       selectedSubcategory: registrationFormProvider.selectedSubcategory!,
@@ -449,6 +452,17 @@ Future<void> _updateSkill(String value) async {
                               },
                               readOnly: true,
                             ),
+                                           SizedBox(height: 20),
+                              TextFormField(
+                controller: _whatsappLinkController,
+                decoration: InputDecoration(labelText: 'WhatsApp Catalogue Link'), // WhatsApp link input field
+                validator: (value) {
+                  if (value == null || value.isEmpty) {
+                    return 'Please enter your WhatsApp Catalogue link';
+                  }
+                  return null;
+                },
+              ),
                             const SizedBox(height: 16),
                             Row(
                               children: [

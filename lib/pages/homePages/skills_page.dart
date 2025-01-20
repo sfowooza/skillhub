@@ -33,11 +33,14 @@ class _SkillsPageState extends State<SkillsPage> {
   TextEditingController descriptionTextController = TextEditingController();
   final TextEditingController _datetimeController = TextEditingController();
   final TextEditingController _gmaplocationController = TextEditingController();
+   final TextEditingController _whatsappLinkController = TextEditingController();
   AuthStatus authStatus = AuthStatus.uninitialized;
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
   bool isUploading = false;
   late String selectedCategory;
   late String selectedSubcategory;
+  
+//late String? _whatsappLink;
 
   FilePickerResult? _filePickerResult;
   bool _isSoleBusiness = true;
@@ -58,6 +61,7 @@ class _SkillsPageState extends State<SkillsPage> {
     client = appwrite.client;
     storage = Storage(client);
     database = DatabaseAPI(auth: auth);
+     // _whatsappLink = database.getWhatsappLink() as String?;
   }
 
   @override
@@ -178,6 +182,8 @@ class _SkillsPageState extends State<SkillsPage> {
           message: messageTextController.text,
           description: descriptionTextController.text,
           gmaplocation: _gmaplocationController.text,
+          whatsappLinkController: _whatsappLinkController.text,
+         
           registrationFields: RegistrationFields(
             selectedCategory: context.read<RegistrationFormProvider>().selectedCategory!,
             selectedSubcategory: context.read<RegistrationFormProvider>().selectedSubcategory!,
@@ -231,6 +237,7 @@ class _SkillsPageState extends State<SkillsPage> {
       }
     });
   }
+
 
   @override
   Widget build(BuildContext context) {
@@ -451,6 +458,17 @@ class _SkillsPageState extends State<SkillsPage> {
                               },
                               readOnly: true,
                             ),
+                            SizedBox(height: 20),
+                              TextFormField(
+                controller: _whatsappLinkController,
+                decoration: InputDecoration(labelText: 'WhatsApp Catalogue Link'), // WhatsApp link input field
+                validator: (value) {
+                  if (value == null || value.isEmpty) {
+                    return 'Please enter your WhatsApp Catalogue link';
+                  }
+                  return null;
+                },
+              ),
                             const SizedBox(height: 16),
                             Row(
                               children: [
@@ -628,11 +646,6 @@ class _MapScreenState extends State<MapScreen> {
                   ),
                   markers: markers,
                   myLocationEnabled: true,
-                  //adding UI elements
-                  zoomGesturesEnabled: true,
-                  tiltGesturesEnabled: true,
-                  rotateGesturesEnabled: true,
-                  scrollGesturesEnabled: true,
                   onTap: _onMapTapped,
                 ),
                 Positioned(

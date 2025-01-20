@@ -24,6 +24,8 @@ class _CategoryHomePageState extends State<CategoryHomePage> {
   Map<String, List<Document>> groupedMessages = {};
   String searchQuery = '';
   bool isLoggedIn = false;
+  List<String> allCategories = ['Engineering', 'IT', 'Design', 'Medicine', 'Health & Beauty', 'Farming & Agriculture', 'Fashion'];
+  List<String> filteredCategories = [];
 
   Client client = Client();
   late final Account account;
@@ -34,25 +36,26 @@ class _CategoryHomePageState extends State<CategoryHomePage> {
   @override
   void initState() {
     super.initState();
-   auth = AuthAPI(client: client);  // assuming that AuthAPI takes a Client as a parameter
+    auth = AuthAPI(client: client);
     databases = Databases(client);
     account = Account(client);
     database = DatabaseAPI(auth: auth);
     loadMessages();
+    filteredCategories = allCategories;
   }
 
-void loadMessages() async {
-  try {
-    final value = await database.getAllSkills();
-    final grouped = groupMessagesByCategory(value);  // <-- here
-    setState(() {
-      groupedMessages = grouped;
-    });
-  } catch (e) {
-    print(e);
+  void loadMessages() async {
+    try {
+      final value = await database.getAllSkills();
+      final grouped = groupMessagesByCategory(value);
+      setState(() {
+        groupedMessages = grouped;
+        filteredCategories = allCategories;
+      });
+    } catch (e) {
+      print(e);
+    }
   }
-}
-
 
   Map<String, List<Document>> groupMessagesByCategory(List<Document> messages) {
     final Map<String, List<Document>> categoryMap = {};
@@ -78,9 +81,25 @@ void loadMessages() async {
         return 'https://images.pexels.com/photos/936722/pexels-photo-936722.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=750&w=1260';
       case 'Medicine':
         return 'https://images.pexels.com/photos/40568/medical-appointment-doctor-healthcare-40568.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=750&w=1260';
+      case 'Health & Beauty':
+        return 'https://images.pexels.com/photos/1591374/pexels-photo-1591374.jpeg?auto=compress&cs=tinysrgb&h=750&w=1260';
+      case 'Farming & Agriculture':
+        return 'https://images.pexels.com/photos/376464/pexels-photo-376464.jpeg?auto=compress&cs=tinysrgb&h=750&w=1260';
+      case 'Fashion':
+        return 'https://images.pexels.com/photos/3769022/pexels-photo-3769022.jpeg?auto=compress&cs=tinysrgb&h=750&w=1260';
       default:
-        return 'https://images.pexels.com/photos/5222/snow-mountains-forest-winter.jpg?auto=compress&cs=tinysrgb&dpr=2&h=750&w=1260'; // Default image
+        return 'https://images.pexels.com/photos/5222/snow-mountains-forest-winter.jpg?auto=compress&cs=tinysrgb&dpr=2&h=750&w=1260';
     }
+  }
+
+  void filterCategories(String query) {
+    setState(() {
+      searchQuery = query;
+      filteredCategories = allCategories
+          .where((category) =>
+              category.toLowerCase().contains(query.toLowerCase()))
+          .toList();
+    });
   }
 
   @override
@@ -95,11 +114,7 @@ void loadMessages() async {
           Padding(
             padding: const EdgeInsets.all(8.0),
             child: TextField(
-              onChanged: (value) {
-                setState(() {
-                  searchQuery = value;
-                });
-              },
+              onChanged: filterCategories,
               decoration: const InputDecoration(
                 labelText: 'Search',
                 prefixIcon: Icon(Icons.search),
@@ -108,64 +123,40 @@ void loadMessages() async {
             ),
           ),
           Expanded(
-            child: groupedMessages.isNotEmpty
+            child: filteredCategories.isNotEmpty
                 ? GridView.builder(
                     gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                       crossAxisCount: 2,
                       crossAxisSpacing: 8.0,
                       mainAxisSpacing: 8.0,
                     ),
-                    itemCount: groupedMessages.length,
+                    itemCount: filteredCategories.length,
                     itemBuilder: (context, index) {
-                      final category = groupedMessages.keys.elementAt(index);
-                      final messages = groupedMessages[category]!;
+                      final category = filteredCategories[index];
                       final imageUrl = getImageUrlForCategory(category);
                       return ProductCard(
                         productItem: ProductItem(
                           messageImageUrl: imageUrl,
                           category: category,
                         ),
-                        // onDeletePressed: () {
-                        //   for (var message in messages) {
-                        //     _deleteMessage(message.$id);
-                        //   }
-                        // },
                         onViewMessage: () {
                           formProvider.selectedCategory = category;
                           Navigator.push(
                             context,
                             MaterialPageRoute(
-                              builder: (context) => SubCategoryStaggeredHomePage(title: 'Skillhub',),
+                              builder: (context) => SubCategoryStaggeredHomePage(title: 'Skillhub'),
                             ),
                           );
-                        }, // View the first message in the category
+                        },
                       );
                     },
                   )
-                : const Center(child: CircularProgressIndicator()),
+                : const Center(child: Text('No matching categories found')),
           ),
         ],
       ),
     );
   }
-
-  // void _deleteMessage(String id) async {
-  //   try {
-  //     await database.deleteMessage(id: id);
-  //     setState(() {
-  //       for (var category in groupedMessages.keys) {
-  //         groupedMessages[category]!.removeWhere((element) => element.$id == id);
-  //         if (groupedMessages[category]!.isEmpty) {
-  //           groupedMessages.remove(category);
-  //         }
-  //       }
-  //     });
-  //     const snackbar = SnackBar(content: Text('Message deleted!'));
-  //     ScaffoldMessenger.of(context).showSnackBar(snackbar);
-  //   } catch (e) {
-  //     _showAlert(title: 'Error', text: e.toString());
-  //   }
-  // }
 
   void _showAlert({required String title, required String text}) {
     showDialog(
@@ -197,12 +188,10 @@ class ProductItem {
 
 class ProductCard extends StatelessWidget {
   final ProductItem productItem;
-  //final VoidCallback onDeletePressed;
   final VoidCallback onViewMessage;
 
   const ProductCard({
     required this.productItem,
-    //required this.onDeletePressed,
     required this.onViewMessage,
   });
 
@@ -249,14 +238,6 @@ class ProductCard extends StatelessWidget {
                 ),
               ),
             ),
-            // Positioned(
-            //   top: 8,
-            //   right: 8,
-            //   child: IconButton(
-            //     icon: const Icon(Icons.delete, color: Colors.white),
-            //     onPressed: onDeletePressed,
-            //   ),
-            // ),
           ],
         ),
       ),
