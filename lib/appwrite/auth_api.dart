@@ -58,19 +58,32 @@ class AuthAPI extends ChangeNotifier {
     }
   }
 
-  Future<String> createUser({required String email, required String password, required String username}) async {
-    try {
-      final user = await account.create(
-          userId: ID.unique(),
-          email: email,
-          password: password,
-          name: username);
-      await database.saveUserData(user.$id, username, email); // Call the saveUserData() method of the DatabaseAPI instance
-      return "success";
-    } on AppwriteException catch(e) {return e.message.toString();}finally{
-      notifyListeners();
-    }
+Future<String> createUser({required String email, required String password, required String username}) async {
+  try {
+    // Create a new user in Appwrite
+    final user = await account.create(
+      userId: ID.unique(),
+      email: email,
+      password: password,
+      name: username,
+    );
+    
+    // Save user data to your database
+    await database.saveUserData(user.$id, username, email);
+    
+    // Optionally, send an email verification
+    // Commented out as it should be handled based on your app's flow
+    // await createEmailVerification(url: 'https://verify.skillhub.avodahsystems.com/verification');
+    
+    return "success";
+  } on AppwriteException catch (e) {
+    // Return the error message from Appwrite
+    return e.message.toString();
+  } finally {
+    // Notify listeners of any state change
+    notifyListeners();
   }
+}
 
   Future<bool> createEmailSession({required String email, required String password}) async {
     try {
@@ -142,4 +155,22 @@ class AuthAPI extends ChangeNotifier {
   Future<dynamic> createRecovery({required String email, required String url}) async {
     return await account.createRecovery(email: email, url: url);
   }
+
+  // In your AuthAPI class
+Future<void> updateRecovery({
+  required String userId,
+  required String secret,
+  required String password,
+}) async {
+  try {
+    await account.updateRecovery(
+      userId: userId,
+      secret: secret,
+      password: password,
+    );
+  } on AppwriteException catch (e) {
+    throw e;
+  }
+}
+
 }

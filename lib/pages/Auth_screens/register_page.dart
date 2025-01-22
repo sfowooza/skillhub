@@ -62,8 +62,38 @@ void createAccount() async {
       );
       
       Navigator.pop(context);
+      // Display Snackbar in the middle center with rounded corners and staying until clicked
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Account created! Check your email for verification.')),
+        SnackBar(
+          behavior: SnackBarBehavior.floating,
+          margin: EdgeInsets.only(
+            bottom: MediaQuery.of(context).size.height / 2 - 40, // Adjust for desired vertical position
+            left: 20,
+            right: 20,
+          ),
+          content: Text(
+            'Account created! Check your email for verification.',
+            textAlign: TextAlign.center,
+            style: TextStyle(color: Colors.white),
+          ),
+          backgroundColor: Colors.green,
+          elevation: 6.0,
+          // Rounded corners
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(10.0),
+          ),
+          duration: const Duration(days: 365), // Set a very long duration to keep it until clicked
+          action: SnackBarAction(
+            label: 'Login',
+            textColor: Colors.blue,
+            onPressed: () {
+              // Dismiss the Snackbar
+              ScaffoldMessenger.of(context).hideCurrentSnackBar();
+              // Navigate to login page
+              Navigator.pushNamed(context, '/login');
+            },
+          ),
+        ),
       );
     } on AppwriteException catch (e) {
       Navigator.pop(context);
@@ -124,7 +154,7 @@ void createAccount() async {
                     ),
                     children: [
                       TextSpan(
-                        text: 'work',
+                        text: 'Skills',
                         style: GoogleFonts.montserrat(
                           fontWeight: FontWeight.w800,
                           fontSize: 32,

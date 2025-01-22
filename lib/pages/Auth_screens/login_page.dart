@@ -41,35 +41,20 @@ signIn() async {
             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
             children: [
               CircularProgressIndicator(),
-            ]
+            ],
           ),
         );
-      }
+      },
     );
 
     try {
       final AuthAPI appwrite = context.read<AuthAPI>();
       
-      // First try to get current user to check verification
-      if (appwrite.status == AuthStatus.authenticated && !appwrite.currentUser.emailVerification) {
-        // User is logged in but email not verified
-        Navigator.pop(context); // Close loading dialog
-        
-        // Send new verification email
-        await appwrite.createEmailVerification(
-          url: 'https://verify.skillhub.avodahsystems.com/verification',
-        );
-
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Please verify your email. A new verification link has been sent.'),
-            duration: Duration(seconds: 5),
-          ),
-        );
-
-        // Sign out the unverified user
+      // Clear any existing session before attempting to log in
+      try {
         await appwrite.signOut(context);
-        return;
+      } catch (e) {
+        // If no session exists, this will throw an error, which we can ignore
       }
 
       // Attempt login
@@ -84,6 +69,7 @@ signIn() async {
       }
 
       // Check verification status after login
+      await appwrite.loadUser(); // Ensure we have the latest user data
       if (!appwrite.currentUser.emailVerification) {
         Navigator.pop(context); // Close loading dialog
         
@@ -99,8 +85,7 @@ signIn() async {
           ),
         );
 
-        // Sign out since email isn't verified
-        await appwrite.signOut(context);
+        // Do not sign out, let the user verify their email or try again
         return;
       }
 
@@ -117,7 +102,7 @@ signIn() async {
       Navigator.pop(context);
       // Handle nullable message
       final String errorMessage = e.message?.contains('Creation of a session is prohibited') == true
-          ? 'Please verify your email first. Check your inbox for the verification link.'
+          ? 'Please verify your email first or sign out from any active session. Check your inbox for the verification link.'
           : e.message ?? 'An error occurred during login';
       
       ScaffoldMessenger.of(context).showSnackBar(

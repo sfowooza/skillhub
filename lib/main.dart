@@ -80,10 +80,27 @@ class _MyAppState extends State<MyApp> {
   }
 
   void handleDeepLink(Uri uri) {
+    // Handle skill details deep link
     if (uri.pathSegments.length >= 2 && uri.pathSegments[0] == 'skill') {
       String skillId = uri.pathSegments[1];
       // Navigate to the SkillDetails page with the given skillId
       navigatorKey.currentState?.pushNamed('/skill/$skillId');
+    }
+    // Handle reset password deep link
+    else if (uri.path == 'reset-password') {
+      final userId = uri.queryParameters['userId'];
+      final secret = uri.queryParameters['secret'];
+      
+      if (userId != null && secret != null) {
+        navigatorKey.currentState?.push(
+          MaterialPageRoute(
+            builder: (context) => ResetPasswordPage(
+              userId: userId,
+              secret: secret,
+            ),
+          ),
+        );
+      }
     }
   }
 
@@ -97,13 +114,29 @@ class _MyAppState extends State<MyApp> {
       ),
       navigatorKey: navigatorKey,
       onGenerateRoute: (settings) {
+        // Handle skill details route
         if (settings.name?.startsWith('/skill/') ?? false) {
           final skillId = settings.name!.split('/').last;
           return MaterialPageRoute(
             builder: (context) => SkillDetails(skillId: skillId),
           );
         }
-        // Use the routes defined in routes.dart
+        // Handle reset password route
+        if (settings.name?.startsWith('/reset-password') ?? false) {
+          final uri = Uri.parse(settings.name!);
+          final userId = uri.queryParameters['userId'];
+          final secret = uri.queryParameters['secret'];
+          
+          if (userId != null && secret != null) {
+            return MaterialPageRoute(
+              builder: (context) => ResetPasswordPage(
+                userId: userId,
+                secret: secret,
+              ),
+            );
+          }
+        }
+        // Use the routes defined in routes.dart for other routes
         return MaterialPageRoute(
           builder: routes[settings.name] ?? (context) => const MyHomePage(title: ''),
           settings: settings,
@@ -137,6 +170,26 @@ class SkillDetails extends StatelessWidget {
       ),
       body: Center(
         child: Text('Displaying details for skill: $skillId'),
+      ),
+    );
+  }
+}
+
+// Assuming you have a ResetPasswordPage defined elsewhere
+class ResetPasswordPage extends StatelessWidget {
+  final String userId;
+  final String secret;
+
+  ResetPasswordPage({required this.userId, required this.secret});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: Text('Reset Password'),
+      ),
+      body: Center(
+        child: Text('Reset Password for User ID: $userId with Secret: $secret'),
       ),
     );
   }
