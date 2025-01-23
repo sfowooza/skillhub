@@ -18,6 +18,80 @@ import 'package:intl_phone_field/intl_phone_field.dart';
 import 'package:provider/provider.dart';
 import 'package:file_picker/file_picker.dart';
 
+class CategoryMapper {
+  static String toEnumValue(String displayName) {
+    if (displayToEnum.containsKey(displayName)) {
+      return displayToEnum[displayName]!;
+    }
+    return displayName.replaceAll(' & ', '').replaceAll(' ', '');
+  }
+
+  static String toDisplayName(String enumValue) {
+    if (enumToDisplay.containsKey(enumValue)) {
+      return enumToDisplay[enumValue]!;
+    }
+    return enumValue;
+  }
+
+  static final Map<String, String> displayToEnum = {
+    'Engineering': 'Engineering',
+    'IT': 'IT',
+    'Design': 'Design',
+    'Medicine': 'Medicine',
+    'Health & Beauty': 'HealthBeauty',
+    'Farming & Agriculture': 'FarmingAgriculture',
+    'Fashion': 'Fashion',
+    'Leisure & Hospitality': 'LeisureHospitality',
+    'Transport': 'Transport'
+  };
+
+  static final Map<String, String> enumToDisplay = Map.fromEntries(
+    displayToEnum.entries.map((e) => MapEntry(e.value, e.key))
+  );
+}
+
+
+class SubCategoryMapper {
+  // Convert display names to Appwrite enum values
+  static String toEnumValue(String displayName) {
+    if (displayToEnum.containsKey(displayName)) {
+      return displayToEnum[displayName]!;
+    }
+    return displayName.replaceAll(' ', '');
+  }
+
+  // Convert Appwrite enum values to display names
+  static String toDisplayName(String enumValue) {
+    if (enumToDisplay.containsKey(enumValue)) {
+      return enumToDisplay[enumValue]!;
+    }
+    return enumValue.replaceAllMapped(
+      RegExp(r'(?!^)([A-Z])'),
+      (match) => ' ${match.group(1)}'
+    );
+  }
+
+  // Mapping between display names and enum values
+  static final Map<String, String> displayToEnum = {
+    'General Medicine': 'GeneralMedicine',
+    'Graphic Design': 'GraphicDesign',
+    'Data Science': 'DataScience',
+    'Civil': 'Civil',
+    'Mechanical': 'Mechanical',
+    'Electrical': 'Electrical',
+    'AI': 'AI',
+    'Software': 'Software',
+    'Animation': 'Animation',
+    'Illustration': 'Illustration',
+    'Cardiology': 'Cardiology',
+    'Pediatrics': 'Pediatrics',
+  };
+
+  static final Map<String, String> enumToDisplay = Map.fromEntries(
+    displayToEnum.entries.map((e) => MapEntry(e.value, e.key))
+  );
+}
+
 class SkillsPage extends StatefulWidget {
   const SkillsPage({Key? key}) : super(key: key);
 
@@ -39,6 +113,7 @@ class _SkillsPageState extends State<SkillsPage> {
   bool isUploading = false;
   late String selectedCategory;
   late String selectedSubcategory;
+  late TextEditingController firstNameController;
   
 //late String? _whatsappLink;
 
@@ -61,11 +136,17 @@ class _SkillsPageState extends State<SkillsPage> {
     client = appwrite.client;
     storage = Storage(client);
     database = DatabaseAPI(auth: auth);
+     // Initialize the controller
+    firstNameController = TextEditingController(text: userName);
      // _whatsappLink = database.getWhatsappLink() as String?;
+       WidgetsBinding.instance.addPostFrameCallback((_) {
+    context.read<RegistrationFormProvider>().firstName = userName;
+  });
   }
 
   @override
   void dispose() {
+    firstNameController.dispose();
     super.dispose();
   }
 
@@ -175,68 +256,64 @@ class _SkillsPageState extends State<SkillsPage> {
     }
   }
 
-  void uploadEventImageAndCreateSkill() {
-    uploadEventImage().then((value) {
-      if (value != null) {
-        database.createSkill(
-          message: messageTextController.text,
+ void uploadEventImageAndCreateSkill() {
+  uploadEventImage().then((value) {
+    if (value != null) {
+      final provider = context.read<RegistrationFormProvider>();
+      
+      // Convert subcategory to enum value
+       // Convert both category and subcategory to enum values
+      final enumCategory = CategoryMapper.toEnumValue(provider.selectedCategory!);
+      final enumSubcategory = SubCategoryMapper.toEnumValue(
+        provider.selectedSubcategory!
+      );
+
+      database.createSkill(
+        message: messageTextController.text,
+        description: descriptionTextController.text,
+        gmaplocation: _gmaplocationController.text,
+        whatsappLinkController: _whatsappLinkController.text,
+        registrationFields: RegistrationFields(
+          selectedCategory: enumCategory, 
+          selectedSubcategory: enumSubcategory, // Use enum value
+          firstName: provider.firstName!,
+          lastName: provider.lastName!,
+          phoneNumber: provider.phoneNumber!,
+          email: provider.email!,
           description: descriptionTextController.text,
-          gmaplocation: _gmaplocationController.text,
-          whatsappLinkController: _whatsappLinkController.text,
-         
-          registrationFields: RegistrationFields(
-            selectedCategory: context.read<RegistrationFormProvider>().selectedCategory!,
-            selectedSubcategory: context.read<RegistrationFormProvider>().selectedSubcategory!,
-            firstName: context.read<RegistrationFormProvider>().firstName!,
-            lastName: context.read<RegistrationFormProvider>().lastName!,
-            phoneNumber: context.read<RegistrationFormProvider>().phoneNumber!,
-            email: context.read<RegistrationFormProvider>().email!,
-            description: descriptionTextController.text,
-            createdBy: userId,
-            datetime: context.read<RegistrationFormProvider>().datetime!,
-            location: context.read<RegistrationFormProvider>().location!,
-            participants: [],
-            inSoleBusiness: _isSoleBusiness,
-            image: value, // Assign the uploaded file ID or URL to the registrationFields
-          ),
+          createdBy: userId,
+          datetime: provider.datetime!,
+          location: provider.location!,
+          participants: [],
+          inSoleBusiness: _isSoleBusiness,
+          image: value,
+        ),
         latitude: latitude ?? 0.0,
         longitude: longitude ?? 0.0,
-        ).then((value) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text("Skill Created !!")),
-          );
-          Navigator.pop(context);
-
-          showDialog(
-            context: context,
-            builder: (BuildContext context) {
-              return AlertDialog(
-                title: const Text('Success'),
-                content: const Text('Business Skill Added'),
-                actions: [
-                  TextButton(
-                    onPressed: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => const JobOffersStaggeredPage(title: ''),
-                        ),
-                      );
-                    },
-                    child: const Text('OK'),
-                  ),
-                ],
-              );
-            },
-          );
-        });
-      } else {
+      ).then((value) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text("Image upload failed")),
+          const SnackBar(content: Text("Skill Created Successfully!")),
         );
-      }
-    });
-  }
+        
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(
+            builder: (context) => const JobOffersStaggeredPage(title: ''),
+          ),
+        );
+      }).catchError((error) {
+        print('Error creating skill: $error');
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text("Error creating skill: ${error.toString()}")),
+        );
+      });
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Image upload failed")),
+      );
+    }
+  });
+}
 
 
   @override
@@ -325,20 +402,22 @@ class _SkillsPageState extends State<SkillsPage> {
                                       }).toList()
                                     : [],
                               ),
-                            TextFormField(
-                              initialValue: userName,
-                              decoration: const InputDecoration(labelText: 'First Name', prefixIcon: Icon(Icons.people_outlined)),
-                              validator: (value) {
-                                if (value == null || value.isEmpty) {
-                                  return 'Please enter your first name';
-                                }
-                                return null;
-                              },
-                              onChanged: (value) {
-                                context.read<RegistrationFormProvider>().firstName = value;
-                              },
-                            ),
-                            TextFormField(
+  TextFormField(
+    controller: firstNameController,
+    decoration: const InputDecoration(
+      labelText: 'First Name', 
+      prefixIcon: Icon(Icons.people_outlined)
+    ),
+    validator: (value) {
+      if (value == null || value.isEmpty) {
+        return 'Please enter your first name';
+      }
+      return null;
+    },
+    onChanged: (value) {
+      context.read<RegistrationFormProvider>().firstName = value;
+    },
+  ),                       TextFormField(
                               decoration: const InputDecoration(labelText: 'Last Name', prefixIcon: Icon(Icons.people_outlined)),
                               validator: (value) {
                                 if (value == null || value.isEmpty) {
@@ -486,30 +565,68 @@ class _SkillsPageState extends State<SkillsPage> {
                               ],
                             ),
                             SizedBox(height: 20),
-                            ElevatedButton(
-                              onPressed: () async {
-                                final registrationFormProvider = context.read<RegistrationFormProvider>();
-                                if (registrationFormProvider.firstName!.isEmpty ||
-                                    registrationFormProvider.lastName!.isEmpty ||
-                                    registrationFormProvider.phoneNumber!.isEmpty ||
-                                    registrationFormProvider.email!.isEmpty ||
-                                    registrationFormProvider.selectedCategory!.isEmpty ||
-                                    registrationFormProvider.selectedSubcategory!.isEmpty ||
-                                    descriptionTextController.text.isEmpty ||
-                                    registrationFormProvider.datetime!.isEmpty ||
-                                    registrationFormProvider.location!.isEmpty) {
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    SnackBar(
-                                      content: Text(
-                                          "First Name, Last Name, Phone Number, Email, Category, Subcategory, Description, Date & Time, and Location are required."),
-                                    ),
-                                  );
-                                } else if (_formKey.currentState!.validate()) {
-                                  uploadEventImageAndCreateSkill();
-                                }
-                              },
-                              child: const Text('Submit'),
-                            ),
+                           ElevatedButton(
+  onPressed: () async {
+    if (_formKey.currentState!.validate()) {
+      final registrationFormProvider = context.read<RegistrationFormProvider>();
+      
+      // First check if file is selected
+      if (_filePickerResult == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("Please select a business image")),
+        );
+        return;
+      }
+
+      // Check all required fields
+      if (registrationFormProvider.selectedCategory == null ||
+          registrationFormProvider.selectedSubcategory == null ||
+          registrationFormProvider.firstName == null ||
+          registrationFormProvider.firstName!.isEmpty ||
+          registrationFormProvider.lastName == null ||
+          registrationFormProvider.lastName!.isEmpty ||
+          registrationFormProvider.phoneNumber == null ||
+          registrationFormProvider.phoneNumber!.isEmpty ||
+          registrationFormProvider.email == null ||
+          registrationFormProvider.email!.isEmpty ||
+          descriptionTextController.text.isEmpty ||
+          registrationFormProvider.datetime == null ||
+          registrationFormProvider.location == null ||
+          registrationFormProvider.location!.isEmpty ||
+          _gmaplocationController.text.isEmpty ||
+          _whatsappLinkController.text.isEmpty) {
+        
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text(
+              "Please fill in all required fields"
+            ),
+          ),
+        );
+        return;
+      }
+
+      try {
+        // Convert display name to enum value before saving
+        final enumSubcategory = SubCategoryMapper.toEnumValue(
+          registrationFormProvider.selectedSubcategory!
+        );
+        
+        // Upload image and create skill
+        uploadEventImageAndCreateSkill();
+        
+      } catch (e) {
+        print('Error submitting form: $e');
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error: ${e.toString()}'),
+          ),
+        );
+      }
+    }
+  },
+  child: const Text('Submit'),
+),
                           ],
                         )
                       : const Center(),

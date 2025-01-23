@@ -15,6 +15,8 @@ import 'package:skillhub/appwrite/auth_api.dart';
 import 'package:flutter_rating_bar/flutter_rating_bar.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:intl/intl.dart';
+import 'dart:io';
+import 'package:skillhub/utils/category_mappers.dart';
 
 class SkillDetails extends StatefulWidget {
   final Document data;
@@ -174,13 +176,41 @@ class _SkillDetailsState extends State<SkillDetails> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    description,
-                    style: TextStyle(
-                      fontSize: 18,
-                      color: BaseColors().baseTextColor,
-                    ),
-                  ),
+                  Row(
+ mainAxisAlignment: MainAxisAlignment.spaceBetween,
+ children: [
+   Text(
+     "First Name",
+     style: TextStyle(
+       fontSize: 20,
+       fontWeight: FontWeight.bold, 
+       color: BaseColors().customTheme.primaryColor,
+     ),
+   ),
+   Row(
+     children: [
+       Icon(Icons.phone, color: BaseColors().customTheme.primaryColor),
+       SizedBox(width: 8),
+       Text(
+         widget.data.data["phoneNumber"] as String? ?? "No phone number",
+         style: TextStyle(
+           fontSize: 16,
+           color: BaseColors().customTheme.primaryColor,
+           fontWeight: FontWeight.w500,
+         ),
+       ),
+     ],
+   ),
+ ],
+),
+SizedBox(height: 8),
+Text(
+ description,
+ style: TextStyle(
+   fontSize: 18,
+   color: BaseColors().baseTextColor,
+ ),
+),
                   SizedBox(height: 16),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -193,131 +223,163 @@ class _SkillDetailsState extends State<SkillDetails> {
                           fontSize: 16,
                         ),
                       ),
-                      IconButton(
+ IconButton(
   icon: Icon(Icons.share, color: BaseColors().customTheme.primaryColor),
   onPressed: () async {
-    final String shareLink = 'skillhub://skill/${widget.data.$id}';
+    final String shareLink = 'https://skillhub.avodahsystems.com/skillhub/skill/${widget.data.$id}';
     final String text = 'Check out this skill on SkillHub: $firstName\n$shareLink';
-    await Share.share(text);
+    
+    // Assuming you have an image URL or path for the skill
+    final String imageUrl = 'URL_OR_PATH_TO_YOUR_IMAGE'; // Replace with actual URL or path
+    
+    // Check if the app is running on Android or iOS
+    if (Platform.isAndroid || Platform.isIOS) {
+      // Share with text
+      await Share.share(
+        text,
+        subject: 'Skill on SkillHub',
+      );
+      
+      // For WhatsApp sharing, since shareToWhatsApp isn't available, we'll use share with package
+      // Note: This is a workaround. For direct WhatsApp sharing, you might need to use a different package or check for updates in share_plus
+      final RenderBox? box = context.findRenderObject() as RenderBox?;
+      if (box != null) {
+        await Share.share(
+          text,
+          subject: 'Skill on SkillHub',
+          sharePositionOrigin: box.localToGlobal(Offset.zero) & box.size,
+        );
+      }
+    } else {
+      // For other platforms, just share the text
+      await Share.share(text);
+    }
   },
 ),
-                      // IconButton(
-                      //   icon: Icon(Icons.share, color: BaseColors().customTheme.primaryColor),
-                      //   onPressed: () async {
-                      //     final String shareLink = 'https://skillhub.avodahsystems.com/skillhub/skill/${widget.data.$id}';
-                      //     final String text = 'Check out this skill on SkillHub: $firstName\n$shareLink';
-                      //     await Share.share(text);
-                      //   },
-                      // ),
                     ],
                   ),
                   SizedBox(height: 16),
-                  Text(
-                    "Rate this skill:",
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                      color: BaseColors().customTheme.primaryColor,
-                    ),
-                  ),
-                  SizedBox(height: 8),
-                  RatingBar.builder(
-                    initialRating: userRating,
-                    minRating: 1,
-                    direction: Axis.horizontal,
-                    allowHalfRating: true,
-                    itemCount: 5,
-                    itemPadding: EdgeInsets.symmetric(horizontal: 4.0),
-                    itemBuilder: (context, _) => Icon(
-                      Icons.star,
-                      color: Colors.amber,
-                    ),
-                    onRatingUpdate: _updateRating,
-                  ),
-                  SizedBox(height: 16),
-                  Text(
-                    "More Info",
-                    style: TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
-                      color: BaseColors().customTheme.primaryColor,
-                    ),
-                  ),
-                  SizedBox(height: 8),
-                  ListTile(
-                    leading: Icon(isInPerson ? Icons.person : Icons.computer),
-                    title: Text(
-                      "Skill Type: ${isInPerson ? "In Person" : "Virtual"}",
-                      style: TextStyle(color: BaseColors().baseTextColor),
-                    ),
-                  ),
-                  ListTile(
-                    leading: Icon(Icons.category),
-                    title: Text(
-                      "Category: $selectedCategory",
-                      style: TextStyle(color: BaseColors().baseTextColor),
-                    ),
-                    onTap: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(builder: (context) => MyHomeCategoryPage()),
-                      );
-                    },
-                  ),
-                  SizedBox(height: 16),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                    children: [
-                      ElevatedButton.icon(
-                        onPressed: () {
-                          _launchUrl(
-                              "https://www.google.com/maps/search/?api=1&query=$location");
-                        },
-                        icon: Icon(Icons.map),
-                        label: Text("Open in Maps",style:TextStyle(color:Colors.white)),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: BaseColors().customTheme.primaryColor,
-                        ),
-                      ),
-                      ElevatedButton(
-                        onPressed: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                                builder: (context) => ViewLocation(documentId: widget.data.$id)),
-                          );
-                        },
-                        child: Text('View Location',style:TextStyle(color:Colors.white)),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: BaseColors().customTheme.primaryColor,
-                        ),
-                      ),
-                    ],
-                  ),
-                  SizedBox(height: 16),
-                  Center(
-                    child: ElevatedButton.icon(
-                      onPressed: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(builder: (context) => ViewWhatsappLink()),
-                        );
-                      },
-                      icon: Image.asset(
-                        'assets/logo_skillshub.png',
-                        width: 24,
-                        height: 24,
-                        color: Colors.white,
-                      ),
-                      label: Text('View WhatsApp Biz Catalogue'),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Color(0xFF25D366),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(30),
-                        ),
-                      ),
-                    ),
-                  ),
+              Text(
+  "Rate this skill:",
+  style: TextStyle(
+    fontSize: 18,
+    fontWeight: FontWeight.bold,
+    color: BaseColors().customTheme.primaryColor,
+  ),
+),
+SizedBox(height: 8),
+RatingBar.builder(
+  initialRating: userRating,
+  minRating: 1,
+  direction: Axis.horizontal,
+  allowHalfRating: true,
+  itemCount: 5,
+  itemPadding: EdgeInsets.symmetric(horizontal: 4.0),
+  itemBuilder: (context, _) => Icon(
+    Icons.star,
+    color: Colors.amber,
+  ),
+  onRatingUpdate: _updateRating,
+),
+Divider(  // Added divider before More Info
+  color: Colors.grey.shade300,
+  thickness: 1,
+  height: 32,
+),
+Text(
+  "More Info",
+  style: TextStyle(
+    fontSize: 20,
+    fontWeight: FontWeight.bold,
+    color: BaseColors().customTheme.primaryColor,
+  ),
+),
+SizedBox(height: 8),
+ListTile(
+  leading: Icon(isInPerson ? Icons.person : Icons.computer),
+  title: Text(
+    "Skill Type: ${isInPerson ? "In Person" : "Virtual"}",
+    style: TextStyle(color: BaseColors().baseTextColor),
+  ),
+),
+ListTile(
+  leading: Icon(Icons.category),
+  title: Text(
+    "Category: ${CategoryMapper.toDisplayName(selectedCategory)}",
+    style: TextStyle(color: BaseColors().baseTextColor),
+  ),
+  onTap: () {
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => MyHomeCategoryPage()),
+    );
+  },
+),
+ListTile(
+  leading: Icon(Icons.layers_outlined),
+  title: Text(
+    "Subcategory: ${SubCategoryMapper.toDisplayName(widget.data.data["selectedSubcategory"] as String? ?? "Not specified")}",
+    style: TextStyle(color: BaseColors().baseTextColor),
+  ),
+),
+Divider(  // Added divider after subcategory
+  color: Colors.grey.shade300,
+  thickness: 1,
+  height: 32,
+),
+Row(
+  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+  children: [
+    ElevatedButton.icon(
+      onPressed: () {
+        _launchUrl(
+            "https://www.google.com/maps/search/?api=1&query=$location");
+      },
+      icon: Icon(Icons.map),
+      label: Text("Open in Maps",style:TextStyle(color:Colors.white)),
+      style: ElevatedButton.styleFrom(
+        backgroundColor: BaseColors().customTheme.primaryColor,
+      ),
+    ),
+    ElevatedButton(
+      onPressed: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+              builder: (context) => ViewLocation(documentId: widget.data.$id)),
+        );
+      },
+      child: Text('View Location',style:TextStyle(color:Colors.white)),
+      style: ElevatedButton.styleFrom(
+        backgroundColor: BaseColors().customTheme.primaryColor,
+      ),
+    ),
+  ],
+),
+SizedBox(height: 16),
+Center(
+  child: ElevatedButton.icon(
+    onPressed: () {
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (context) => ViewWhatsappLink()),
+      );
+    },
+    icon: Image.asset(
+      'assets/logo_skillshub.png',
+      width: 24,
+      height: 24,
+      color: Colors.white,
+    ),
+    label: Text('View WhatsApp Biz Catalogue'),
+    style: ElevatedButton.styleFrom(
+      backgroundColor: Color(0xFF25D366),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(30),
+      ),
+    ),
+  ),
+),
                   SizedBox(height: 16),
                   if (isAuthenticated)
                     SizedBox(

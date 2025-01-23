@@ -13,6 +13,39 @@ import 'package:skillhub/pages/Staggered/subCategory_homePag.dart';
 import 'package:skillhub/pages/homePages/skills_page.dart';
 import 'package:skillhub/providers/registration_form_providers.dart';
 
+
+class CategoryMapper {
+  static String toEnumValue(String displayName) {
+    if (displayToEnum.containsKey(displayName)) {
+      return displayToEnum[displayName]!;
+    }
+    return displayName.replaceAll(' & ', '').replaceAll(' ', '');
+  }
+
+  static String toDisplayName(String enumValue) {
+    if (enumToDisplay.containsKey(enumValue)) {
+      return enumToDisplay[enumValue]!;
+    }
+    return enumValue;
+  }
+
+  static final Map<String, String> displayToEnum = {
+    'Engineering': 'Engineering',
+    'IT': 'IT',
+    'Design': 'Design',
+    'Medicine': 'Medicine',
+    'Health & Beauty': 'HealthBeauty',
+    'Farming & Agriculture': 'FarmingAgriculture',
+    'Fashion': 'Fashion',
+    'Leisure & Hospitality': 'LeisureHospitality',
+    'Transport': 'Transport'
+  };
+
+  static final Map<String, String> enumToDisplay = Map.fromEntries(
+    displayToEnum.entries.map((e) => MapEntry(e.value, e.key))
+  );
+}
+
 class CategoryHomePage extends StatefulWidget {
   const CategoryHomePage({Key? key}) : super(key: key);
 
@@ -24,7 +57,7 @@ class _CategoryHomePageState extends State<CategoryHomePage> {
   Map<String, List<Document>> groupedMessages = {};
   String searchQuery = '';
   bool isLoggedIn = false;
-  List<String> allCategories = ['Engineering', 'IT', 'Design', 'Medicine', 'Health & Beauty', 'Farming & Agriculture', 'Fashion'];
+  List<String> allCategories = ['Engineering', 'IT', 'Design', 'Medicine', 'Health & Beauty', 'Farming & Agriculture', 'Fashion', 'Leisure & Hospitality', 'Transport'];
   List<String> filteredCategories = [];
 
   Client client = Client();
@@ -87,6 +120,10 @@ class _CategoryHomePageState extends State<CategoryHomePage> {
         return 'https://images.pexels.com/photos/376464/pexels-photo-376464.jpeg?auto=compress&cs=tinysrgb&h=750&w=1260';
       case 'Fashion':
         return 'https://images.pexels.com/photos/3769022/pexels-photo-3769022.jpeg?auto=compress&cs=tinysrgb&h=750&w=1260';
+      case 'Leisure & Hospitality':
+        return 'https://images.pexels.com/photos/30339550/pexels-photo-30339550.jpeg?auto=compress&cs=tinysrgb&h=750&w=1260';
+      case 'Transport':
+        return 'https://images.pexels.com/photos/5648413/pexels-photo-5648413.jpeg?auto=compress&cs=tinysrgb&h=750&w=1260';
       default:
         return 'https://images.pexels.com/photos/5222/snow-mountains-forest-winter.jpg?auto=compress&cs=tinysrgb&dpr=2&h=750&w=1260';
     }
