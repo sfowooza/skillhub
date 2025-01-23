@@ -18,6 +18,68 @@ import 'package:intl/intl.dart';
 import 'dart:io';
 import 'package:skillhub/utils/category_mappers.dart';
 
+class InfoTile extends StatelessWidget {
+  final IconData icon;
+  final String title;
+  final String value;
+  final VoidCallback? onTap;
+
+  const InfoTile({
+    Key? key,
+    required this.icon,
+    required this.title,
+    required this.value,
+    this.onTap,
+  }) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onTap,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 8.0),
+        child: Row(
+          children: [
+            Icon(
+              icon,
+              size: 24,
+              color: BaseColors().customTheme.primaryColor,
+            ),
+            SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: TextStyle(
+                      color: Colors.grey[600],
+                      fontSize: 14,
+                    ),
+                  ),
+                  SizedBox(height: 4),
+                  Text(
+                    value,
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            if (onTap != null)
+              Icon(
+                Icons.chevron_right,
+                color: Colors.grey[400],
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
 class SkillDetails extends StatefulWidget {
   final Document data;
 
@@ -133,36 +195,54 @@ class _SkillDetailsState extends State<SkillDetails> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(
-                          firstName,
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 24,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        SizedBox(height: 8),
-                        Row(
-                          children: [
-                            Icon(Icons.calendar_today, color: Colors.white, size: 16),
-                            SizedBox(width: 4),
-                            Text(
-                              "${formatDate(datetime)} ${formatTime(datetime)}",
-                              style: TextStyle(color: Colors.white),
-                            ),
-                          ],
-                        ),
-                        SizedBox(height: 4),
-                        Row(
-                          children: [
-                            Icon(Icons.location_on, color: Colors.white, size: 16),
-                            SizedBox(width: 4),
-                            Text(
-                              location,
-                              style: TextStyle(color: Colors.white),
-                            ),
-                          ],
-                        ),
+                      Text(
+  firstName,
+  style: TextStyle(
+    color: Colors.white,
+    fontSize: 28, // Increased size
+    fontWeight: FontWeight.bold,
+  ),
+),
+SizedBox(height: 4),
+Row(
+  children: [
+    Container(
+      padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: Colors.white.withOpacity(0.2),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Row(
+        children: [
+          Icon(Icons.calendar_today, color: Colors.white, size: 14),
+          SizedBox(width: 4),
+          Text(
+            formatDate(datetime),
+            style: TextStyle(color: Colors.white),
+          ),
+        ],
+      ),
+    ),
+    SizedBox(width: 8),
+    Container(
+      padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: Colors.white.withOpacity(0.2),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Row(
+        children: [
+          Icon(Icons.access_time, color: Colors.white, size: 14),
+          SizedBox(width: 4),
+          Text(
+            formatTime(datetime),
+            style: TextStyle(color: Colors.white),
+          ),
+        ],
+      ),
+    ),
+  ],
+),
                       ],
                     ),
                   ),
@@ -170,67 +250,113 @@ class _SkillDetailsState extends State<SkillDetails> {
               ),
             ),
           ),
-          SliverToBoxAdapter(
-            child: Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
- mainAxisAlignment: MainAxisAlignment.spaceBetween,
- children: [
-   Text(
-     "First Name",
-     style: TextStyle(
-       fontSize: 20,
-       fontWeight: FontWeight.bold, 
-       color: BaseColors().customTheme.primaryColor,
-     ),
-   ),
-   Row(
-     children: [
-       Icon(Icons.phone, color: BaseColors().customTheme.primaryColor),
-       SizedBox(width: 8),
-       Text(
-         widget.data.data["phoneNumber"] as String? ?? "No phone number",
-         style: TextStyle(
-           fontSize: 16,
-           color: BaseColors().customTheme.primaryColor,
-           fontWeight: FontWeight.w500,
-         ),
-       ),
-     ],
-   ),
- ],
-),
-SizedBox(height: 8),
-Text(
- description,
- style: TextStyle(
-   fontSize: 18,
-   color: BaseColors().baseTextColor,
- ),
-),
-                  SizedBox(height: 16),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        "${participants.length} person(s) like this!",
-                        style: TextStyle(
-                          color: BaseColors().customTheme.primaryColor,
-                          fontWeight: FontWeight.w500,
-                          fontSize: 16,
+         SliverToBoxAdapter(
+  child: Padding(
+    padding: const EdgeInsets.all(16.0),
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // First Card - Main Content
+        Card(
+          elevation: 0,
+          color: Colors.grey.shade50,
+          margin: EdgeInsets.symmetric(vertical: 8),
+          child: Padding(
+            padding: EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          "Contact Info",
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                            color: BaseColors().customTheme.primaryColor,
+                          ),
                         ),
+                        SizedBox(height: 4),
+                        Text(
+                          firstName,
+                          style: TextStyle(fontSize: 16),
+                        ),
+                      ],
+                    ),
+                    Container(
+                      padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                      decoration: BoxDecoration(
+                        color: BaseColors().customTheme.primaryColor.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(20),
                       ),
- IconButton(
-  icon: Icon(Icons.share, color: BaseColors().customTheme.primaryColor),
-  onPressed: () async {
+                      child: Row(
+                        children: [
+                          Icon(Icons.phone, 
+                            color: BaseColors().customTheme.primaryColor,
+                            size: 16,
+                          ),
+                          SizedBox(width: 6),
+                          Text(
+                            widget.data.data["phoneNumber"] as String? ?? "No phone",
+                            style: TextStyle(
+                              fontSize: 14,
+                              color: BaseColors().customTheme.primaryColor,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+                Divider(height: 24),
+                Text(
+                  "About",
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: BaseColors().customTheme.primaryColor,
+                  ),
+                ),
+                SizedBox(height: 8),
+                Text(
+                  description,
+                  style: TextStyle(
+                    fontSize: 16,
+                    height: 1.5,
+                    color: BaseColors().baseTextColor,
+                  ),
+                ),
+                Divider(height: 24),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Row(
+                      children: [
+                        Icon(
+                          Icons.thumb_up,
+                          size: 16,
+                          color: BaseColors().customTheme.primaryColor,
+                        ),
+                        SizedBox(width: 8),
+                        Text(
+                          "${participants.length} likes",
+                          style: TextStyle(
+                            color: BaseColors().customTheme.primaryColor,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ],
+                    ),
+                    IconButton(
+                      icon: Icon(Icons.share),
+                      color: BaseColors().customTheme.primaryColor,
+                      onPressed: () async {
     final String shareLink = 'https://skillhub.avodahsystems.com/skillhub/skill/${widget.data.$id}';
     final String text = 'Check out this skill on SkillHub: $firstName\n$shareLink';
-    
-    // Assuming you have an image URL or path for the skill
-    final String imageUrl = 'URL_OR_PATH_TO_YOUR_IMAGE'; // Replace with actual URL or path
     
     // Check if the app is running on Android or iOS
     if (Platform.isAndroid || Platform.isIOS) {
@@ -240,8 +366,7 @@ Text(
         subject: 'Skill on SkillHub',
       );
       
-      // For WhatsApp sharing, since shareToWhatsApp isn't available, we'll use share with package
-      // Note: This is a workaround. For direct WhatsApp sharing, you might need to use a different package or check for updates in share_plus
+      // For WhatsApp sharing
       final RenderBox? box = context.findRenderObject() as RenderBox?;
       if (box != null) {
         await Share.share(
@@ -254,79 +379,16 @@ Text(
       // For other platforms, just share the text
       await Share.share(text);
     }
-  },
-),
-                    ],
-                  ),
-                  SizedBox(height: 16),
-              Text(
-  "Rate this skill:",
-  style: TextStyle(
-    fontSize: 18,
-    fontWeight: FontWeight.bold,
-    color: BaseColors().customTheme.primaryColor,
-  ),
-),
-SizedBox(height: 8),
-RatingBar.builder(
-  initialRating: userRating,
-  minRating: 1,
-  direction: Axis.horizontal,
-  allowHalfRating: true,
-  itemCount: 5,
-  itemPadding: EdgeInsets.symmetric(horizontal: 4.0),
-  itemBuilder: (context, _) => Icon(
-    Icons.star,
-    color: Colors.amber,
-  ),
-  onRatingUpdate: _updateRating,
-),
-Divider(  // Added divider before More Info
-  color: Colors.grey.shade300,
-  thickness: 1,
-  height: 32,
-),
-Text(
-  "More Info",
-  style: TextStyle(
-    fontSize: 20,
-    fontWeight: FontWeight.bold,
-    color: BaseColors().customTheme.primaryColor,
-  ),
-),
-SizedBox(height: 8),
-ListTile(
-  leading: Icon(isInPerson ? Icons.person : Icons.computer),
-  title: Text(
-    "Skill Type: ${isInPerson ? "In Person" : "Virtual"}",
-    style: TextStyle(color: BaseColors().baseTextColor),
-  ),
-),
-ListTile(
-  leading: Icon(Icons.category),
-  title: Text(
-    "Category: ${CategoryMapper.toDisplayName(selectedCategory)}",
-    style: TextStyle(color: BaseColors().baseTextColor),
-  ),
-  onTap: () {
-    Navigator.push(
-      context,
-      MaterialPageRoute(builder: (context) => MyHomeCategoryPage()),
-    );
-  },
-),
-ListTile(
-  leading: Icon(Icons.layers_outlined),
-  title: Text(
-    "Subcategory: ${SubCategoryMapper.toDisplayName(widget.data.data["selectedSubcategory"] as String? ?? "Not specified")}",
-    style: TextStyle(color: BaseColors().baseTextColor),
-  ),
-),
-Divider(  // Added divider after subcategory
-  color: Colors.grey.shade300,
-  thickness: 1,
-  height: 32,
-),
+},
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ),
+
+// Location Buttons
 Row(
   mainAxisAlignment: MainAxisAlignment.spaceEvenly,
   children: [
@@ -356,7 +418,8 @@ Row(
     ),
   ],
 ),
-SizedBox(height: 16),
+
+// WhatsApp Button
 Center(
   child: ElevatedButton.icon(
     onPressed: () {
@@ -380,45 +443,132 @@ Center(
     ),
   ),
 ),
-                  SizedBox(height: 16),
-                  if (isAuthenticated)
-                    SizedBox(
-                      height: 50,
-                      width: double.infinity,
-                      child: ElevatedButton(
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: isRSVPedEvent ? Colors.grey : BaseColors().customTheme.primaryColor,
-                        ),
-                        onPressed: isRSVPedEvent
-                            ? null
-                            : () {
-                                database.rsvpEvent(participants, widget.data.$id).then((value) {
-                                  if (value) {
-                                    setState(() {
-                                      isRSVPedEvent = true;
-                                    });
-                                    ScaffoldMessenger.of(context)
-                                        .showSnackBar(SnackBar(content: Text("RSVP Successful!")));
-                                  } else {
-                                    ScaffoldMessenger.of(context)
-                                        .showSnackBar(SnackBar(content: Text("Something went wrong. Try Again.")));
-                                  }
-                                });
-                              },
-                        child: Text(
-                          isRSVPedEvent ? "Attending Event" : "Like this? Click!",
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontWeight: FontWeight.w900,
-                            fontSize: 20,
-                          ),
-                        ),
-                      ),
-                    ),
-                ],
-              ),
-            ),
+// Rating Card
+Card(
+  elevation: 0,
+  margin: EdgeInsets.symmetric(vertical: 8),
+  child: Padding(
+    padding: EdgeInsets.all(16),
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          "Rate this skill",
+          style: TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.bold,
+            color: BaseColors().customTheme.primaryColor,
           ),
+        ),
+        SizedBox(height: 12),
+        Center(
+          child: RatingBar.builder(
+            initialRating: userRating,
+            minRating: 1,
+            direction: Axis.horizontal,
+            allowHalfRating: true,
+            itemCount: 5,
+            itemPadding: EdgeInsets.symmetric(horizontal: 4),
+            itemBuilder: (context, _) => Icon(
+              Icons.star,
+              color: Colors.amber,
+            ),
+            onRatingUpdate: _updateRating,
+          ),
+        ),
+      ],
+    ),
+  ),
+),
+
+// More Info Card
+Card(
+  elevation: 0,
+  margin: EdgeInsets.symmetric(vertical: 8),
+  child: Padding(
+    padding: EdgeInsets.all(16),
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          "More Info",
+          style: TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.bold,
+            color: BaseColors().customTheme.primaryColor,
+          ),
+        ),
+        SizedBox(height: 12),
+        InfoTile(
+          icon: isInPerson ? Icons.person : Icons.computer,
+          title: "Type",
+          value: isInPerson ? "In Person" : "Virtual",
+        ),
+        InfoTile(
+          icon: Icons.category,
+          title: "Category",
+          value: CategoryMapper.toDisplayName(selectedCategory),
+          onTap: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => MyHomeCategoryPage()),
+            );
+          },
+        ),
+        InfoTile(
+          icon: Icons.layers_outlined,
+          title: "Subcategory",
+          value: SubCategoryMapper.toDisplayName(
+            widget.data.data["selectedSubcategory"] as String? ?? "Not specified"
+          ),
+        ),
+      ],
+    ),
+  ),
+),
+
+
+// Like Button
+if (isAuthenticated)
+  SizedBox(
+    height: 50,
+    width: double.infinity,
+    child: ElevatedButton(
+      style: ElevatedButton.styleFrom(
+        backgroundColor: isRSVPedEvent ? Colors.grey : BaseColors().customTheme.primaryColor,
+      ),
+      onPressed: isRSVPedEvent
+          ? null
+          : () {
+              database.rsvpEvent(participants, widget.data.$id).then((value) {
+                if (value) {
+                  setState(() {
+                    isRSVPedEvent = true;
+                  });
+                  ScaffoldMessenger.of(context)
+                      .showSnackBar(SnackBar(content: Text("RSVP Successful!")));
+                } else {
+                  ScaffoldMessenger.of(context)
+                      .showSnackBar(SnackBar(content: Text("Something went wrong. Try Again.")));
+                }
+              });
+            },
+      child: Text(
+        isRSVPedEvent ? "Attending Event" : "Like this? Click!",
+        style: TextStyle(
+          color: Colors.white,
+          fontWeight: FontWeight.w900,
+          fontSize: 20,
+        ),
+      ),
+    ),
+  ),
+        // Your existing code continues here...
+        
+      ],
+    ),
+  ),
+),
         ],
       ),
     );
