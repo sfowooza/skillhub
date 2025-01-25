@@ -94,7 +94,11 @@ signIn() async {
       Navigator.push(
         context,
         MaterialPageRoute(
-          builder: (context) => const JobOffersStaggeredPage(title: 'Job Offers')
+          // builder: (context) => const JobOffersStaggeredPage(title: 'Job Offers')
+          builder: (context) => const JobOffersStaggeredPage(
+  title: 'Job Offers',
+  selectedSubCategory: null, // or 'All'
+),
         ),
       );
       

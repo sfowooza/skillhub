@@ -17,7 +17,10 @@ import 'package:flutter/material.dart';
 final Map<String, WidgetBuilder> routes = {
   //'/': (context) => const MyHomePage(title: 'Explore SkillsHub',),
   '/':(context) => MyHomeCategoryPage(),
-   '/jobs': (context) => const JobOffersStaggeredPage(title: '',),
+   '/jobs': (context) => const JobOffersStaggeredPage(
+  title: '',
+  selectedSubCategory: null, // or 'All' depending on your preference
+),
   // '/messages': (context) => const MessagesPage(),
   // '/account': (context) => const AccountPage(),
    '/login': (context) => const LoginPage(),

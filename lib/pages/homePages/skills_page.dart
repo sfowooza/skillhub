@@ -298,7 +298,11 @@ class _SkillsPageState extends State<SkillsPage> {
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(
-            builder: (context) => const JobOffersStaggeredPage(title: ''),
+            // builder: (context) => const JobOffersStaggeredPage(title: ''),
+            builder: (context) => const JobOffersStaggeredPage(
+  title: '',
+  selectedSubCategory: null, // or 'All'
+),
           ),
         );
       }).catchError((error) {

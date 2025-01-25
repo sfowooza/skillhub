@@ -192,6 +192,20 @@ class _SubCategoryHomePageState extends State<SubCategoryHomePage> {
     return imageUrls[enumValue] ?? 'https://images.pexels.com/photos/5222/snow-mountains-forest-winter.jpg?auto=compress&cs=tinysrgb&dpr=2&h=750&w=1260';
   }
 
+// void _viewMessage(Document message, String displayName) {
+//   final enumValue = SubCategoryMapper.toEnumValue(displayName);
+//   print('Viewing message for category: $displayName (enum: $enumValue)');
+  
+//   Navigator.push(
+//     context,
+//     MaterialPageRoute(
+//       builder: (context) => JobOffersStaggeredPage(
+//         title: displayName,
+//         selectedSubCategory: enumValue, // Add this parameter
+//       ),
+//     ),
+//   );
+// }
 void _viewMessage(Document message, String displayName) {
   final enumValue = SubCategoryMapper.toEnumValue(displayName);
   print('Viewing message for category: $displayName (enum: $enumValue)');
@@ -201,6 +215,7 @@ void _viewMessage(Document message, String displayName) {
     MaterialPageRoute(
       builder: (context) => JobOffersStaggeredPage(
         title: displayName,
+        selectedSubCategory: enumValue,
       ),
     ),
   );
