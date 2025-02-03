@@ -1,4 +1,4 @@
-name: Deploy my App to Google Play
+name: Deploy Skillhub to Google Play
 
 on:
   push:
