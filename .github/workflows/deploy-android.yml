@@ -1,4 +1,4 @@
-name: Deploy Flutter App to Google Play
+name: Deploy my App to Google Play
 
 on:
   push:
