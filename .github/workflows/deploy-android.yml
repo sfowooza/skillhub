@@ -19,6 +19,11 @@ jobs:
           flutter-version: '3.x'  # Specify the Flutter version you need
           channel: 'stable'
       - run: flutter pub get
+
+      # Clean the project to ensure no debug artifacts remain
+      - run: flutter clean
+
+      # Build the app bundle in release mode
       - run: flutter build appbundle --release  # This builds an App Bundle, which is recommended for Google Play
       
       # Debug step to inspect Base64 secrets

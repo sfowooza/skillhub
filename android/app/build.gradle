@@ -47,10 +47,9 @@ android {
         versionCode flutterVersionCode.toInteger()
         versionName flutterVersionName
     }
-    signingConfigs {
+       signingConfigs {
         release {
-            // Use environment variables or secrets for CI/CD
-            storeFile file('upload-keystore.jks')
+            storeFile file('../release-keystore.jks')
             storePassword System.getenv("STORE_PASSWORD")
             keyAlias System.getenv("KEY_ALIAS")
             keyPassword System.getenv("KEY_PASSWORD")
@@ -59,7 +58,10 @@ android {
 
     buildTypes {
         release {
-            signingConfig signingConfigs.debug
+            signingConfig signingConfigs.release
+            ndk {
+                debugSymbolLevel 'SYMBOL_TABLE'
+            }
             // Other release-specific configurations can go here
             minifyEnabled true
             shrinkResources true
