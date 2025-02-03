@@ -39,7 +39,7 @@ void main() async {
 class MyApp extends StatefulWidget {
   final Client client;
 
-  MyApp({super.key, required this.client});
+  const MyApp({Key? key, required this.client}) : super(key: key);
 
   @override
   _MyAppState createState() => _MyAppState();
@@ -49,6 +49,7 @@ class _MyAppState extends State<MyApp> {
   final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
   late AppLinks _appLinks;
   StreamSubscription<Uri>? _linkSubscription;
+  bool _isHandlingDeepLink = false;
 
   @override
   void initState() {
@@ -72,37 +73,42 @@ class _MyAppState extends State<MyApp> {
       }
     });
 
-    // Handle any initial links
+    // Handle any initial links when the app is launched
     final initialLink = await _appLinks.getInitialLink();
     if (initialLink != null) {
       handleDeepLink(initialLink);
     }
   }
 
-  void handleDeepLink(Uri uri) {
-    // Handle skill details deep link
-    if (uri.pathSegments.length >= 2 && uri.pathSegments[0] == 'skill') {
-      String skillId = uri.pathSegments[1];
-      // Navigate to the SkillDetails page with the given skillId
-      navigatorKey.currentState?.pushNamed('/skill/$skillId');
-    }
-    // Handle reset password deep link
-    else if (uri.path == 'reset-password') {
-      final userId = uri.queryParameters['userId'];
-      final secret = uri.queryParameters['secret'];
-      
-      if (userId != null && secret != null) {
-        navigatorKey.currentState?.push(
-          MaterialPageRoute(
-            builder: (context) => ResetPasswordPage(
-              userId: userId,
-              secret: secret,
-            ),
+ void handleDeepLink(Uri uri) {
+  debugPrint('Handling deep link: ${uri.toString()}');
+  if (uri.path == '/reset-password') {
+    final userId = uri.queryParameters['userId'];
+    final secret = uri.queryParameters['secret'];
+    
+    if (userId != null && secret != null) {
+      debugPrint('Navigating to ResetPasswordPage with userId: $userId');
+      setState(() => _isHandlingDeepLink = true); // Make sure this is in a stateful context
+      navigatorKey.currentState?.pushAndRemoveUntil(
+        MaterialPageRoute(
+          builder: (context) => ResetPasswordPage(
+            userId: userId,
+            secret: secret,
           ),
-        );
-      }
+        ),
+        (route) => false,
+      ).then((value) {
+        debugPrint('Navigation to ResetPasswordPage completed');
+        setState(() => _isHandlingDeepLink = false); // Reset flag after navigation
+      }).catchError((error) {
+        debugPrint('Error during navigation: $error');
+        setState(() => _isHandlingDeepLink = false); // Reset flag even on error
+      });
+    } else {
+      debugPrint('User ID or Secret is null, navigation failed.');
     }
   }
+}
 
   @override
   Widget build(BuildContext context) {
@@ -143,7 +149,7 @@ class _MyAppState extends State<MyApp> {
         );
       },
       debugShowCheckedModeBanner: false,
-      home: const CheckSessions(),
+      home: _isHandlingDeepLink ? null : const CheckSessions(),
     );
   }
 }
@@ -160,7 +166,7 @@ class MyHttpOverrides extends HttpOverrides {
 class SkillDetails extends StatelessWidget {
   final String skillId;
 
-  SkillDetails({required this.skillId});
+  const SkillDetails({Key? key, required this.skillId}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
@@ -175,12 +181,11 @@ class SkillDetails extends StatelessWidget {
   }
 }
 
-// Assuming you have a ResetPasswordPage defined elsewhere
 class ResetPasswordPage extends StatelessWidget {
   final String userId;
   final String secret;
 
-  ResetPasswordPage({required this.userId, required this.secret});
+  const ResetPasswordPage({Key? key, required this.userId, required this.secret}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {

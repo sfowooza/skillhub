@@ -156,7 +156,7 @@ Future<String> createUser({required String email, required String password, requ
     return await account.createRecovery(email: email, url: url);
   }
 
-  // In your AuthAPI class
+
 Future<void> updateRecovery({
   required String userId,
   required String secret,

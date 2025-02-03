@@ -169,7 +169,7 @@ void createAccount() async {
                 alignment: Alignment.centerLeft,
                 padding: const EdgeInsets.all(10),
                 child: Text(
-                  'SkillsHub helps you connect to jobs in Uganda.',
+                  'SkillsHub helps you connect to skilled labour & Jobs in Uganda.',
                   style: GoogleFonts.poppins(
                     fontWeight: FontWeight.w400,
                     fontSize: 16,

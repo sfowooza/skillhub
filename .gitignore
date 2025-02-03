@@ -30,7 +30,7 @@ migrate_working_dir/
 .pub-cache/
 .pub/
 /build/
-
+/adnroid/lib/constants/constants.dart
 # Symbolication related
 app.*.symbols
 
@@ -41,3 +41,7 @@ app.*.map.json
 /android/app/debug
 /android/app/profile
 /android/app/release
+/adnroid/key.properties
+android/upload-keystore.jks
+/lib/appwrite/constants/constants.dart
+

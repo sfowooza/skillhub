@@ -2,6 +2,7 @@ import 'package:appwrite/appwrite.dart';
 import 'package:flutter/material.dart';
 import 'package:skillhub/appwrite/auth_api.dart';
 import 'package:skillhub/pages/Auth_screens/login_page.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 
 class Menu extends StatefulWidget {
@@ -19,11 +20,9 @@ class _MenuState extends State<Menu> with SingleTickerProviderStateMixin {
  
 
   static const _menuTitles = [
-    'Service Providers',
-    'Products Listing',
-    'Job Listings',
-    'OpenCVs',
     'Login',
+    'Privacy Policy',
+    'Documentation',
   ];
 
   static const _initialDelayTime = Duration(milliseconds: 50);
@@ -119,71 +118,91 @@ class _MenuState extends State<Menu> with SingleTickerProviderStateMixin {
     );
   }
 
-  List<Widget> _buildListItems() {
-    final listItems = <Widget>[];
-    for (var i = 0; i < _menuTitles.length; ++i) {
-      listItems.add(
-        GestureDetector(
-          onTap: () {
-  // Handle menu item tap here
-  if (_menuTitles[i] == 'Login') {
-    Navigator.push(
-      context,
-      MaterialPageRoute(builder: (context) => LoginPage()),
-    );
-  } else {
-    Navigator.of(context).pushNamed(
-      '/${_menuTitles[i].toLowerCase().replaceAll(' ', '_')}',
-    );
-  }
-},
-
-          // onTap: () {
-          //   // Handle menu item tap here
-          //   if (_menuTitles[i] == 'Login') {
-          //     authApi.signOut(context);
-          //   } else {
-          //     Navigator.of(context).pushNamed(
-          //         '/${_menuTitles[i].toLowerCase().replaceAll(' ', '_')}');
-          //   }
-          // },
-          child: AnimatedBuilder(
-            animation: _staggeredController,
-            builder: (context, child) {
-              final animationPercent = Curves.easeOut.transform(
-                _itemSlideIntervals[i].transform(_staggeredController.value),
+List<Widget> _buildListItems() {
+  final listItems = <Widget>[];
+  for (var i = 0; i < _menuTitles.length; ++i) {
+    listItems.add(
+      GestureDetector(
+        onTap: () {
+          // Handle menu item tap with different actions based on title
+          switch (_menuTitles[i]) {
+            case 'Login':
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => LoginPage()),
               );
-              final opacity = animationPercent;
-              final slideDistance = (1.0 - animationPercent) * 150;
+            //   break;
+            // case 'Reset Password':
+            //   Navigator.of(context).pushNamed('/reset_password');
+              break;
+            case 'Privacy Policy':
+              _launchPrivacyPolicy();
+              break;
+            case 'Documentation':
+              _launchDocumentation();
+              break;
+          }
+        },
+        child: AnimatedBuilder(
+          animation: _staggeredController,
+          builder: (context, child) {
+            final animationPercent = Curves.easeOut.transform(
+              _itemSlideIntervals[i].transform(_staggeredController.value),
+            );
+            final opacity = animationPercent;
+            final slideDistance = (1.0 - animationPercent) * 150;
 
-              return Opacity(
-                opacity: opacity,
-                child: Transform.translate(
-                  offset: Offset(slideDistance, 0),
-                  child: child,
-                ),
-              );
-            },
-            child: Padding(
-              padding: EdgeInsets.symmetric(horizontal: 36.0, vertical: 16),
-              child: SizedBox(
-                width: double.infinity, // Add explicit width constraint
-                child: Text(
-                  _menuTitles[i],
-                  textAlign: TextAlign.left,
-                  style: const TextStyle(
-                    fontSize: 24,
-                    fontWeight: FontWeight.w500,
-                  ),
+            return Opacity(
+              opacity: opacity,
+              child: Transform.translate(
+                offset: Offset(slideDistance, 0),
+                child: child,
+              ),
+            );
+          },
+          child: Padding(
+            padding: EdgeInsets.symmetric(horizontal: 36.0, vertical: 16),
+            child: SizedBox(
+              width: double.infinity,
+              child: Text(
+                _menuTitles[i],
+                textAlign: TextAlign.left,
+                style: const TextStyle(
+                  fontSize: 24,
+                  fontWeight: FontWeight.w500,
                 ),
               ),
             ),
           ),
         ),
-      );
-    }
-    return listItems;
+      ),
+    );
   }
+  return listItems;
+}
+
+// Add these helper methods for launching URLs
+void _launchPrivacyPolicy() async {
+  const privacyPolicyUrl = 'https://avodahsystems.com/?page_id=101'; // Replace with your actual URL
+  if (await canLaunch(privacyPolicyUrl)) {
+    await launch(privacyPolicyUrl);
+  } else {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('Could not launch Privacy Policy')),
+    );
+  }
+}
+
+void _launchDocumentation() async {
+  const documentationUrl = 'https://yourapp.com/documentation'; // Replace with your actual URL
+  if (await canLaunch(documentationUrl)) {
+    await launch(documentationUrl);
+  } else {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('Could not launch Documentation')),
+    );
+  }
+}
 
   Widget _buildGetStartedButton() {
     return SizedBox(

@@ -4,14 +4,11 @@ import 'package:skillhub/pages/Auth_screens/login_page.dart';
 import 'package:skillhub/pages/Auth_screens/register_page.dart';
 import 'package:skillhub/pages/Staggered/category_staggered_page.dart';
 import 'package:skillhub/pages/Staggered/job_offers.dart';
-// import 'package:skillshub/pages/homePages/category_home_page.dart';
-import 'package:skillhub/pages/Staggered/my_home_page.dart';
-// import 'package:skillshub/pages/homePages/subCategory_home_page.dart';
-// import 'package:skillshub/pages/messages_screens/loaded_messages_page.dart';
-// import 'package:skillshub/pages/messages_screens/messages_page.dart';
-// import 'package:skillshub/pages/staggered_homePages/loadedMessages.dart';
-import 'package:flutter/material.dart';
 
+import 'package:skillhub/pages/Staggered/my_home_page.dart';
+
+import 'package:flutter/material.dart';
+import 'package:skillhub/pages/Auth_screens/reset_password_page.dart'; 
 
 // Define the routes using a Map
 final Map<String, WidgetBuilder> routes = {
@@ -26,6 +23,13 @@ final Map<String, WidgetBuilder> routes = {
    '/login': (context) => const LoginPage(),
   '/register': (context) => const RegisterPage(),
   '/forgot_password': (context) => const ForgotPasswordPage(),
-  // '/job_offers': (context) => const JobOffersPage(),
+
+  '/reset-password': (context) {
+    final routeArgs = ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
+    return ResetPasswordPage(
+      userId: routeArgs?['userId'] ?? '',
+      secret: routeArgs?['secret'] ?? '',
+    );
+  },
   // Add more routes for other pages
 };
