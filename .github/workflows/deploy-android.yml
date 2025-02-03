@@ -21,16 +21,43 @@ jobs:
       - run: flutter pub get
       - run: flutter build appbundle --release  # This builds an App Bundle, which is recommended for Google Play
       
+      # Debug step to inspect Base64 secrets
+      - name: Debug Secrets
+        run: |
+          echo "$ANDROID_KEYSTORE_BASE64" > debug_keystore.txt
+          echo "$ANDROID_KEY_PROPERTIES_BASE64" > debug_key_properties.txt
+          cat debug_keystore.txt
+          cat debug_key_properties.txt
+        env:
+          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          ANDROID_KEY_PROPERTIES_BASE64: ${{ secrets.ANDROID_KEY_PROPERTIES_BASE64 }}
+      
       # Steps for signing the app
       - name: Decode Android keystore
         env:
           ANDROID_KEYSTORE: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
-        run: echo $ANDROID_KEYSTORE | base64 --decode > android/upload-keystore.jks
+        run: |
+          echo "$ANDROID_KEYSTORE" | tr -d '\n' | base64 --decode > android/upload-keystore.jks
+      
+      - name: Check if keystore was decoded correctly
+        run: |
+          if [ ! -f "android/upload-keystore.jks" ]; then
+            echo "Keystore file not found!"
+            exit 1
+          fi
       
       - name: Decode Android key properties
         env:
           ANDROID_KEY_PROPERTIES: ${{ secrets.ANDROID_KEY_PROPERTIES_BASE64 }}
-        run: echo $ANDROID_KEY_PROPERTIES | base64 --decode > android/key.properties
+        run: |
+          echo "$ANDROID_KEY_PROPERTIES" | tr -d '\n' | base64 --decode > android/key.properties
+      
+      - name: Check if key properties was decoded correctly
+        run: |
+          if [ ! -f "android/key.properties" ]; then
+            echo "Key properties file not found!"
+            exit 1
+          fi
       
       - name: Set up signing environment
         run: |
