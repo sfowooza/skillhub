@@ -194,7 +194,7 @@ void _launchPrivacyPolicy() async {
 }
 
 void _launchDocumentation() async {
-  const documentationUrl = 'https://yourapp.com/documentation'; // Replace with your actual URL
+  const documentationUrl = 'https://avodahsystems.com/?page_id=154'; // Replace with your actual URL
   if (await canLaunch(documentationUrl)) {
     await launch(documentationUrl);
   } else {
