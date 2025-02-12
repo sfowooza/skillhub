@@ -315,21 +315,16 @@ if (provider.selectedCategory != null)
     value: provider.selectedSubcategory,
     decoration: const InputDecoration(
       labelText: 'Subcategory',
+      prefixIcon: Icon(Icons.subdirectory_arrow_right),
       border: OutlineInputBorder(),
     ),
-    items: SubCategoryMapper.displayToEnum.keys
-        .where((displayName) {
-          // Convert selected category to enum for comparison
-          final categoryEnum = CategoryMapper.toEnumValue(provider.selectedCategory!);
-          final subcategoryEnum = SubCategoryMapper.toEnumValue(displayName);
-          return provider.subcategories[categoryEnum]?.contains(subcategoryEnum) ?? false;
-        })
-        .map((String displayName) {
-          return DropdownMenuItem<String>(
-            value: displayName,
-            child: Text(displayName),
-          );
-        }).toList(),
+    items: provider.subcategories[provider.selectedCategory]?.map((String subcategory) {
+      final displayName = SubCategoryMapper.toDisplayName(subcategory);
+      return DropdownMenuItem<String>(
+        value: displayName,
+        child: Text(displayName),
+      );
+    }).toList() ?? [],
     onChanged: (value) {
       if (value != null) {
         setState(() {
@@ -337,7 +332,12 @@ if (provider.selectedCategory != null)
         });
       }
     },
-    validator: (value) => value == null ? 'Please select a subcategory' : null,
+    validator: (value) {
+      if (value == null || value.isEmpty) {
+        return 'Please select a subcategory';
+      }
+      return null;
+    },
   ),
                             TextFormField(
                               controller: firstNameTextController,
