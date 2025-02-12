@@ -16,6 +16,7 @@ import 'package:appwrite/appwrite.dart';
 import 'package:intl_phone_field/intl_phone_field.dart';
 import 'package:provider/provider.dart';
 import 'package:file_picker/file_picker.dart';
+import 'package:skillhub/utils/category_mappers.dart';
 
 class EditSkillsPage extends StatefulWidget {
   final String image, firstName, lastName, email, phoneNumber, message, selectedCategory, selectedSubcategory, location, description, datetime, docID,link, gmaplocation;
@@ -60,43 +61,46 @@ class _EditSkillsPageState extends State<EditSkillsPage> {
   late AuthAPI auth;
   String userId = "";
 
-  @override
-  void initState() {
-    super.initState();
-    final AuthAPI appwrite = context.read<AuthAPI>();
-    authStatus = appwrite.status;
-    userName = SavedData.getUserName().split(" ")[0];
-    userId = SavedData.getUserId();
-    auth = appwrite;
-    client = appwrite.client;
-    storage = Storage(client);
+ // In initState:
+@override
+void initState() {
+  super.initState();
+  final AuthAPI appwrite = context.read<AuthAPI>();
+  authStatus = appwrite.status;
+  userName = SavedData.getUserName().split(" ")[0];
+  userId = SavedData.getUserId();
+  auth = appwrite;
+  client = appwrite.client;
+  storage = Storage(client);
 
-    _datetimeController.text = widget.datetime;
-    messageTextController.text = widget.message;
-    descriptionTextController.text = widget.description;
-    firstNameTextController.text = widget.firstName;
-    lastNameTextController.text = widget.lastName;
-    emailTextController.text = widget.email;
-    phoneNumberTextController.text = widget.phoneNumber;
-    locationTextController.text = widget.location;
-    _gmaplocationController.text = widget.gmaplocation;
-    _whatsappLinkController.text = widget.link;
+  _datetimeController.text = widget.datetime;
+  messageTextController.text = widget.message;
+  descriptionTextController.text = widget.description;
+  firstNameTextController.text = widget.firstName;
+  lastNameTextController.text = widget.lastName;
+  emailTextController.text = widget.email;
+  phoneNumberTextController.text = widget.phoneNumber;
+  locationTextController.text = widget.location;
+  _gmaplocationController.text = widget.gmaplocation;
+  _whatsappLinkController.text = widget.link;
 
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      final provider = Provider.of<RegistrationFormProvider>(context, listen: false);
-      provider.selectedCategory = widget.selectedCategory;
-      provider.selectedSubcategory = widget.selectedSubcategory;
-      provider.inSoleBusiness = widget.inSoleBusiness;
-      provider.firstName = widget.firstName;
-      provider.lastName = widget.lastName;
-      provider.email = widget.email;
-      provider.phoneNumber = widget.phoneNumber;
-      provider.location = widget.location;
-      provider.image = widget.image;
-    });
+  WidgetsBinding.instance.addPostFrameCallback((_) {
+    final provider = Provider.of<RegistrationFormProvider>(context, listen: false);
+    // Convert from stored enum value to display name
+    provider.selectedCategory = CategoryMapper.toDisplayName(widget.selectedCategory);
+    provider.selectedSubcategory = SubCategoryMapper.toDisplayName(widget.selectedSubcategory);
+    provider.inSoleBusiness = widget.inSoleBusiness;
+    provider.firstName = widget.firstName;
+    provider.lastName = widget.lastName;
+    provider.email = widget.email;
+    provider.phoneNumber = widget.phoneNumber;
+    provider.location = widget.location;
+    provider.image = widget.image;
+  });
 
-    database = DatabaseAPI(auth: auth);
-  }
+  database = DatabaseAPI(auth: auth);
+}
+
 
   @override
   void dispose() {
@@ -200,16 +204,20 @@ class _EditSkillsPageState extends State<EditSkillsPage> {
 Future<void> _updateSkill(String value) async {
   final registrationFormProvider = context.read<RegistrationFormProvider>();
 
+  // Convert display names to enum values for storage
+  final categoryEnum = CategoryMapper.toEnumValue(registrationFormProvider.selectedCategory!);
+  final subcategoryEnum = SubCategoryMapper.toEnumValue(registrationFormProvider.selectedSubcategory!);
+
   await database.updateSkill(
     messageTextController.text,
     descriptionTextController.text,
-    latitude ?? 0.0, // latitude
-    longitude ?? 0.0, // longitude
-    _gmaplocationController.text, // gmaplocation
+    latitude ?? 0.0,
+    longitude ?? 0.0,
+    _gmaplocationController.text,
     _whatsappLinkController.text,
     RegistrationFields(
-      selectedCategory: registrationFormProvider.selectedCategory!,
-      selectedSubcategory: registrationFormProvider.selectedSubcategory!,
+      selectedCategory: categoryEnum,
+      selectedSubcategory: subcategoryEnum,
       firstName: registrationFormProvider.firstName!,
       lastName: registrationFormProvider.lastName!,
       phoneNumber: registrationFormProvider.phoneNumber!,
@@ -220,15 +228,15 @@ Future<void> _updateSkill(String value) async {
       location: registrationFormProvider.location!,
       participants: [],
       inSoleBusiness: inSoleBusiness,
-      image: value, // image
+      image: value,
     ),
     widget.docID,
   );
 
   ScaffoldMessenger.of(context).showSnackBar(
-    SnackBar(content: Text("Skill Updated !!")),
+    const SnackBar(content: Text("Skill Updated Successfully!")),
   );
-  Navigator.pop(context);
+  Navigator.pop(context, true);
 }
 
 
@@ -278,39 +286,59 @@ Future<void> _updateSkill(String value) async {
                               ),
                             ),
                             SizedBox(height: 8,),
-                            DropdownButtonFormField<String>(
-                              value: provider.selectedCategory,
-                              hint: const Text('Select Category'),
-                              onChanged: (value) {
-                                provider.selectedCategory = value!;
-                                provider.selectedSubcategory = null;
-                              },
-                              items: provider.subcategories.keys
-                                  .map((String category) {
-                                return DropdownMenuItem<String>(
-                                  value: category,
-                                  child: Text(category),
-                                );
-                              }).toList(),
-                            ),
-                            const SizedBox(height: 20),
-                            if (provider.selectedCategory != null)
-                              DropdownButtonFormField<String>(
-                                value: provider.selectedSubcategory,
-                                hint: const Text('Select Subcategory'),
-                                onChanged: (value) {
-                                  provider.selectedSubcategory = value!;
-                                },
-                                items: provider.selectedCategory != null
-                                    ? provider.subcategories[provider.selectedCategory!]!
-                                        .map((String subcategory) {
-                                        return DropdownMenuItem<String>(
-                                          value: subcategory,
-                                          child: Text(subcategory),
-                                        );
-                                      }).toList()
-                                    : [],
-                              ),
+        DropdownButtonFormField<String>(
+  value: provider.selectedCategory,
+  decoration: const InputDecoration(
+    labelText: 'Category',
+    border: OutlineInputBorder(),
+  ),
+  items: CategoryMapper.displayToEnum.keys.map((String displayName) {
+    return DropdownMenuItem<String>(
+      value: displayName,
+      child: Text(displayName),
+    );
+  }).toList(),
+  onChanged: (value) {
+    if (value != null) {
+      setState(() {
+        provider.selectedCategory = value;
+        provider.selectedSubcategory = null;
+      });
+    }
+  },
+  validator: (value) => value == null ? 'Please select a category' : null,
+),
+const SizedBox(height: 20),
+
+if (provider.selectedCategory != null)
+  DropdownButtonFormField<String>(
+    value: provider.selectedSubcategory,
+    decoration: const InputDecoration(
+      labelText: 'Subcategory',
+      border: OutlineInputBorder(),
+    ),
+    items: SubCategoryMapper.displayToEnum.keys
+        .where((displayName) {
+          // Convert selected category to enum for comparison
+          final categoryEnum = CategoryMapper.toEnumValue(provider.selectedCategory!);
+          final subcategoryEnum = SubCategoryMapper.toEnumValue(displayName);
+          return provider.subcategories[categoryEnum]?.contains(subcategoryEnum) ?? false;
+        })
+        .map((String displayName) {
+          return DropdownMenuItem<String>(
+            value: displayName,
+            child: Text(displayName),
+          );
+        }).toList(),
+    onChanged: (value) {
+      if (value != null) {
+        setState(() {
+          provider.selectedSubcategory = value;
+        });
+      }
+    },
+    validator: (value) => value == null ? 'Please select a subcategory' : null,
+  ),
                             TextFormField(
                               controller: firstNameTextController,
                               decoration: const InputDecoration(
