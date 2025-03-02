@@ -17,7 +17,7 @@ class JobOffersPage extends StatefulWidget {
   final String? selectedSubCategory;
 
   const JobOffersPage({
-    super.key, 
+    super.key,
     required this.title,
     this.selectedSubCategory,
   });
@@ -43,60 +43,83 @@ class _JobOffersPageState extends State<JobOffersPage> {
     client = Client();
     auth = AuthAPI(client: client);
     database = DatabaseAPI(auth: auth);
-    selectedSubCategory = widget.selectedSubCategory ?? 'All'; // Initialize with passed value or default to 'All'
+    selectedSubCategory = widget.selectedSubCategory ?? 'All';
     if (SavedData.isLoggedIn()) {
       userName = SavedData.getUserName().split(" ")[0];
     }
     refresh();
   }
 
- void refresh() {
-  setState(() {
-    isLoading = true;
-  });
-  
-  if (selectedSubCategory == 'All') {
-    database.getAllSkills().then((value) {
-      setState(() {
-        skills = value;
-        isLoading = false;
-      });
+  void refresh() {
+    setState(() {
+      isLoading = true;
     });
-  } else {
-    // Convert display name to enum value before querying
-    final enumValue = SubCategoryMapper.toEnumValue(selectedSubCategory);
-    database.getSkillsBySubCategory(enumValue).then((value) {
-      setState(() {
-        skills = value;
-        isLoading = false;
+
+    if (selectedSubCategory == 'All') {
+      database.getAllSkills().then((value) {
+        setState(() {
+          skills = value;
+          isLoading = false;
+        });
       });
-    });
+    } else {
+      final enumValue = SubCategoryMapper.toEnumValue(selectedSubCategory);
+      database.getSkillsBySubCategory(enumValue).then((value) {
+        setState(() {
+          skills = value;
+          isLoading = false;
+        });
+      });
+    }
   }
-}
 
   List<Document> getFilteredItems() {
     if (_selectedView == 'Popular Skills') {
-      return skills.take(5).toList();  // Replace with your actual logic to filter popular skills
+      return skills.take(5).toList(); // Replace with actual logic if needed
     } else if (_selectedView == 'New') {
-      return skills.reversed.toList();  // Replace with your actual logic to filter new skills
+      return skills.reversed.toList(); // Replace with actual logic if needed
     } else {
-      return skills;  // All Skills
+      return skills;
     }
   }
 
   @override
   Widget build(BuildContext context) {
-   final isAuthenticated = Provider.of<AuthAPI>(context).status == AuthStatus.authenticated;
-  
-  // Create subcategories list from the mapper
-  final subCategories = ['All', ...SubCategoryMapper.displayToEnum.keys].toList();
+    final isAuthenticated = Provider.of<AuthAPI>(context).status == AuthStatus.authenticated;
 
-  // Sort the list alphabetically (except 'All' which should stay first)
-  subCategories.removeWhere((element) => element == 'All');
-  subCategories.sort();
-  subCategories.insert(0, 'All');
+    final subCategories = ['All', ...SubCategoryMapper.displayToEnum.keys].toList();
+    subCategories.removeWhere((element) => element == 'All');
+    subCategories.sort();
+    subCategories.insert(0, 'All');
 
     return Scaffold(
+      appBar: AppBar(
+        automaticallyImplyLeading: true, // Adds the back button on the left
+        title: Row(
+          mainAxisAlignment: MainAxisAlignment.end, // Aligns content to the right
+          children: [
+            Text(
+              isAuthenticated ? "Hi $userName \u{1F44B}\u{FE0F}" : "Hi",
+              style: TextStyle(
+                color: Theme.of(context).primaryColor,
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            const SizedBox(width: 8), // Small spacing between "Hi" and "Login"
+            if (!isAuthenticated)
+              TextButton(
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => LoginPage()),
+                  );
+                },
+                child: const Text("Login"),
+              ),
+          ],
+        ),
+      ),
       body: CustomScrollView(
         slivers: [
           SliverToBoxAdapter(
@@ -105,34 +128,14 @@ class _JobOffersPageState extends State<JobOffersPage> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Row(
-                    children: [
-                      Text(
-                        isAuthenticated ? "Hi $userName \u{1F44B}\u{FE0F}" : "Hi",
-                        style: TextStyle(
-                          color: Theme.of(context).primaryColor,
-                          fontSize: 16,
-                          fontWeight: FontWeight.w600,
-                        ),
+                  Center( // Wrap Text in Center widget
+                    child: Text(
+                      "Explore Services & Products Around You",
+                      style: TextStyle(
+                        color: BaseColors().baseTextColor,
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
                       ),
-                      if (!isAuthenticated)
-                        TextButton(
-                          onPressed: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(builder: (context) => LoginPage()),
-                            );
-                          },
-                          child: const Text("Login"),
-                        ),
-                    ],
-                  ),
-                  Text(
-                    "Explore Services & Products Around You",
-                    style: TextStyle(
-                      color: BaseColors().baseTextColor,
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
                     ),
                   ),
                   if (!isLoading && skills.isNotEmpty)
@@ -146,8 +149,12 @@ class _JobOffersPageState extends State<JobOffersPage> {
                         scrollDirection: Axis.horizontal,
                       ),
                       items: skills.map((skill) {
-                        return EventContainer(
-                          data: skill,
+                        return GestureDetector(
+                          onTap: () {
+                            print("Tapped skill: ${skill.data['title']}");
+                            // Example: Navigator.push(context, MaterialPageRoute(builder: (context) => DetailPage(skill: skill)));
+                          },
+                          child: EventContainer(data: skill),
                         );
                       }).toList(),
                     ),
@@ -211,7 +218,14 @@ class _JobOffersPageState extends State<JobOffersPage> {
           else
             SliverList(
               delegate: SliverChildBuilderDelegate(
-                (context, index) => EventContainer(data: getFilteredItems()[index]),
+                (context, index) => GestureDetector(
+                  onTap: () {
+                    final skill = getFilteredItems()[index];
+                    print("Tapped skill: ${skill.data['title']}");
+                    // Example: Navigator.push(context, MaterialPageRoute(builder: (context) => DetailPage(skill: skill)));
+                  },
+                  child: EventContainer(data: getFilteredItems()[index]),
+                ),
                 childCount: getFilteredItems().length,
               ),
             ),

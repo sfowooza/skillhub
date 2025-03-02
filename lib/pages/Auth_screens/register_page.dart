@@ -25,82 +25,83 @@ class _RegisterPageState extends State<RegisterPage> {
   double iconSize = 19;
   String? _verificationId;
 
-void createAccount() async {
-  if (_formKey.currentState!.validate()) {
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (BuildContext context) {
-        return const Dialog(
-          backgroundColor: Colors.transparent,
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-            children: [
-              CircularProgressIndicator(),
-            ],
+  void createAccount() async {
+    if (_formKey.currentState!.validate()) {
+      showDialog(
+          context: context,
+          barrierDismissible: false,
+          builder: (BuildContext context) {
+            return const Dialog(
+              backgroundColor: Colors.transparent,
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                children: [
+                  CircularProgressIndicator(),
+                ],
+              ),
+            );
+          });
+
+      try {
+        final AuthAPI appwrite = context.read<AuthAPI>();
+        final user = await appwrite.createUser(
+          email: emailTextController.text,
+          password: passwordTextController.text,
+          username: usernameTextController.text,
+        );
+
+        // Create session to ensure verification can be sent
+        await appwrite.createEmailSession(
+          email: emailTextController.text,
+          password: passwordTextController.text,
+        );
+
+        // Send email verification with the correct URL host
+        await appwrite.createEmailVerification(
+          url: 'https://verify.skillhub.avodahsystems.com/verification',
+        );
+
+        Navigator.pop(context);
+        // Display Snackbar in the middle center with rounded corners and staying until clicked
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            behavior: SnackBarBehavior.floating,
+            margin: EdgeInsets.only(
+              bottom: MediaQuery.of(context).size.height / 2 - 40, // Adjust for desired vertical position
+              left: 20,
+              right: 20,
+            ),
+            content: Text(
+              'Account created! Check your email for verification.',
+              textAlign: TextAlign.center,
+              style: TextStyle(color: Colors.white),
+            ),
+            backgroundColor: Colors.green,
+            elevation: 6.0,
+            // Rounded corners
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(10.0),
+            ),
+            duration: const Duration(days: 365), // Set a very long duration to keep it until clicked
+            action: SnackBarAction(
+              label: 'Login',
+              textColor: Colors.blue,
+              onPressed: () {
+                // Dismiss the Snackbar
+                ScaffoldMessenger.of(context).hideCurrentSnackBar();
+                // Navigate to login page
+                Navigator.pushNamed(context, '/login');
+              },
+            ),
           ),
         );
-      });
-
-    try {
-      final AuthAPI appwrite = context.read<AuthAPI>();
-      final user = await appwrite.createUser(
-        email: emailTextController.text,
-        password: passwordTextController.text,
-        username: usernameTextController.text,
-      );
-
-      // Create session to ensure verification can be sent
-      await appwrite.createEmailSession(
-        email: emailTextController.text,
-        password: passwordTextController.text,
-      );
-
-      // Send email verification with the correct URL host
-      await appwrite.createEmailVerification(
-        url: 'https://verify.skillhub.avodahsystems.com/verification',
-      );
-      
-      Navigator.pop(context);
-      // Display Snackbar in the middle center with rounded corners and staying until clicked
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          behavior: SnackBarBehavior.floating,
-          margin: EdgeInsets.only(
-            bottom: MediaQuery.of(context).size.height / 2 - 40, // Adjust for desired vertical position
-            left: 20,
-            right: 20,
-          ),
-          content: Text(
-            'Account created! Check your email for verification.',
-            textAlign: TextAlign.center,
-            style: TextStyle(color: Colors.white),
-          ),
-          backgroundColor: Colors.green,
-          elevation: 6.0,
-          // Rounded corners
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(10.0),
-          ),
-          duration: const Duration(days: 365), // Set a very long duration to keep it until clicked
-          action: SnackBarAction(
-            label: 'Login',
-            textColor: Colors.blue,
-            onPressed: () {
-              // Dismiss the Snackbar
-              ScaffoldMessenger.of(context).hideCurrentSnackBar();
-              // Navigate to login page
-              Navigator.pushNamed(context, '/login');
-            },
-          ),
-        ),
-      );
-    } on AppwriteException catch (e) {
-      Navigator.pop(context);
-      showAlert(title: 'Account creation failed', text: e.message.toString());
+      } on AppwriteException catch (e) {
+        Navigator.pop(context);
+        showAlert(title: 'Account creation failed', text: e.message.toString());
+      }
     }
   }
-}
+
   showAlert({required String title, required String text}) {
     showDialog(
         context: context,
@@ -319,6 +320,22 @@ void createAccount() async {
                   ],
                 ),
                 margin: const EdgeInsets.only(left: 12.0),
+              ),
+              const SizedBox(height: 16), // Added spacing before back button
+              Row(
+                mainAxisAlignment: MainAxisAlignment.start,
+                children: [
+                  IconButton(
+                    icon: const Icon(Icons.arrow_back),
+                    onPressed: () {
+                      Navigator.pop(context);
+                    },
+                  ),
+                  const Text(
+                    'Back',
+                    style: TextStyle(fontSize: 16),
+                  ),
+                ],
               ),
             ],
           ),

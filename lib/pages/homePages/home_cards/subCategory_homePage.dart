@@ -7,38 +7,35 @@ import 'package:skillhub/appwrite/auth_api.dart';
 import 'package:skillhub/appwrite/database_api.dart';
 import 'package:skillhub/pages/Staggered/job_offers.dart';
 import 'package:skillhub/providers/registration_form_providers.dart';
+import 'package:skillhub/pages/Auth_screens/login_page.dart'; // Add this import
+import 'package:skillhub/pages/Auth_screens/register_page.dart'; // Add this import
 
 class SubCategoryMapper {
   static String toEnumValue(String displayName) {
-    // Convert display names to Appwrite enum values
     if (displayToEnum.containsKey(displayName)) {
       return displayToEnum[displayName]!;
     }
-    // If not found in map, remove spaces and return
     return displayName.replaceAll(' ', '');
   }
 
   static String toDisplayName(String enumValue) {
-    // Convert Appwrite enum values to display names
     if (enumToDisplay.containsKey(enumValue)) {
       return enumToDisplay[enumValue]!;
     }
-    // If not found in map, add spaces before capitals
     return enumValue.replaceAllMapped(
       RegExp(r'(?!^)([A-Z])'),
-      (match) => ' ${match.group(1)}'
+      (match) => ' ${match.group(1)}',
     );
   }
 
-  // Update the mapping to match exactly with Appwrite enum values
   static final Map<String, String> displayToEnum = {
     'General Medicine': 'GeneralMedicine',
     'Graphic Design': 'GraphicDesign',
     'Data Science': 'DataScience',
     'Civil': 'Civil',
     'Mechanical': 'Mechanical',
-    'Electrical': 'Electrical', 
-    'Architecture':'Architecture',
+    'Electrical': 'Electrical',
+    'Architecture': 'Architecture',
     'Painting': 'Painting',
     'Plumbing': 'Plumbing',
     'Exterior Design': 'ExteriorDesign',
@@ -66,7 +63,7 @@ class SubCategoryMapper {
     'Pedicure': 'Pedicure',
     'Manicure': 'Manicure',
     'Mens Ware': 'MensWare',
-    'Womens Ware': 'WomesWare',
+    'Womens Ware': 'WomesWare', // Note: Typo retained from original
     'Poultry': 'Poultry',
     'Piggery': 'Piggery',
     'Goat Keeping': 'GoatFarming',
@@ -76,14 +73,12 @@ class SubCategoryMapper {
     'Bananas': 'Bananas',
     'Maize': 'Maize',
     'Beans': 'Beans',
-
   };
 
   static final Map<String, String> enumToDisplay = Map.fromEntries(
-    displayToEnum.entries.map((e) => MapEntry(e.value, e.key))
+    displayToEnum.entries.map((e) => MapEntry(e.value, e.key)),
   );
 }
-
 
 class SubCategoryHomePage extends StatefulWidget {
   const SubCategoryHomePage({Key? key}) : super(key: key);
@@ -125,25 +120,25 @@ class _SubCategoryHomePageState extends State<SubCategoryHomePage> {
     }
   }
 
- Map<String, List<Document>> groupMessagesBySubCategory(List<Document> messages) {
-  final Map<String, List<Document>> subCategoryMap = {};
+  Map<String, List<Document>> groupMessagesBySubCategory(List<Document> messages) {
+    final Map<String, List<Document>> subCategoryMap = {};
 
-  for (var message in messages) {
-    final enumValue = message.data['selectedSubcategory'] as String;
-    final displayName = SubCategoryMapper.toDisplayName(enumValue);
-    
-    if (!subCategoryMap.containsKey(displayName)) {
-      subCategoryMap[displayName] = [];
+    for (var message in messages) {
+      final enumValue = message.data['selectedSubcategory'] as String;
+      final displayName = SubCategoryMapper.toDisplayName(enumValue);
+
+      if (!subCategoryMap.containsKey(displayName)) {
+        subCategoryMap[displayName] = [];
+      }
+      subCategoryMap[displayName]!.add(message);
     }
-    subCategoryMap[displayName]!.add(message);
-  }
 
-  return subCategoryMap;
-}
+    return subCategoryMap;
+  }
 
   String getImageUrlForSubCategory(String displayName) {
     final enumValue = SubCategoryMapper.toEnumValue(displayName);
-    
+
     Map<String, String> imageUrls = {
       'Mechanical': 'https://images.pexels.com/photos/3861969/pexels-photo-3861969.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=750&w=1260',
       'Electrical': 'https://images.pexels.com/photos/9242271/pexels-photo-9242271.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=750&w=1260',
@@ -192,34 +187,20 @@ class _SubCategoryHomePageState extends State<SubCategoryHomePage> {
     return imageUrls[enumValue] ?? 'https://images.pexels.com/photos/5222/snow-mountains-forest-winter.jpg?auto=compress&cs=tinysrgb&dpr=2&h=750&w=1260';
   }
 
-// void _viewMessage(Document message, String displayName) {
-//   final enumValue = SubCategoryMapper.toEnumValue(displayName);
-//   print('Viewing message for category: $displayName (enum: $enumValue)');
-  
-//   Navigator.push(
-//     context,
-//     MaterialPageRoute(
-//       builder: (context) => JobOffersStaggeredPage(
-//         title: displayName,
-//         selectedSubCategory: enumValue, // Add this parameter
-//       ),
-//     ),
-//   );
-// }
-void _viewMessage(Document message, String displayName) {
-  final enumValue = SubCategoryMapper.toEnumValue(displayName);
-  print('Viewing message for category: $displayName (enum: $enumValue)');
-  
-  Navigator.push(
-    context,
-    MaterialPageRoute(
-      builder: (context) => JobOffersStaggeredPage(
-        title: displayName,
-        selectedSubCategory: enumValue,
+  void _viewMessage(Document message, String displayName) {
+    final enumValue = SubCategoryMapper.toEnumValue(displayName);
+    print('Viewing message for category: $displayName (enum: $enumValue)');
+
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => JobOffersStaggeredPage(
+          title: displayName,
+          selectedSubCategory: enumValue,
+        ),
       ),
-    ),
-  );
-}
+    );
+  }
 
   void filterSubcategories(String query, List<String> subcategories) {
     setState(() {
@@ -274,31 +255,62 @@ void _viewMessage(Document message, String displayName) {
                     ),
                     itemCount: filteredSubcategories.length,
                     itemBuilder: (context, index) {
-  final displayName = filteredSubcategories[index];
-  final enumValue = SubCategoryMapper.toEnumValue(displayName);
-  final imageUrl = getImageUrlForSubCategory(displayName);
-  final messages = groupedMessages[displayName] ?? [];
+                      final displayName = filteredSubcategories[index];
+                      final enumValue = SubCategoryMapper.toEnumValue(displayName);
+                      final imageUrl = getImageUrlForSubCategory(displayName);
+                      final messages = groupedMessages[displayName] ?? [];
 
-  return ProductCard(
-    productItem: ProductItem(
-      messageImageUrl: imageUrl,
-      category: displayName,
-    ),
-    onViewMessage: () {
-      if (messages.isNotEmpty) {
-        _viewMessage(messages.first, displayName);
-      } else {
-        print('No messages found for category: $displayName (enum: $enumValue)');
-        // Optionally show a message to the user
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('No items available for $displayName'),
-          ),
-        );
-      }
-    },
-  );
-},
+                      return ProductCard(
+                        productItem: ProductItem(
+                          messageImageUrl: imageUrl,
+                          category: displayName,
+                        ),
+                        onViewMessage: () {
+                          if (messages.isNotEmpty) {
+                            _viewMessage(messages.first, displayName);
+                          } else {
+                            print('No messages found for category: $displayName (enum: $enumValue)');
+                            showDialog(
+                              context: context,
+                              builder: (context) {
+                                return AlertDialog(
+                                  title: const Text('No Items Available'),
+                                  content: Text(
+                                    'No items available for $displayName. Would you like to add your own?',
+                                  ),
+                                  actions: [
+                                    TextButton(
+                                      onPressed: () {
+                                        Navigator.pop(context); // Close dialog
+                                        Navigator.push(
+                                          context,
+                                          MaterialPageRoute(
+                                            builder: (context) => const LoginPage(),
+                                          ),
+                                        );
+                                      },
+                                      child: const Text('Login'),
+                                    ),
+                                    TextButton(
+                                      onPressed: () {
+                                        Navigator.pop(context); // Close dialog
+                                        Navigator.push(
+                                          context,
+                                          MaterialPageRoute(
+                                            builder: (context) => const RegisterPage(),
+                                          ),
+                                        );
+                                      },
+                                      child: const Text('Sign Up'),
+                                    ),
+                                  ],
+                                );
+                              },
+                            );
+                          }
+                        },
+                      );
+                    },
                   )
                 : const Center(child: Text('No matching subcategories found')),
           ),
@@ -329,30 +341,30 @@ class ProductCard extends StatelessWidget {
     return SizedBox(
       width: double.infinity,
       height: 200,
-      child: Card(
-        elevation: 4,
-        clipBehavior: Clip.antiAlias,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12),
-        ),
-        child: Stack(
-          fit: StackFit.expand,
-          children: [
-            Image.network(
-              productItem.messageImageUrl,
-              fit: BoxFit.cover,
-              errorBuilder: (context, error, stackTrace) {
-                return const Center(
-                  child: Icon(Icons.error),
-                );
-              },
-            ),
-            Positioned(
-              bottom: 0,
-              left: 0,
-              right: 0,
-              child: GestureDetector(
-                onTap: onViewMessage,
+      child: GestureDetector(
+        onTap: onViewMessage,
+        child: Card(
+          elevation: 4,
+          clipBehavior: Clip.antiAlias,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Stack(
+            fit: StackFit.expand,
+            children: [
+              Image.network(
+                productItem.messageImageUrl,
+                fit: BoxFit.cover,
+                errorBuilder: (context, error, stackTrace) {
+                  return const Center(
+                    child: Icon(Icons.error),
+                  );
+                },
+              ),
+              Positioned(
+                bottom: 0,
+                left: 0,
+                right: 0,
                 child: Container(
                   color: Colors.black.withOpacity(0.5),
                   padding: const EdgeInsets.all(8.0),
@@ -366,8 +378,8 @@ class ProductCard extends StatelessWidget {
                   ),
                 ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );

@@ -13,7 +13,6 @@ import 'package:skillhub/pages/Staggered/subCategory_homePag.dart';
 import 'package:skillhub/pages/homePages/skills_page.dart';
 import 'package:skillhub/providers/registration_form_providers.dart';
 
-
 class CategoryMapper {
   static String toEnumValue(String displayName) {
     if (displayToEnum.containsKey(displayName)) {
@@ -42,7 +41,7 @@ class CategoryMapper {
   };
 
   static final Map<String, String> enumToDisplay = Map.fromEntries(
-    displayToEnum.entries.map((e) => MapEntry(e.value, e.key))
+    displayToEnum.entries.map((e) => MapEntry(e.value, e.key)),
   );
 }
 
@@ -57,7 +56,17 @@ class _CategoryHomePageState extends State<CategoryHomePage> {
   Map<String, List<Document>> groupedMessages = {};
   String searchQuery = '';
   bool isLoggedIn = false;
-  List<String> allCategories = ['Engineering', 'IT', 'Design', 'Medicine', 'Health & Beauty', 'Farming & Agriculture', 'Fashion', 'Leisure & Hospitality', 'Transport'];
+  List<String> allCategories = [
+    'Engineering',
+    'IT',
+    'Design',
+    'Medicine',
+    'Health & Beauty',
+    'Farming & Agriculture',
+    'Fashion',
+    'Leisure & Hospitality',
+    'Transport'
+  ];
   List<String> filteredCategories = [];
 
   Client client = Client();
@@ -133,8 +142,7 @@ class _CategoryHomePageState extends State<CategoryHomePage> {
     setState(() {
       searchQuery = query;
       filteredCategories = allCategories
-          .where((category) =>
-              category.toLowerCase().contains(query.toLowerCase()))
+          .where((category) => category.toLowerCase().contains(query.toLowerCase()))
           .toList();
     });
   }
@@ -144,7 +152,7 @@ class _CategoryHomePageState extends State<CategoryHomePage> {
     final formProvider = Provider.of<RegistrationFormProvider>(context);
     return Scaffold(
       appBar: AppBar(
-        title: Center(child: const Text('Choose Category')),
+        title: const Center(child: Text('Choose Category')),
       ),
       body: Column(
         children: [
@@ -237,31 +245,31 @@ class ProductCard extends StatelessWidget {
     return SizedBox(
       width: double.infinity,
       height: 200,
-      child: Card(
-        elevation: 4,
-        clipBehavior: Clip.antiAlias,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12),
-        ),
-        child: Stack(
-          fit: StackFit.expand,
-          children: [
-            Image.network(
-              productItem.messageImageUrl,
-              fit: BoxFit.cover,
-              errorBuilder: (context, error, stackTrace) {
-                return const Center(
-                  child: Icon(Icons.error),
-                );
-              },
-            ),
-            Positioned(
-              bottom: 0,
-              left: 0,
-              right: 0,
-              child: GestureDetector(
-                onTap: onViewMessage,
-                child: Container(
+      child: GestureDetector( // Wrap the entire card with GestureDetector
+        onTap: onViewMessage, // Trigger navigation on tap
+        child: Card(
+          elevation: 4,
+          clipBehavior: Clip.antiAlias,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Stack(
+            fit: StackFit.expand,
+            children: [
+              Image.network(
+                productItem.messageImageUrl,
+                fit: BoxFit.cover,
+                errorBuilder: (context, error, stackTrace) {
+                  return const Center(
+                    child: Icon(Icons.error),
+                  );
+                },
+              ),
+              Positioned(
+                bottom: 0,
+                left: 0,
+                right: 0,
+                child: Container( // Removed GestureDetector from here
                   color: Colors.black.withOpacity(0.5),
                   padding: const EdgeInsets.all(8.0),
                   child: Text(
@@ -274,8 +282,8 @@ class ProductCard extends StatelessWidget {
                   ),
                 ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );

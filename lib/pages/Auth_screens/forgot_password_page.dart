@@ -104,7 +104,7 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
               onPressed: () {
                 Navigator.pop(context);
               },
-              child: const Text('Ok')
+              child: const Text('Ok'),
             )
           ],
         );
@@ -242,6 +242,22 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
                   ],
                 ),
                 margin: const EdgeInsets.only(left: 12.0),
+              ),
+              const SizedBox(height: 16), // Added spacing before back button
+              Row(
+                mainAxisAlignment: MainAxisAlignment.start,
+                children: [
+                  IconButton(
+                    icon: const Icon(Icons.arrow_back),
+                    onPressed: () {
+                      Navigator.pop(context);
+                    },
+                  ),
+                  const Text(
+                    'Back',
+                    style: TextStyle(fontSize: 16),
+                  ),
+                ],
               ),
             ],
           ),

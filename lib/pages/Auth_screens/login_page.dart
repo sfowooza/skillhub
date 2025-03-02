@@ -9,7 +9,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:provider/provider.dart';
 import 'package:google_fonts/google_fonts.dart';
-
 import 'package:skillhub/colors.dart';
 import 'package:skillhub/pages/homePages/skills_page.dart';
 
@@ -29,95 +28,93 @@ class _LoginPageState extends State<LoginPage> {
   bool _passwordVisible = true;
   double iconSize = 19;
 
-signIn() async {
-  if (_formKey.currentState!.validate()) {
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (BuildContext context) {
-        return const Dialog(
-          backgroundColor: Colors.transparent,
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-            children: [
-              CircularProgressIndicator(),
-            ],
-          ),
-        );
-      },
-    );
-
-    try {
-      final AuthAPI appwrite = context.read<AuthAPI>();
-      
-      // Clear any existing session before attempting to log in
-      try {
-        await appwrite.signOut(context);
-      } catch (e) {
-        // If no session exists, this will throw an error, which we can ignore
-      }
-
-      // Attempt login
-      final loginSuccess = await appwrite.createEmailSession(
-        email: emailTextController.text,
-        password: passwordTextController.text,
+  signIn() async {
+    if (_formKey.currentState!.validate()) {
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (BuildContext context) {
+          return const Dialog(
+            backgroundColor: Colors.transparent,
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              children: [
+                CircularProgressIndicator(),
+              ],
+            ),
+          );
+        },
       );
 
-      if (!loginSuccess) {
-        Navigator.pop(context);
-        return;
-      }
+      try {
+        final AuthAPI appwrite = context.read<AuthAPI>();
 
-      // Check verification status after login
-      await appwrite.loadUser(); // Ensure we have the latest user data
-      if (!appwrite.currentUser.emailVerification) {
-        Navigator.pop(context); // Close loading dialog
-        
-        // Send verification email
-        await appwrite.createEmailVerification(
-          url: 'https://verify.skillhub.avodahsystems.com/verification',
+        // Clear any existing session before attempting to log in
+        try {
+          await appwrite.signOut(context);
+        } catch (e) {
+          // If no session exists, this will throw an error, which we can ignore
+        }
+
+        // Attempt login
+        final loginSuccess = await appwrite.createEmailSession(
+          email: emailTextController.text,
+          password: passwordTextController.text,
         );
+
+        if (!loginSuccess) {
+          Navigator.pop(context);
+          return;
+        }
+
+        // Check verification status after login
+        await appwrite.loadUser(); // Ensure we have the latest user data
+        if (!appwrite.currentUser.emailVerification) {
+          Navigator.pop(context); // Close loading dialog
+
+          // Send verification email
+          await appwrite.createEmailVerification(
+            url: 'https://verify.skillhub.avodahsystems.com/verification',
+          );
+
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Please verify your email before logging in. Check your inbox for the verification link.'),
+              duration: Duration(seconds: 5),
+            ),
+          );
+
+          // Do not sign out, let the user verify their email or try again
+          return;
+        }
+
+        // Email is verified - proceed with login
+        Navigator.pop(context); // Close loading dialog
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => const JobOffersStaggeredPage(
+              title: 'Job Offers',
+              selectedSubCategory: null, // or 'All'
+            ),
+          ),
+        );
+      } on AppwriteException catch (e) {
+        Navigator.pop(context);
+        // Handle nullable message
+        final String errorMessage = e.message?.contains('Creation of a session is prohibited') == true
+            ? 'Please verify your email first or sign out from any active session. Check your inbox for the verification link.'
+            : e.message ?? 'An error occurred during login';
 
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Please verify your email before logging in. Check your inbox for the verification link.'),
-            duration: Duration(seconds: 5),
+          SnackBar(
+            content: Text(errorMessage),
+            duration: const Duration(seconds: 5),
           ),
         );
-
-        // Do not sign out, let the user verify their email or try again
-        return;
       }
-
-      // Email is verified - proceed with login
-      Navigator.pop(context); // Close loading dialog
-      Navigator.push(
-        context,
-        MaterialPageRoute(
-          // builder: (context) => const JobOffersStaggeredPage(title: 'Job Offers')
-          builder: (context) => const JobOffersStaggeredPage(
-  title: 'Job Offers',
-  selectedSubCategory: null, // or 'All'
-),
-        ),
-      );
-      
-    } on AppwriteException catch (e) {
-      Navigator.pop(context);
-      // Handle nullable message
-      final String errorMessage = e.message?.contains('Creation of a session is prohibited') == true
-          ? 'Please verify your email first or sign out from any active session. Check your inbox for the verification link.'
-          : e.message ?? 'An error occurred during login';
-      
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(errorMessage),
-          duration: const Duration(seconds: 5),
-        ),
-      );
     }
   }
-}
 
   showAlert({required String title, required String text}) {
     showDialog(
@@ -311,34 +308,21 @@ signIn() async {
                   ),
                 ),
                 const SizedBox(height: 16),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                  children: [
-                    ElevatedButton(
-                      onPressed: () => signInWithProvider(OAuthProvider.google),
-                      style: ElevatedButton.styleFrom(
-                          foregroundColor: Colors.black,
-                          backgroundColor: Colors.white),
-                      child:
-                          SvgPicture.asset('assets/google_icon.svg', width: 12),
-                    ),
-                    ElevatedButton(
-                      onPressed: () => signInWithProvider(OAuthProvider.apple),
-                      style: ElevatedButton.styleFrom(
-                          foregroundColor: Colors.black,
-                          backgroundColor: Colors.white),
-                      child: SvgPicture.asset('assets/apple_icon.svg', width: 12),
-                    ),
-                    ElevatedButton(
-                      onPressed: () => signInWithProvider(OAuthProvider.github),
-                      style: ElevatedButton.styleFrom(
-                          foregroundColor: Colors.black,
-                          backgroundColor: Colors.white),
-                      child:
-                          SvgPicture.asset('assets/github_icon.svg', width: 12),
-                    ),
-                  ],
-                ),
+               Row(
+  mainAxisAlignment: MainAxisAlignment.start,
+  children: [
+    IconButton(
+      icon: const Icon(Icons.arrow_back),
+      onPressed: () {
+        Navigator.pop(context);
+      },
+    ),
+    const Text(
+      'Back',
+      style: TextStyle(fontSize: 16),
+    ),
+  ],
+),
               ],
             ),
           ),
