@@ -114,6 +114,7 @@ class _SkillsPageState extends State<SkillsPage> {
   late String selectedCategory;
   late String selectedSubcategory;
   late TextEditingController firstNameController;
+  bool isSubmitting = false;
   
 //late String? _whatsappLink;
 
@@ -256,67 +257,57 @@ class _SkillsPageState extends State<SkillsPage> {
     }
   }
 
- void uploadEventImageAndCreateSkill() {
-  uploadEventImage().then((value) {
-    if (value != null) {
-      final provider = context.read<RegistrationFormProvider>();
-      
-      // Convert subcategory to enum value
-       // Convert both category and subcategory to enum values
-      final enumCategory = CategoryMapper.toEnumValue(provider.selectedCategory!);
-      final enumSubcategory = SubCategoryMapper.toEnumValue(
-        provider.selectedSubcategory!
-      );
+ Future<void> uploadEventImageAndCreateSkill() async {
+  String? value = await uploadEventImage();
+  if (value != null) {
+    final provider = context.read<RegistrationFormProvider>();
+    
+    // Convert subcategory to enum value
+    final enumCategory = CategoryMapper.toEnumValue(provider.selectedCategory!);
+    final enumSubcategory = SubCategoryMapper.toEnumValue(
+      provider.selectedSubcategory!
+    );
 
-      database.createSkill(
-        message: messageTextController.text,
+    await database.createSkill(
+      message: messageTextController.text,
+      description: descriptionTextController.text,
+      gmaplocation: _gmaplocationController.text,
+      whatsappLinkController: _whatsappLinkController.text,
+      registrationFields: RegistrationFields(
+        selectedCategory: enumCategory, 
+        selectedSubcategory: enumSubcategory,
+        firstName: provider.firstName!,
+        lastName: provider.lastName!,
+        phoneNumber: provider.phoneNumber!,
+        email: provider.email!,
         description: descriptionTextController.text,
-        gmaplocation: _gmaplocationController.text,
-        whatsappLinkController: _whatsappLinkController.text,
-        registrationFields: RegistrationFields(
-          selectedCategory: enumCategory, 
-          selectedSubcategory: enumSubcategory, // Use enum value
-          firstName: provider.firstName!,
-          lastName: provider.lastName!,
-          phoneNumber: provider.phoneNumber!,
-          email: provider.email!,
-          description: descriptionTextController.text,
-          createdBy: userId,
-          datetime: provider.datetime!,
-          location: provider.location!,
-          participants: [],
-          inSoleBusiness: _isSoleBusiness,
-          image: value,
+        createdBy: userId,
+        datetime: provider.datetime!,
+        location: provider.location!,
+        participants: [],
+        inSoleBusiness: _isSoleBusiness,
+        image: value,
+      ),
+      latitude: latitude ?? 0.0,
+      longitude: longitude ?? 0.0,
+    );
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text("Skill Created Successfully!")),
+    );
+    
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(
+        builder: (context) => const JobOffersStaggeredPage(
+          title: '',
+          selectedSubCategory: null,
         ),
-        latitude: latitude ?? 0.0,
-        longitude: longitude ?? 0.0,
-      ).then((value) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text("Skill Created Successfully!")),
-        );
-        
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(
-            // builder: (context) => const JobOffersStaggeredPage(title: ''),
-            builder: (context) => const JobOffersStaggeredPage(
-  title: '',
-  selectedSubCategory: null, // or 'All'
-),
-          ),
-        );
-      }).catchError((error) {
-        print('Error creating skill: $error');
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text("Error creating skill: ${error.toString()}")),
-        );
-      });
-    } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Image upload failed")),
-      );
-    }
-  });
+      ),
+    );
+  } else {
+    throw Exception("Image upload failed");
+  }
 }
 
 
@@ -570,54 +561,56 @@ class _SkillsPageState extends State<SkillsPage> {
                             ),
                             SizedBox(height: 20),
                            ElevatedButton(
-  onPressed: () async {
+  onPressed: isSubmitting ? null : () async {
     if (_formKey.currentState!.validate()) {
       final registrationFormProvider = context.read<RegistrationFormProvider>();
       
-      // First check if file is selected
-      if (_filePickerResult == null) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text("Please select a business image")),
-        );
-        return;
-      }
-
-      // Check all required fields
-      if (registrationFormProvider.selectedCategory == null ||
-          registrationFormProvider.selectedSubcategory == null ||
-          registrationFormProvider.firstName == null ||
-          registrationFormProvider.firstName!.isEmpty ||
-          registrationFormProvider.lastName == null ||
-          registrationFormProvider.lastName!.isEmpty ||
-          registrationFormProvider.phoneNumber == null ||
-          registrationFormProvider.phoneNumber!.isEmpty ||
-          registrationFormProvider.email == null ||
-          registrationFormProvider.email!.isEmpty ||
-          descriptionTextController.text.isEmpty ||
-          registrationFormProvider.datetime == null ||
-          registrationFormProvider.location == null ||
-          registrationFormProvider.location!.isEmpty ||
-          _gmaplocationController.text.isEmpty ||
-          _whatsappLinkController.text.isEmpty) {
-        
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text(
-              "Please fill in all required fields"
-            ),
-          ),
-        );
-        return;
-      }
-
+      setState(() {
+        isSubmitting = true;
+      });
+      
       try {
+        // First check if file is selected
+        if (_filePickerResult == null) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text("Please select a business image")),
+          );
+          return;
+        }
+
+        // Check all required fields
+        if (registrationFormProvider.selectedCategory == null ||
+            registrationFormProvider.selectedSubcategory == null ||
+            registrationFormProvider.firstName == null ||
+            registrationFormProvider.firstName!.isEmpty ||
+            registrationFormProvider.lastName == null ||
+            registrationFormProvider.lastName!.isEmpty ||
+            registrationFormProvider.phoneNumber == null ||
+            registrationFormProvider.phoneNumber!.isEmpty ||
+            registrationFormProvider.email == null ||
+            registrationFormProvider.email!.isEmpty ||
+            descriptionTextController.text.isEmpty ||
+            registrationFormProvider.datetime == null ||
+            registrationFormProvider.location == null ||
+            registrationFormProvider.location!.isEmpty ||
+            _gmaplocationController.text.isEmpty ||
+            _whatsappLinkController.text.isEmpty) {
+          
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text("Please fill in all required fields")
+            ),
+          );
+          return;
+        }
+
         // Convert display name to enum value before saving
         final enumSubcategory = SubCategoryMapper.toEnumValue(
           registrationFormProvider.selectedSubcategory!
         );
         
         // Upload image and create skill
-        uploadEventImageAndCreateSkill();
+        await uploadEventImageAndCreateSkill();
         
       } catch (e) {
         print('Error submitting form: $e');
@@ -626,10 +619,32 @@ class _SkillsPageState extends State<SkillsPage> {
             content: Text('Error: ${e.toString()}'),
           ),
         );
+      } finally {
+        if (mounted) {
+          setState(() {
+            isSubmitting = false;
+          });
+        }
       }
     }
   },
-  child: const Text('Submit'),
+  child: isSubmitting 
+    ? const Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          SizedBox(
+            width: 20,
+            height: 20,
+            child: CircularProgressIndicator(
+              strokeWidth: 2,
+              valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+            ),
+          ),
+          SizedBox(width: 12),
+          Text('Submitting...'),
+        ],
+      )
+    : const Text('Submit'),
 ),
                           ],
                         )
