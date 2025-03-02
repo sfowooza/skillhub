@@ -1,28 +1,32 @@
 import 'package:appwrite/appwrite.dart';
+import 'package:appwrite/models.dart';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:skillhub/appwrite/auth_api.dart';
 import 'package:skillhub/pages/Auth_screens/login_page.dart';
 import 'package:url_launcher/url_launcher.dart';
-
+import 'package:skillhub/appwrite/database_api.dart';
+import 'package:skillhub/pages/homePages/skills_detail.dart';
 
 class Menu extends StatefulWidget {
-  const Menu({Key? key});
+  const Menu({Key? key}) : super(key: key);
 
   @override
   State<Menu> createState() => _MenuState();
 }
 
 class _MenuState extends State<Menu> with SingleTickerProviderStateMixin {
-
- late AuthAPI authApi;
+  late AuthAPI authApi;
+  late DatabaseAPI databaseApi;
   final Client client = Client();
-
- 
+  List<Document> newSkills = [];
+  bool _isNewItemsExpanded = false;
 
   static const _menuTitles = [
     'Login',
     'Privacy Policy',
     'Documentation',
+    'New Items',
   ];
 
   static const _initialDelayTime = Duration(milliseconds: 50);
@@ -42,13 +46,26 @@ class _MenuState extends State<Menu> with SingleTickerProviderStateMixin {
   @override
   void initState() {
     super.initState();
-   authApi = AuthAPI(client: client);
+    authApi = AuthAPI(client: client);
+    databaseApi = DatabaseAPI(auth: authApi);
+    _fetchNewSkills();
     _createAnimationIntervals();
 
     _staggeredController = AnimationController(
       vsync: this,
       duration: _animationDuration,
     )..forward();
+  }
+
+  void _fetchNewSkills() async {
+    try {
+      final skills = await databaseApi.getAllSkills();
+      setState(() {
+        newSkills = skills.take(5).toList(); // Take first 5 skills
+      });
+    } catch (e) {
+      print('Error fetching new skills: $e');
+    }
   }
 
   void _createAnimationIntervals() {
@@ -63,8 +80,7 @@ class _MenuState extends State<Menu> with SingleTickerProviderStateMixin {
       );
     }
 
-    final buttonStartTime =
-        Duration(milliseconds: (_menuTitles.length * 50)) + _buttonDelayTime;
+    final buttonStartTime = Duration(milliseconds: (_menuTitles.length * 50)) + _buttonDelayTime;
     final buttonEndTime = buttonStartTime + _buttonTime;
     _buttonInterval = Interval(
       buttonStartTime.inMilliseconds / _animationDuration.inMilliseconds,
@@ -80,13 +96,15 @@ class _MenuState extends State<Menu> with SingleTickerProviderStateMixin {
 
   @override
   Widget build(BuildContext context) {
+    final isAuthenticated = Provider.of<AuthAPI>(context).status == AuthStatus.authenticated;
+
     return Container(
       color: Colors.white,
       child: Stack(
         fit: StackFit.expand,
         children: [
           _buildAvodahLogo(),
-          _buildContent(),
+          _buildContent(isAuthenticated),
         ],
       ),
     );
@@ -106,44 +124,31 @@ class _MenuState extends State<Menu> with SingleTickerProviderStateMixin {
     );
   }
 
-  Widget _buildContent() {
+  Widget _buildContent(bool isAuthenticated) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         const SizedBox(height: 16),
-        ..._buildListItems(),
+        ..._buildListItems(isAuthenticated),
         const Spacer(),
         _buildGetStartedButton(),
       ],
     );
   }
 
-List<Widget> _buildListItems() {
-  final listItems = <Widget>[];
-  for (var i = 0; i < _menuTitles.length; ++i) {
-    listItems.add(
-      GestureDetector(
-        onTap: () {
-          // Handle menu item tap with different actions based on title
-          switch (_menuTitles[i]) {
-            case 'Login':
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (context) => LoginPage()),
-              );
-            //   break;
-            // case 'Reset Password':
-            //   Navigator.of(context).pushNamed('/reset_password');
-              break;
-            case 'Privacy Policy':
-              _launchPrivacyPolicy();
-              break;
-            case 'Documentation':
-              _launchDocumentation();
-              break;
-          }
-        },
-        child: AnimatedBuilder(
+  List<Widget> _buildListItems(bool isAuthenticated) {
+    final listItems = <Widget>[];
+    
+    // Create a modified list of menu titles based on authentication
+    final displayMenuTitles = List<String>.from(_menuTitles);
+    if (isAuthenticated) {
+      // Replace 'Login' with 'Logout' if user is authenticated
+      displayMenuTitles[0] = 'Logout';
+    }
+    
+    for (var i = 0; i < displayMenuTitles.length; ++i) {
+      listItems.add(
+        AnimatedBuilder(
           animation: _staggeredController,
           builder: (context, child) {
             final animationPercent = Curves.easeOut.transform(
@@ -161,48 +166,135 @@ List<Widget> _buildListItems() {
             );
           },
           child: Padding(
-            padding: EdgeInsets.symmetric(horizontal: 36.0, vertical: 16),
-            child: SizedBox(
-              width: double.infinity,
-              child: Text(
-                _menuTitles[i],
-                textAlign: TextAlign.left,
-                style: const TextStyle(
-                  fontSize: 24,
-                  fontWeight: FontWeight.w500,
+            padding: const EdgeInsets.symmetric(horizontal: 36.0, vertical: 16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                GestureDetector(
+                  onTap: () {
+                    switch (displayMenuTitles[i]) {
+                      case 'Login':
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(builder: (context) => LoginPage()),
+                        );
+                        break;
+                      case 'Logout':
+                        authApi.signOut(context);
+                        break;
+                      case 'Privacy Policy':
+                        _launchPrivacyPolicy();
+                        break;
+                      case 'Documentation':
+                        _launchDocumentation();
+                        break;
+                      case 'New Items':
+                        setState(() {
+                          _isNewItemsExpanded = !_isNewItemsExpanded;
+                        });
+                        break;
+                    }
+                  },
+                  child: SizedBox(
+                    width: double.infinity,
+                    child: Text(
+                      displayMenuTitles[i] == 'New Items'
+                          ? 'New Items (${newSkills.length})'
+                          : displayMenuTitles[i],
+                      textAlign: TextAlign.left,
+                      style: const TextStyle(
+                        fontSize: 24,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ),
                 ),
-              ),
+                if (displayMenuTitles[i] == 'New Items' && _isNewItemsExpanded)
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: newSkills.isEmpty
+                        ? [
+                            Padding(
+                              padding: const EdgeInsets.only(left: 16.0, top: 8.0),
+                              child: Text(
+                                'Loading skills...',
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  color: Colors.grey[600],
+                                ),
+                              ),
+                            ),
+                          ]
+                        : newSkills.map<Widget>((skill) {
+                            final title = skill.data['firstName'] as String? ?? 'Unknown';
+                            final category = skill.data['selectedCategory'] as String? ?? 'Unknown';
+                            final subCategory = skill.data['selectedSubcategory'] as String? ?? 'Unknown';
+                            return Padding(
+                              padding: const EdgeInsets.only(left: 16.0, top: 8.0),
+                              child: GestureDetector(
+                                onTap: () {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (context) => SkillDetails(data: skill),
+                                    ),
+                                  );
+                                },
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      title,
+                                      style: const TextStyle(
+                                        fontSize: 18,
+                                        //fontWeight: FontWeight.bold,
+                                        color:  Colors.deepPurple,
+                                      ),
+                                    ),
+                                    Text(
+                                      '$category - $subCategory',
+                                      style: TextStyle(
+                                        fontSize: 14,
+                                        color: Colors.grey[600],
+                                      ),
+                                    ),
+                                    const SizedBox(height: 8),
+                                  ],
+                                ),
+                              ),
+                            );
+                          }).toList(),
+                  ),
+              ],
             ),
           ),
         ),
-      ),
-    );
+      );
+    }
+    return listItems;
   }
-  return listItems;
-}
 
-// Add these helper methods for launching URLs
-void _launchPrivacyPolicy() async {
-  const privacyPolicyUrl = 'https://avodahsystems.com/?page_id=101'; // Replace with your actual URL
-  if (await canLaunch(privacyPolicyUrl)) {
-    await launch(privacyPolicyUrl);
-  } else {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('Could not launch Privacy Policy')),
-    );
+  void _launchPrivacyPolicy() async {
+    const privacyPolicyUrl = 'https://avodahsystems.com/?page_id=101';
+    if (await canLaunch(privacyPolicyUrl)) {
+      await launch(privacyPolicyUrl);
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Could not launch Privacy Policy')),
+      );
+    }
   }
-}
 
-void _launchDocumentation() async {
-  const documentationUrl = 'https://avodahsystems.com/?page_id=154'; // Replace with your actual URL
-  if (await canLaunch(documentationUrl)) {
-    await launch(documentationUrl);
-  } else {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('Could not launch Documentation')),
-    );
+  void _launchDocumentation() async {
+    const documentationUrl = 'https://avodahsystems.com/?page_id=154';
+    if (await canLaunch(documentationUrl)) {
+      await launch(documentationUrl);
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Could not launch Documentation')),
+      );
+    }
   }
-}
 
   Widget _buildGetStartedButton() {
     return SizedBox(
@@ -233,13 +325,12 @@ void _launchDocumentation() async {
               padding: const EdgeInsets.symmetric(horizontal: 48, vertical: 14),
             ),
             onPressed: () {
-              // Navigate to the home page ('/')
               Navigator.pushNamed(context, '/');
             },
             child: const Text(
               'Go to Home',
               style: TextStyle(
-                color: Color.fromARGB(255, 199, 170, 170),
+                color: Colors.white,
                 fontSize: 22,
               ),
             ),
