@@ -277,4 +277,20 @@ Future deleteSkill(String docID) async {
   }
 }
 
+
+// Add this to your DatabaseAPI class
+Future<Document> getSkillById(String skillId) async {
+  try {
+    final document = await databases.getDocument(
+      databaseId: APPWRITE_DATABASE_ID,
+      collectionId: COLLECTION_DB_ID,
+      documentId: skillId,
+    );
+    return document;
+  } catch (e) {
+    print('Error fetching skill: $e'); // Using print instead of debugPrint
+    throw e;
+  }
+}
+
 }

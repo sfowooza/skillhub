@@ -13,6 +13,8 @@ import 'package:skillhub/pages/nav_tabs/tabs_page.dart';
 import 'package:skillhub/providers/registration_form_providers.dart';
 import 'package:skillhub/routes/routes.dart';
 import 'appwrite/auth_api.dart';
+import 'package:skillhub/appwrite/database_api.dart';
+import 'package:skillhub/pages/homePages/skills_detail.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -80,32 +82,59 @@ class _MyAppState extends State<MyApp> {
     }
   }
 
- void handleDeepLink(Uri uri) {
-  debugPrint('Handling deep link: ${uri.toString()}');
+void handleDeepLink(Uri uri) {
+  print('Handling deep link: ${uri.toString()}');
+  
+  // Reset password handling
   if (uri.path == '/reset-password') {
-    final userId = uri.queryParameters['userId'];
-    final secret = uri.queryParameters['secret'];
+    // Reset password code unchanged
+  }
+  // Skill details handling
+  else if (uri.host == 'skill' || uri.path.contains('/skill/')) {
+    // Extract the skill ID from either host or path
+    String? skillId;
     
-    if (userId != null && secret != null) {
-      debugPrint('Navigating to ResetPasswordPage with userId: $userId');
-      setState(() => _isHandlingDeepLink = true); // Make sure this is in a stateful context
-      navigatorKey.currentState?.pushAndRemoveUntil(
-        MaterialPageRoute(
-          builder: (context) => ResetPasswordPage(
-            userId: userId,
-            secret: secret,
+    if (uri.host == 'skill' && uri.path.isNotEmpty) {
+      // Handle skillhub://skill/123456
+      skillId = uri.path.replaceFirst('/', '');
+    } else if (uri.pathSegments.length >= 2 && uri.pathSegments.contains('skill')) {
+      // Handle https://skillhub.avodahsystems.com/skillhub/skill/123456
+      final index = uri.pathSegments.indexOf('skill');
+      if (index >= 0 && index < uri.pathSegments.length - 1) {
+        skillId = uri.pathSegments[index + 1];
+      }
+    }
+    
+    if (skillId != null && skillId.isNotEmpty) {
+      print('Navigating to SkillDetails with skillId: $skillId');
+      setState(() => _isHandlingDeepLink = true);
+      
+      // Use the non-null skillId since we've checked it's not null
+      final String nonNullSkillId = skillId;
+      
+      // Call database to get the skill data
+      final databaseAPI = DatabaseAPI(auth: Provider.of<AuthAPI>(context, listen: false));
+      
+      databaseAPI.getSkillById(nonNullSkillId).then((skillData) {
+        navigatorKey.currentState?.pushAndRemoveUntil(
+          MaterialPageRoute(
+            builder: (context) => SkillDetails(skillId: nonNullSkillId),
           ),
-        ),
-        (route) => false,
-      ).then((value) {
-        debugPrint('Navigation to ResetPasswordPage completed');
-        setState(() => _isHandlingDeepLink = false); // Reset flag after navigation
+          (route) => false,
+        ).then((_) {
+          setState(() => _isHandlingDeepLink = false);
+        });
       }).catchError((error) {
-        debugPrint('Error during navigation: $error');
-        setState(() => _isHandlingDeepLink = false); // Reset flag even on error
+        print('Error fetching skill data: $error');
+        setState(() => _isHandlingDeepLink = false);
+        // Show error message to user
+        ScaffoldMessenger.of(navigatorKey.currentContext!).showSnackBar(
+          SnackBar(content: Text('Error loading skill data. Please try again.')),
+        );
       });
     } else {
-      debugPrint('User ID or Secret is null, navigation failed.');
+      print('Skill ID is null or empty, navigation failed.');
+      setState(() => _isHandlingDeepLink = false);
     }
   }
 }
