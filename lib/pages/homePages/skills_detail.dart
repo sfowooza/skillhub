@@ -1,4 +1,3 @@
-// lib/pages/homePages/skills_detail.dart
 import 'package:appwrite/models.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -18,34 +17,48 @@ import 'package:share_plus/share_plus.dart';
 import 'package:intl/intl.dart';
 import 'dart:io';
 import 'package:skillhub/utils/category_mappers.dart';
+import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:percent_indicator/circular_percent_indicator.dart';
+import 'package:carousel_slider/carousel_slider.dart';
 
-class InfoTile extends StatelessWidget {
+class ModernInfoTile extends StatelessWidget {
   final IconData icon;
   final String title;
   final String value;
   final VoidCallback? onTap;
+  final Color? accentColor;
 
-  const InfoTile({
+  const ModernInfoTile({
     Key? key,
     required this.icon,
     required this.title,
     required this.value,
     this.onTap,
+    this.accentColor,
   }) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
-    return InkWell(
+    return GestureDetector(
       onTap: onTap,
-      child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 8.0),
+      child: AnimatedContainer(
+        duration: Duration(milliseconds: 200),
+        margin: EdgeInsets.symmetric(vertical: 8),
+        padding: EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.grey.withOpacity(0.1),
+              spreadRadius: 2,
+              blurRadius: 5,
+            ),
+          ],
+        ),
         child: Row(
           children: [
-            Icon(
-              icon,
-              size: 24,
-              color: BaseColors().customTheme.primaryColor,
-            ),
+            Icon(icon, size: 28, color: accentColor ?? BaseColors().customTheme.primaryColor),
             SizedBox(width: 16),
             Expanded(
               child: Column(
@@ -54,8 +67,9 @@ class InfoTile extends StatelessWidget {
                   Text(
                     title,
                     style: TextStyle(
-                      color: Colors.grey[600],
+                      color: Colors.grey[700],
                       fontSize: 14,
+                      fontWeight: FontWeight.w600,
                     ),
                   ),
                   SizedBox(height: 4),
@@ -63,17 +77,15 @@ class InfoTile extends StatelessWidget {
                     value,
                     style: TextStyle(
                       fontSize: 16,
-                      fontWeight: FontWeight.w500,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.black87,
                     ),
                   ),
                 ],
               ),
             ),
             if (onTap != null)
-              Icon(
-                Icons.chevron_right,
-                color: Colors.grey[400],
-              ),
+              Icon(Icons.chevron_right, color: Colors.grey[400]),
           ],
         ),
       ),
@@ -90,22 +102,33 @@ class SkillDetails extends StatefulWidget {
   State<SkillDetails> createState() => _SkillDetailsState();
 }
 
-class _SkillDetailsState extends State<SkillDetails> {
+class _SkillDetailsState extends State<SkillDetails> with SingleTickerProviderStateMixin {
   bool isRSVPedEvent = false;
   String id = "";
   late DatabaseAPI database;
-  bool isHovering = false;
   double userRating = 0;
+  late AnimationController _controller;
+  late Animation<double> _animation;
+  bool isAvailable = true; // For live availability toggle
+  double estimatedPrice = 0.0; // For dynamic pricing calculator
 
   @override
   void initState() {
     super.initState();
+    _controller = AnimationController(
+      duration: Duration(milliseconds: 500),
+      vsync: this,
+    );
+    _animation = CurvedAnimation(parent: _controller, curve: Curves.easeInOut);
+    _controller.forward();
+
     WidgetsBinding.instance.addPostFrameCallback((_) {
       initializeDatabase();
       setState(() {
         id = SavedData.getUserId();
         isRSVPedEvent = isUserPresent(widget.data.data["participants"] as List<dynamic>? ?? [], id);
         userRating = (widget.data.data["averageRating"] as num?)?.toDouble() ?? 0;
+        isAvailable = widget.data.data['isAvailable'] ?? true;
       });
     });
   }
@@ -130,8 +153,7 @@ class _SkillDetailsState extends State<SkillDetails> {
     setState(() {
       userRating = rating;
     });
-    // TODO: Implement rating update in the database
-    // database.updateRating(widget.data.$id, rating);
+    // TODO: Update rating in database
   }
 
   String formatDate(String? dateTimeString) {
@@ -155,6 +177,12 @@ class _SkillDetailsState extends State<SkillDetails> {
   }
 
   @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     final isAuthenticated = Provider.of<AuthAPI>(context).status == AuthStatus.authenticated;
 
@@ -170,386 +198,400 @@ class _SkillDetailsState extends State<SkillDetails> {
     final String selectedCategory = widget.data.data["selectedCategory"] as String? ?? "Uncategorized";
 
     return Scaffold(
-      floatingActionButton: isAuthenticated ? ExpandableFab() : null,
-      body: CustomScrollView(
-        slivers: [
-          SliverAppBar(
-            expandedHeight: 300,
-            floating: false,
-            pinned: true,
-            flexibleSpace: FlexibleSpaceBar(
-              background: Stack(
-                fit: StackFit.expand,
-                children: [
-                  ColorFiltered(
-                    colorFilter: ColorFilter.mode(
-                        Colors.black.withOpacity(0.3), BlendMode.darken),
-                    child: Image.network(
-                      imageUrl,
-                      fit: BoxFit.cover,
-                    ),
-                  ),
-                  Positioned(
-                    bottom: 16,
-                    left: 16,
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          firstName,
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 28,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        SizedBox(height: 4),
-                        Row(
-                          children: [
-                            Container(
-                              padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                              decoration: BoxDecoration(
-                                color: Colors.white.withOpacity(0.2),
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                              child: Row(
-                                children: [
-                                  Icon(Icons.calendar_today, color: Colors.white, size: 14),
-                                  SizedBox(width: 4),
-                                  Text(
-                                    formatDate(datetime),
-                                    style: TextStyle(color: Colors.white),
-                                  ),
-                                ],
-                              ),
-                            ),
-                            SizedBox(width: 8),
-                            Container(
-                              padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                              decoration: BoxDecoration(
-                                color: Colors.white.withOpacity(0.2),
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                              child: Row(
-                                children: [
-                                  Icon(Icons.access_time, color: Colors.white, size: 14),
-                                  SizedBox(width: 4),
-                                  Text(
-                                    formatTime(datetime),
-                                    style: TextStyle(color: Colors.white),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
+      floatingActionButton: isAuthenticated
+          ? Padding(
+              padding: EdgeInsets.only(left: 30), // Moves FAB to the left with some padding
+              child: Align(
+                alignment: Alignment.bottomLeft,
+                child: ExpandableFab(),
               ),
-            ),
-          ),
-          SliverToBoxAdapter(
-            child: Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Card(
-                    elevation: 0,
-                    color: Colors.grey.shade50,
-                    margin: EdgeInsets.symmetric(vertical: 8),
-                    child: Padding(
-                      padding: EdgeInsets.all(16),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            )
+          : null,
+      body: Stack(
+        children: [
+          CustomScrollView(
+            slivers: [
+              SliverAppBar(
+                expandedHeight: 350,
+                floating: false,
+                pinned: true,
+                flexibleSpace: FlexibleSpaceBar(
+                  background: Stack(
+                    fit: StackFit.expand,
+                    children: [
+                      Image.network(imageUrl, fit: BoxFit.cover),
+                      Container(
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            colors: [Colors.black.withOpacity(0.5), Colors.transparent],
+                            begin: Alignment.bottomCenter,
+                            end: Alignment.topCenter,
+                          ),
+                        ),
+                      ),
+                      Positioned(
+                        bottom: 20,
+                        left: 20,
+                        child: FadeTransition(
+                          opacity: _animation,
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    "Contact Info",
-                                    style: TextStyle(
-                                      fontSize: 18,
-                                      fontWeight: FontWeight.bold,
-                                      color: BaseColors().customTheme.primaryColor,
-                                    ),
-                                  ),
-                                  SizedBox(height: 4),
-                                  Text(
-                                    firstName,
-                                    style: TextStyle(fontSize: 16),
-                                  ),
-                                ],
-                              ),
-                              Container(
-                                padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                                decoration: BoxDecoration(
-                                  color: BaseColors().customTheme.primaryColor.withOpacity(0.1),
-                                  borderRadius: BorderRadius.circular(20),
-                                ),
-                                child: Row(
-                                  children: [
-                                    Icon(
-                                      Icons.phone,
-                                      color: BaseColors().customTheme.primaryColor,
-                                      size: 16,
-                                    ),
-                                    SizedBox(width: 6),
-                                    Text(
-                                      widget.data.data["phoneNumber"] as String? ?? "No phone",
-                                      style: TextStyle(
-                                        fontSize: 14,
-                                        color: BaseColors().customTheme.primaryColor,
-                                      ),
-                                    ),
-                                  ],
+                              Text(
+                                firstName,
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 32,
+                                  fontWeight: FontWeight.bold,
+                                  shadows: [Shadow(color: Colors.black45, blurRadius: 5)],
                                 ),
                               ),
-                            ],
-                          ),
-                          Divider(height: 24),
-                          Text(
-                            "About",
-                            style: TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
-                              color: BaseColors().customTheme.primaryColor,
-                            ),
-                          ),
-                          SizedBox(height: 8),
-                          Text(
-                            description,
-                            style: TextStyle(
-                              fontSize: 16,
-                              height: 1.5,
-                              color: BaseColors().baseTextColor,
-                            ),
-                          ),
-                          Divider(height: 24),
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
+                              SizedBox(height: 8),
                               Row(
                                 children: [
-                                  Icon(
-                                    Icons.thumb_up,
-                                    size: 16,
-                                    color: BaseColors().customTheme.primaryColor,
+                                  Chip(
+                                    label: Text(formatDate(datetime)),
+                                    avatar: Icon(Icons.calendar_today, size: 16, color: Colors.white),
+                                    backgroundColor: Colors.white.withOpacity(0.2),
                                   ),
                                   SizedBox(width: 8),
-                                  Text(
-                                    "${participants.length} likes",
-                                    style: TextStyle(
-                                      color: BaseColors().customTheme.primaryColor,
-                                      fontWeight: FontWeight.w500,
-                                    ),
+                                  Chip(
+                                    label: Text(formatTime(datetime)),
+                                    avatar: Icon(Icons.access_time, size: 16, color: Colors.white),
+                                    backgroundColor: Colors.white.withOpacity(0.2),
                                   ),
                                 ],
                               ),
-                              IconButton(
-                                icon: Icon(Icons.share),
-                                color: BaseColors().customTheme.primaryColor,
-                                onPressed: () async {
-                                  final String shareLink = 'https://skillhub.avodahsystems.com/skillhub/skill/${widget.data.$id}';
-                                  final String text = 'Check out this skill on SkillHub: $firstName\n$shareLink';
-                                  if (Platform.isAndroid || Platform.isIOS) {
-                                    await Share.share(
-                                      text,
-                                      subject: 'Skill on SkillHub',
-                                    );
-                                    final RenderBox? box = context.findRenderObject() as RenderBox?;
-                                    if (box != null) {
-                                      await Share.share(
-                                        text,
-                                        subject: 'Skill on SkillHub',
-                                        sharePositionOrigin: box.localToGlobal(Offset.zero) & box.size,
-                                      );
-                                    }
-                                  } else {
-                                    await Share.share(text);
-                                  }
-                                },
-                              ),
                             ],
                           ),
-                        ],
-                      ),
-                    ),
-                  ),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                    children: [
-                      ElevatedButton.icon(
-                        onPressed: () {
-                          _launchUrl("https://www.google.com/maps/search/?api=1&query=$location");
-                        },
-                        icon: Icon(Icons.map),
-                        label: Text("Open in Maps", style: TextStyle(color: Colors.white)),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: BaseColors().customTheme.primaryColor,
-                        ),
-                      ),
-                      ElevatedButton(
-                        onPressed: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                                builder: (context) => ViewLocation(documentId: widget.data.$id)),
-                          );
-                        },
-                        child: Text('View Location', style: TextStyle(color: Colors.white)),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: BaseColors().customTheme.primaryColor,
                         ),
                       ),
                     ],
                   ),
-                  Center(
-                    child: ElevatedButton.icon(
-                      onPressed: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(builder: (context) => ViewWhatsappLink()),
-                        );
-                      },
-                      icon: Image.asset(
-                        'assets/logo_skillshub.png',
-                        width: 24,
-                        height: 24,
-                        color: Colors.white,
-                      ),
-                      label: Text('View WhatsApp Biz Catalogue'),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Color(0xFF25D366),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(30),
-                        ),
-                      ),
-                    ),
-                  ),
-                  Card(
-                    elevation: 0,
-                    margin: EdgeInsets.symmetric(vertical: 8),
-                    child: Padding(
-                      padding: EdgeInsets.all(16),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            "Rate this skill",
-                            style: TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
-                              color: BaseColors().customTheme.primaryColor,
-                            ),
-                          ),
-                          SizedBox(height: 12),
-                          Center(
-                            child: RatingBar.builder(
-                              initialRating: userRating,
-                              minRating: 1,
-                              direction: Axis.horizontal,
-                              allowHalfRating: true,
-                              itemCount: 5,
-                              itemPadding: EdgeInsets.symmetric(horizontal: 4),
-                              itemBuilder: (context, _) => Icon(
-                                Icons.star,
-                                color: Colors.amber,
-                              ),
-                              onRatingUpdate: _updateRating,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                  Card(
-                    elevation: 0,
-                    margin: EdgeInsets.symmetric(vertical: 8),
-                    child: Padding(
-                      padding: EdgeInsets.all(16),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            "More Info",
-                            style: TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
-                              color: BaseColors().customTheme.primaryColor,
-                            ),
-                          ),
-                          SizedBox(height: 12),
-                          InfoTile(
-                            icon: isInPerson ? Icons.person : Icons.computer,
-                            title: "Type",
-                            value: isInPerson ? "In Person" : "Virtual",
-                          ),
-                          InfoTile(
-                            icon: Icons.category,
-                            title: "Category",
-                            value: CategoryMapper.toDisplayName(selectedCategory),
-                            onTap: () {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(builder: (context) => MyHomeCategoryPage()),
-                              );
-                            },
-                          ),
-                          InfoTile(
-                            icon: Icons.layers_outlined,
-                            title: "Subcategory",
-                            value: SubCategoryMapper.toDisplayName(
-                              widget.data.data["selectedSubcategory"] as String? ?? "Not specified",
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                  if (isAuthenticated)
-                    SizedBox(
-                      height: 50,
-                      width: double.infinity,
-                      child: ElevatedButton(
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: isRSVPedEvent ? Colors.grey : BaseColors().customTheme.primaryColor,
-                        ),
-                        onPressed: isRSVPedEvent
-                            ? null
-                            : () {
-                                database.rsvpEvent(participants, widget.data.$id).then((value) {
-                                  if (value) {
-                                    setState(() {
-                                      isRSVPedEvent = true;
-                                    });
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      SnackBar(content: Text("RSVP Successful!")),
-                                    );
-                                  } else {
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      SnackBar(content: Text("Something went wrong. Try Again.")),
-                                    );
-                                  }
-                                });
-                              },
-                        child: Text(
-                          isRSVPedEvent ? "Attending Event" : "Like this? Click!",
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontWeight: FontWeight.w900,
-                            fontSize: 20,
-                          ),
-                        ),
-                      ),
-                    ),
-                ],
+                ),
               ),
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: const EdgeInsets.all(16.0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Contact Info Card
+                      Card(
+                        elevation: 4,
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                        child: Padding(
+                          padding: EdgeInsets.all(16),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                children: [
+                                  Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        "Contact Info",
+                                        style: TextStyle(
+                                          fontSize: 20,
+                                          fontWeight: FontWeight.bold,
+                                          color: BaseColors().customTheme.primaryColor,
+                                        ),
+                                      ),
+                                      SizedBox(height: 4),
+                                      Text(firstName, style: TextStyle(fontSize: 16)),
+                                    ],
+                                  ),
+                                  ElevatedButton.icon(
+                                    onPressed: () {
+                                      _launchUrl('tel:${widget.data.data["phoneNumber"]}');
+                                    },
+                                    icon: Icon(Icons.phone, size: 18),
+                                    label: Text("Call Now"),
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor: BaseColors().customTheme.primaryColor,
+                                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              Divider(height: 24),
+                              Text(
+                                "About",
+                                style: TextStyle(
+                                  fontSize: 20,
+                                  fontWeight: FontWeight.bold,
+                                  color: BaseColors().customTheme.primaryColor,
+                                ),
+                              ),
+                              SizedBox(height: 8),
+                              Text(
+                                description,
+                                style: TextStyle(fontSize: 16, height: 1.5, color: Colors.black87),
+                              ),
+                              SizedBox(height: 16),
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                children: [
+                                  Row(
+                                    children: [
+                                      Icon(Icons.thumb_up, color: BaseColors().customTheme.primaryColor),
+                                      SizedBox(width: 8),
+                                      Text("${participants.length} likes",
+                                          style: TextStyle(fontWeight: FontWeight.bold)),
+                                    ],
+                                  ),
+                                  IconButton(
+                                    icon: Icon(Icons.share, color: BaseColors().customTheme.primaryColor),
+                                    onPressed: () async {
+                                      final shareLink = 'https://skillhub.avodahsystems.com/skillhub/skill/${widget.data.$id}';
+                                      await Share.share('Check out this skill: $firstName\n$shareLink');
+                                    },
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+
+                      // Service Details Card
+                      SizedBox(height: 16),
+                      Card(
+                        elevation: 4,
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                        child: Padding(
+                          padding: EdgeInsets.all(16),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                "Service Details",
+                                style: TextStyle(
+                                  fontSize: 20,
+                                  fontWeight: FontWeight.bold,
+                                  color: BaseColors().customTheme.primaryColor,
+                                ),
+                              ),
+                              SizedBox(height: 16),
+
+                              // Key Features
+                              if (widget.data.data['keyFeatures'] != null)
+                                ExpansionTile(
+                                  leading: Icon(Icons.star, color: Colors.yellow[700]),
+                                  title: Text("Key Features", style: TextStyle(fontWeight: FontWeight.bold)),
+                                  children: List<String>.from(widget.data.data['keyFeatures'])
+                                      .map((feature) => ListTile(
+                                            leading: Icon(Icons.check_circle, color: Colors.green),
+                                            title: Text(feature),
+                                          ))
+                                      .toList(),
+                                ),
+
+                              // Service Hours
+                              ModernInfoTile(
+                                icon: Icons.access_time,
+                                title: "Service Hours",
+                                value: widget.data.data['serviceHours'] ?? 'Available 24/7',
+                                accentColor: Colors.blue,
+                              ),
+
+                              // Experience Level with Progress Indicator
+                              ListTile(
+                                leading: CircularPercentIndicator(
+                                  radius: 20.0,
+                                  lineWidth: 4.0,
+                                  percent: (widget.data.data['experienceYears'] ?? 0) / 20, // Assuming max 20 years
+                                  center: Text(
+                                    "${widget.data.data['experienceYears'] ?? 0}",
+                                    style: TextStyle(fontSize: 12),
+                                  ),
+                                  progressColor: Colors.amber,
+                                ),
+                                title: Text("Experience"),
+                                subtitle: Text("${widget.data.data['experienceYears'] ?? 'Not specified'} years"),
+                                trailing: Chip(
+                                  label: Text(widget.data.data['certification'] ?? 'Professional'),
+                                  backgroundColor: Colors.blue[100],
+                                ),
+                              ),
+
+                              // Pricing with Dynamic Calculator
+                              ListTile(
+                                leading: Icon(Icons.attach_money, color: Colors.green),
+                                title: Text("Pricing"),
+                                subtitle: Row(
+                                  children: [
+                                    Text("Estimate: \$$estimatedPrice"),
+                                    SizedBox(width: 8),
+                                    ElevatedButton(
+                                      onPressed: () {
+                                        showDialog(
+                                          context: context,
+                                          builder: (context) => AlertDialog(
+                                            title: Text("Estimate Your Cost"),
+                                            content: TextField(
+                                              keyboardType: TextInputType.number,
+                                              decoration: InputDecoration(labelText: "Enter hours"),
+                                              onChanged: (value) {
+                                                setState(() {
+                                                  estimatedPrice = (double.tryParse(value) ?? 0) *
+                                                      (widget.data.data['hourlyRate'] ?? 50);
+                                                });
+                                              },
+                                            ),
+                                            actions: [
+                                              TextButton(
+                                                onPressed: () => Navigator.pop(context),
+                                                child: Text("Done"),
+                                              ),
+                                            ],
+                                          ),
+                                        );
+                                      },
+                                      child: Text("Calculate"),
+                                      style: ElevatedButton.styleFrom(backgroundColor: Colors.green),
+                                    ),
+                                  ],
+                                ),
+                              ),
+
+                              // Mini Interactive Map
+                              Container(
+                                height: 200,
+                                margin: EdgeInsets.symmetric(vertical: 16),
+                                child: ClipRRect(
+                                  borderRadius: BorderRadius.circular(16),
+                                  child: GoogleMap(
+                                    initialCameraPosition: CameraPosition(
+                                      target: LatLng(37.7749, -122.4194), // Replace with actual lat/lng
+                                      zoom: 12,
+                                    ),
+                                    markers: {
+                                      Marker(
+                                        markerId: MarkerId('location'),
+                                        position: LatLng(37.7749, -122.4194), // Replace with actual lat/lng
+                                      ),
+                                    },
+                                  ),
+                                ),
+                              ),
+
+                              // Live Availability Toggle
+                              ListTile(
+                                leading: Icon(Icons.event_available, color: Colors.teal),
+                                title: Text("Availability"),
+                                trailing: Switch(
+                                  value: isAvailable,
+                                  onChanged: (value) {
+                                    setState(() {
+                                      isAvailable = value;
+                                    });
+                                    // TODO: Update availability in database
+                                  },
+                                  activeColor: Colors.green,
+                                ),
+                                subtitle: Text(isAvailable ? "Available Now" : "Currently Busy"),
+                              ),
+
+                              // Social Proof Carousel
+                              if (widget.data.data['portfolioImages'] != null)
+                                Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      "Past Work",
+                                      style: TextStyle(
+                                        fontSize: 18,
+                                        fontWeight: FontWeight.bold,
+                                        color: BaseColors().customTheme.primaryColor,
+                                      ),
+                                    ),
+                                    SizedBox(height: 8),
+                                    CarouselSlider(
+                                      options: CarouselOptions(
+                                        height: 150,
+                                        autoPlay: true,
+                                        enlargeCenterPage: true,
+                                      ),
+                                      items: List<String>.from(widget.data.data['portfolioImages'])
+                                          .map((image) => ClipRRect(
+                                                borderRadius: BorderRadius.circular(12),
+                                                child: Image.network(image, fit: BoxFit.cover),
+                                              ))
+                                          .toList(),
+                                    ),
+                                  ],
+                                ),
+
+                              // Rating Section
+                              SizedBox(height: 16),
+                              Text(
+                                "Rate this Skill",
+                                style: TextStyle(
+                                  fontSize: 20,
+                                  fontWeight: FontWeight.bold,
+                                  color: BaseColors().customTheme.primaryColor,
+                                ),
+                              ),
+                              SizedBox(height: 8),
+                              RatingBar.builder(
+                                initialRating: userRating,
+                                minRating: 1,
+                                direction: Axis.horizontal,
+                                allowHalfRating: true,
+                                itemCount: 5,
+                                itemPadding: EdgeInsets.symmetric(horizontal: 4),
+                                itemBuilder: (context, _) => Icon(Icons.star, color: Colors.amber),
+                                onRatingUpdate: _updateRating,
+                              ),
+                              SizedBox(height: 8),
+                              Text(
+                                "Current Rating: ${(userRating * 10).toStringAsFixed(0)} likes",
+                                style: TextStyle(color: Colors.grey[600]),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+
+          // Quick Action Buttons (Bottom-Right)
+          Positioned(
+            bottom: 20,
+            right: 20,
+            child: Column(
+              children: [
+                FloatingActionButton(
+                  heroTag: "call",
+                  onPressed: () => _launchUrl('tel:${widget.data.data["phoneNumber"]}'),
+                  backgroundColor: Colors.green,
+                  child: Icon(Icons.phone),
+                ),
+                SizedBox(height: 16),
+                FloatingActionButton(
+                  heroTag: "chat",
+                  onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => ViewWhatsappLink())),
+                  backgroundColor: Color(0xFF25D366),
+                  child: Icon(Icons.chat),
+                ),
+                SizedBox(height: 16),
+                FloatingActionButton(
+                  heroTag: "book",
+                  onPressed: () {
+                    // TODO: Implement booking logic
+                    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Booking Coming Soon!")));
+                  },
+                  backgroundColor: BaseColors().customTheme.primaryColor,
+                  child: Icon(Icons.book),
+                ),
+              ],
             ),
           ),
         ],

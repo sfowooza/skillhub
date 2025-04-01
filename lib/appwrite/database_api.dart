@@ -276,6 +276,59 @@ Future deleteSkill(String docID) async {
     print(e);
   }
 }
+Stream<Document> getSkillRatings(String skillId) {
+  try {
+    return databases.getDocument(
+      databaseId: APPWRITE_DATABASE_ID,
+      collectionId: COLLECTION_DB_ID, 
+      documentId: skillId,
+    ).asStream();
+  } catch (e) {
+    print('Error getting skill ratings: $e');
+    throw e;
+  }
+}
+
+Future<void> updateRating(String skillId, double rating) async {
+  try {
+    String userId = SavedData.getUserId();
+    
+    // Get current document
+    final doc = await databases.getDocument(
+      databaseId: APPWRITE_DATABASE_ID,
+      collectionId: COLLECTION_DB_ID,
+      documentId: skillId
+    );
+
+    // Get current ratings or initialize empty map
+    Map<String, dynamic> ratings = (doc.data['ratings'] as Map<String, dynamic>?) ?? {};
+    
+    // Update user's rating
+    ratings[userId] = rating;
+
+    // Calculate average rating
+    double averageRating = 0;
+    if (ratings.isNotEmpty) {
+      double sum = ratings.values.fold(0, (prev, curr) => prev + (curr as num));
+      averageRating = sum / ratings.length;
+    }
+
+    // Update document with new ratings
+    await databases.updateDocument(
+      databaseId: APPWRITE_DATABASE_ID,
+      collectionId: COLLECTION_DB_ID,
+      documentId: skillId,
+      data: {
+        'ratings': ratings,
+        'averageRating': averageRating
+      }
+    );
+
+  } catch (e) {
+    print('Error updating rating: $e');
+    throw e;
+  }
+}
 
 
 // Add this to your DatabaseAPI class

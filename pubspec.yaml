@@ -54,6 +54,7 @@ dependencies:
   flutter_rating_bar: ^4.0.1
   app_links: ^6.3.3
   win32: ^5.0.9
+  percent_indicator: ^4.2.3
 
 dev_dependencies:
   flutter_test:
