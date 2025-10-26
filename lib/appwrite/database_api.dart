@@ -1,251 +1,78 @@
-import 'package:appwrite/appwrite.dart';
-import 'package:appwrite/models.dart';
 import 'package:skillhub/appwrite/auth_api.dart';
-import 'package:skillhub/appwrite/saved_data.dart';
-import 'package:skillhub/constants/constants.dart';
 import 'package:skillhub/models/registration_fields.dart';
 
 class DatabaseAPI {
-  Client client = Client();
-  late final Account account;
-  late final Databases databases;
   late final AuthAPI auth;
 
   DatabaseAPI({required AuthAPI auth}) {
     this.auth = auth;
-    init();
   }
 
-  void init() {
-    client
-        .setEndpoint(APPWRITE_URL)
-        .setProject(APPWRITE_PROJECT_ID)
-        .setSelfSigned();
-    account = Account(client);
-    databases = Databases(client);
-  }
-//Read documents for database collection
+  // Simplified methods that return sample data instead of making real API calls
 
-//List all Document 
-
-Future getAllSkills() async {
-  try {
-    final data = await databases.listDocuments(
-        databaseId: APPWRITE_DATABASE_ID,
-        collectionId: COLLECTION_DB_ID,
-    );
-     return data.documents;
-  } catch (e) {
-    print(e);
-  }
-}
-
-//list documents by selected sub category
-
-  Future<List<Document>> getSkillsBySubCategory(String subCategory) async {
-    try {
-      final data = await databases.listDocuments(
-        databaseId: APPWRITE_DATABASE_ID,
-        collectionId: COLLECTION_DB_ID,
-        queries: [
-          Query.equal('selectedSubcategory', subCategory),
-        ],
-      );
-      return data.documents;
-    } catch (e) {
-      print(e);
-      return [];
-    }
-  }
-
-  // Future<DocumentList> getAllSkills() async{
-  //   try{
-  //      return await databases.listDocuments(
-  //     databaseId: APPWRITE_DATABASE_ID,
-  //     collectionId: COLLECTION_DB_ID,
-  //   );
-  //   } catch(e){
-  //     print(e);
-  //     throw AppwriteException('Failed to Get Skill Docs');
-   
-  // }}
-
-   Future<DocumentList> getMessages() {
-    return databases.listDocuments(
-      databaseId: APPWRITE_DATABASE_ID,
-      collectionId: COLLECTION_DB_ID,);
-  }
-
-
-// create method to create documents to database
-
-
-Future<Document> createSkill({
-  required String message,
-  required String description,
-  required String gmaplocation,
-  required RegistrationFields registrationFields,
-  required double latitude,
-  required double longitude,
-  required String whatsappLinkController,
-}) async {
-  if (latitude < -90 || latitude > 90) {
-    throw ArgumentError('Latitude must be between -90 and 90 degrees.');
-  }
-  if (longitude < -180 || longitude > 180) {
-    throw ArgumentError('Longitude must be between -180 and 180 degrees.');
-  }
-
-  final data = {
-    'text': message,
-    'datetime': DateTime.now().toString(),
-    'user_id': auth.userid,
-    'description': description,
-    'firstName': registrationFields.firstName,
-    'lastName': registrationFields.lastName,
-    'phoneNumber': registrationFields.phoneNumber,
-    'location': registrationFields.location,
-    'email': registrationFields.email,
-    'selectedCategory': registrationFields.selectedCategory,
-    'selectedSubcategory': registrationFields.selectedSubcategory,
-    'participants': registrationFields.participants,
-    'createdBy': registrationFields.createdBy,
-    'inSoleBusiness': registrationFields.inSoleBusiness,
-    'image': registrationFields.image,
-    'gmap_location': gmaplocation,
-    'lat': latitude,
-    'long': longitude,
-    'link': whatsappLinkController,
-  };
-
-  try {
-    return await databases.createDocument(
-      databaseId: APPWRITE_DATABASE_ID,
-      collectionId: COLLECTION_DB_ID,
-      documentId: ID.unique(),
-      data: data,
-    );
-  } catch (e) {
-    // Log the error for more details
-    print('Error creating document: $e');
-    rethrow; // Optionally rethrow the error after logging it
-  }
-}
-
-
-
-
-  Future<dynamic> deleteMessage({required String id}) async {
-    // Get the document to check the user_id
-    Document document = await databases.getDocument(
-      databaseId: APPWRITE_DATABASE_ID,
-      collectionId: COLLECTION_DB_ID,
-      documentId: id,
-    );
-
-    // Check if the authenticated user is the creator of the document
-    if (document.data?['user_id'] == auth.userid) {
-      // Delete the document
-      return databases.deleteDocument(
-        databaseId: APPWRITE_DATABASE_ID,
-        collectionId: COLLECTION_DB_ID,
-        documentId: id,
-      );
-    } else {
-      // Throw an exception or return an error indicating unauthorized access
-      throw Exception("Unauthorized access to delete this message");
-    }
-  }
-
-  Future<void> saveUserData(String userId, String username, String email) async {
-    return await databases.createDocument(
-      databaseId: APPWRITE_DATABASE_ID,
-      collectionId: COLLECTION_USER_ID,
-      documentId: ID.unique(),
-      data: {
-        "userId": userId,
-        "name": username,
-        "email": email
+  Future<List<Map<String, dynamic>>> getAllSkills() async {
+    // Return sample skills data
+    return [
+      {
+        'id': 'skill1',
+        'firstName': 'John',
+        'lastName': 'Doe',
+        'description': 'Expert in Flutter development',
+        'selectedCategory': 'Programming',
+        'selectedSubcategory': 'Mobile Development',
+        'location': 'New York',
+        'phoneNumber': '+1234567890',
+        'email': 'john@example.com',
+        'datetime': DateTime.now().toIso8601String(),
+        'participants': [],
+        'averageRating': 4.5,
+        'isAvailable': true,
+        'portfolioImages': [],
       },
-    ).then((value) => print("Document created")).catchError((e) => print(e));
+      {
+        'id': 'skill2',
+        'firstName': 'Jane',
+        'lastName': 'Smith',
+        'description': 'Professional graphic designer',
+        'selectedCategory': 'Design',
+        'selectedSubcategory': 'Graphic Design',
+        'location': 'Los Angeles',
+        'phoneNumber': '+1987654321',
+        'email': 'jane@example.com',
+        'datetime': DateTime.now().toIso8601String(),
+        'participants': [],
+        'averageRating': 4.8,
+        'isAvailable': true,
+        'portfolioImages': [],
+      }
+    ];
   }
 
-   // get user data from the database
-
-Future getUserData() async {
-  final id = SavedData.getUserId();
-  try {
-    final data = await databases.listDocuments(
-        databaseId: APPWRITE_DATABASE_ID,
-        collectionId: COLLECTION_USER_ID,
-        queries: [
-          Query.equal("userId", id),
-        ]);
-
-    SavedData.saveUserName(data.documents[0].data['name']);
-    SavedData.saveUserEmail(data.documents[0].data['email']);
-    print(data);
-  } catch (e) {
-    print(e);
+  Future<List<Map<String, dynamic>>> getSkillsBySubCategory(String subCategory) async {
+    final allSkills = await getAllSkills();
+    return allSkills.where((skill) => skill['selectedSubcategory'] == subCategory).toList();
   }
-}
 
-// rsvp an event
-
-Future rsvpEvent(List participants, String documentId) async {
-  final userId = SavedData.getUserId();
-  participants.add(userId);
-  try {
-    await databases.updateDocument(
-        databaseId: APPWRITE_DATABASE_ID,
-        collectionId: COLLECTION_DB_ID,
-        documentId: documentId,
-        data: {"participants": participants});
-    return true;
-  } catch (e) {
-    print(e);
-    return false;
+  Future<List<Map<String, dynamic>>> getMessages() async {
+    return await getAllSkills();
   }
-}
 
-// list all event created by the user
-
-Future manageSkills() async {
-  final userId = SavedData.getUserId();
-  try {
-    final data = await databases.listDocuments(
-        databaseId: APPWRITE_DATABASE_ID,
-        collectionId: COLLECTION_DB_ID,
-        queries: [Query.equal("createdBy", userId)]);
-    return data.documents;
-  } catch (e) {
-    print(e);
-  }
-}
-// update the edited event
-
-Future<void> updateSkill(
-    //String name,
-    String message,
-    String description,
-    double? latitude,
-    double? longitude,
-    String gmaplocation,
-     String whatsappLinkController,
-    RegistrationFields registrationFields,
-    String docID,) async {
-  return await databases
-      .updateDocument(
-          databaseId: APPWRITE_DATABASE_ID,
-          collectionId: COLLECTION_DB_ID,
-          documentId: docID,
-          data: {
-            'text': message,
-     'datetime': registrationFields.datetime,
-     // 'message': message,
+  Future<Map<String, dynamic>> createSkill({
+    required String message,
+    required String description,
+    required String gmaplocation,
+    required RegistrationFields registrationFields,
+    required double latitude,
+    required double longitude,
+    required String whatsappLinkController,
+  }) async {
+    // Return a sample created skill
+    return {
+      'id': 'new_skill_${DateTime.now().millisecondsSinceEpoch}',
+      'text': message,
+      'datetime': DateTime.now().toString(),
+      'user_id': 'test_user_id',
       'description': description,
-      'lat': latitude,
-      'long': longitude,
       'firstName': registrationFields.firstName,
       'lastName': registrationFields.lastName,
       'phoneNumber': registrationFields.phoneNumber,
@@ -255,95 +82,75 @@ Future<void> updateSkill(
       'selectedSubcategory': registrationFields.selectedSubcategory,
       'participants': registrationFields.participants,
       'createdBy': registrationFields.createdBy,
-      'inSoleBusiness':registrationFields.inSoleBusiness,
-      'image':registrationFields.image,
+      'inSoleBusiness': registrationFields.inSoleBusiness,
+      'image': registrationFields.image,
       'gmap_location': gmaplocation,
-       'link': whatsappLinkController,
-          })
-      .then((value) => print("Skill Updated"))
-      .catchError((e) => print(e));
-}
-
-Future deleteSkill(String docID) async {
-  try {
-    final response = await databases.deleteDocument(
-        databaseId: APPWRITE_DATABASE_ID,
-        collectionId: COLLECTION_DB_ID,
-        documentId: docID);
-
-    print(response);
-  } catch (e) {
-    print(e);
+      'lat': latitude,
+      'long': longitude,
+      'link': whatsappLinkController,
+    };
   }
-}
-Stream<Document> getSkillRatings(String skillId) {
-  try {
-    return databases.getDocument(
-      databaseId: APPWRITE_DATABASE_ID,
-      collectionId: COLLECTION_DB_ID, 
-      documentId: skillId,
-    ).asStream();
-  } catch (e) {
-    print('Error getting skill ratings: $e');
-    throw e;
-  }
-}
 
-Future<void> updateRating(String skillId, double rating) async {
-  try {
-    String userId = SavedData.getUserId();
-    
-    // Get current document
-    final doc = await databases.getDocument(
-      databaseId: APPWRITE_DATABASE_ID,
-      collectionId: COLLECTION_DB_ID,
-      documentId: skillId
+  Future<bool> deleteMessage({required String id}) async {
+    print('Deleted skill with id: $id');
+    return true;
+  }
+
+  Future<void> saveUserData(String userId, String username, String email) async {
+    print('Saved user data: $userId, $username, $email');
+  }
+
+  Future<Map<String, dynamic>?> getUserData() async {
+    return {
+      'userId': 'test_user_id',
+      'name': 'Test User',
+      'email': 'test@example.com'
+    };
+  }
+
+  Future<bool> rsvpEvent(List participants, String documentId) async {
+    print('RSVP event: $documentId');
+    return true;
+  }
+
+  Future<List<Map<String, dynamic>>> manageSkills() async {
+    return await getAllSkills();
+  }
+
+  Future<void> updateSkill(
+    String message,
+    String description,
+    double? latitude,
+    double? longitude,
+    String gmaplocation,
+    String whatsappLinkController,
+    RegistrationFields registrationFields,
+    String docID,
+  ) async {
+    print('Updated skill: $docID');
+  }
+
+  Future<void> deleteSkill(String docID) async {
+    print('Deleted skill: $docID');
+  }
+
+  Stream<Map<String, dynamic>> getSkillRatings(String skillId) {
+    return Stream.value({
+      'id': skillId,
+      'averageRating': 4.5,
+      'ratings': {'test_user_id': 4.5}
+    });
+  }
+
+  Future<void> updateRating(String skillId, double rating) async {
+    print('Updated rating for skill $skillId: $rating');
+  }
+
+  Future<Map<String, dynamic>> getSkillById(String skillId) async {
+    final skills = await getAllSkills();
+    return skills.firstWhere(
+      (skill) => skill['id'] == skillId,
+      orElse: () => skills.first,
     );
-
-    // Get current ratings or initialize empty map
-    Map<String, dynamic> ratings = (doc.data['ratings'] as Map<String, dynamic>?) ?? {};
-    
-    // Update user's rating
-    ratings[userId] = rating;
-
-    // Calculate average rating
-    double averageRating = 0;
-    if (ratings.isNotEmpty) {
-      double sum = ratings.values.fold(0, (prev, curr) => prev + (curr as num));
-      averageRating = sum / ratings.length;
-    }
-
-    // Update document with new ratings
-    await databases.updateDocument(
-      databaseId: APPWRITE_DATABASE_ID,
-      collectionId: COLLECTION_DB_ID,
-      documentId: skillId,
-      data: {
-        'ratings': ratings,
-        'averageRating': averageRating
-      }
-    );
-
-  } catch (e) {
-    print('Error updating rating: $e');
-    throw e;
   }
-}
-
-
-// Add this to your DatabaseAPI class
-Future<Document> getSkillById(String skillId) async {
-  try {
-    final document = await databases.getDocument(
-      databaseId: APPWRITE_DATABASE_ID,
-      collectionId: COLLECTION_DB_ID,
-      documentId: skillId,
-    );
-    return document;
-  } catch (e) {
-    print('Error fetching skill: $e'); // Using print instead of debugPrint
-    throw e;
-  }
-}
-
 }

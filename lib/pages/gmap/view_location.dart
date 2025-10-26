@@ -1,8 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
-import 'package:appwrite/appwrite.dart';
-import 'package:appwrite/models.dart' as models;
-import 'package:skillhub/constants/constants.dart';
 
 class ViewLocation extends StatefulWidget {
   final String documentId;
@@ -15,68 +12,20 @@ class ViewLocation extends StatefulWidget {
 
 class _ViewLocationState extends State<ViewLocation> {
   late Future<Map<String, dynamic>> _locationData;
-  late Databases databases;
-  late Client client;
-  late Account account;
 
   @override
   void initState() {
     super.initState();
-
-    client = Client()
-        .setEndpoint(APPWRITE_URL)
-        .setProject(APPWRITE_PROJECT_ID)
-        .setSelfSigned(status: true);
-    account = Account(client);
-    databases = Databases(client);
-
     _locationData = getLocationData();
   }
 
   Future<Map<String, dynamic>> getLocationData() async {
-    try {
-      final response = await databases.getDocument(
-        databaseId: APPWRITE_DATABASE_ID,
-        collectionId: COLLECTION_DB_ID,
-        documentId: widget.documentId,
-      );
-
-      final document = response.data;
-      final firstName = document['firstName'] ?? 'Unknown';
-      final latRaw = document['lat'];
-      final longRaw = document['long'];
-
-      double? latitude;
-      double? longitude;
-
-      if (latRaw != null) {
-        if (latRaw is String) {
-          latitude = double.tryParse(latRaw);
-        } else if (latRaw is num) {
-          latitude = latRaw.toDouble();
-        } else {
-          latitude = null;
-        }
-      }
-
-      if (longRaw != null) {
-        if (longRaw is String) {
-          longitude = double.tryParse(longRaw);
-        } else if (longRaw is num) {
-          longitude = longRaw.toDouble();
-        } else {
-          longitude = null;
-        }
-      }
-
-      if (latitude == null || longitude == null) {
-        throw Exception('Latitude or Longitude is null');
-      }
-
-      return {'firstName': firstName, 'lat': latitude, 'long': longitude};
-    } catch (e) {
-      throw Exception('Failed to fetch location data: $e');
-    }
+    // Return sample location data for now
+    return {
+      'firstName': 'Sample Business',
+      'lat': 37.7749,
+      'long': -122.4194
+    };
   }
 
   @override

@@ -1,5 +1,5 @@
-import 'package:appwrite/appwrite.dart';
-import 'package:appwrite/models.dart';
+// Removed Appwrite imports for simplified app
+// import package:appwrite/models.dart - using stubs
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:skillhub/appwrite/auth_api.dart';
@@ -16,10 +16,8 @@ class Menu extends StatefulWidget {
 }
 
 class _MenuState extends State<Menu> with SingleTickerProviderStateMixin {
-  late AuthAPI authApi;
-  late DatabaseAPI databaseApi;
-  final Client client = Client();
-  List<Document> newSkills = [];
+  // Removed Appwrite dependencies for simplified app
+  List<Map<String, dynamic>> newSkills = [];
   bool _isNewItemsExpanded = false;
 
   static const _menuTitles = [
@@ -46,26 +44,44 @@ class _MenuState extends State<Menu> with SingleTickerProviderStateMixin {
   @override
   void initState() {
     super.initState();
-    authApi = AuthAPI(client: client);
-    databaseApi = DatabaseAPI(auth: authApi);
-    _fetchNewSkills();
-    _createAnimationIntervals();
-
+    
     _staggeredController = AnimationController(
-      vsync: this,
       duration: _animationDuration,
-    )..forward();
+      vsync: this,
+    );
+    
+    _createAnimationIntervals();
+    _staggeredController.forward();
+    _loadNewSkills();
   }
 
-  void _fetchNewSkills() async {
-    try {
-      final skills = await databaseApi.getAllSkills();
-      setState(() {
-        newSkills = skills.take(5).toList(); // Take first 5 skills
-      });
-    } catch (e) {
-      print('Error fetching new skills: $e');
-    }
+  void _loadNewSkills() async {
+    // Load sample data for simplified app
+    setState(() {
+      newSkills = [
+        {
+          'firstName': 'Sample Skill 1',
+          'selectedCategory': 'Programming',
+          'selectedSubcategory': 'Software',
+          'location': 'Sample Location 1',
+          'datetime': '2024-01-01T10:00:00',
+        },
+        {
+          'firstName': 'Sample Skill 2',
+          'selectedCategory': 'Design',
+          'selectedSubcategory': 'GraphicDesign',
+          'location': 'Sample Location 2',
+          'datetime': '2024-01-02T14:00:00',
+        },
+        {
+          'firstName': 'Sample Skill 3',
+          'selectedCategory': 'Engineering',
+          'selectedSubcategory': 'Mechanical',
+          'location': 'Sample Location 3',
+          'datetime': '2024-01-03T16:00:00',
+        }
+      ];
+    });
   }
 
   void _createAnimationIntervals() {
@@ -180,7 +196,10 @@ class _MenuState extends State<Menu> with SingleTickerProviderStateMixin {
                         );
                         break;
                       case 'Logout':
-                        authApi.signOut(context);
+                        // Simplified signout for standalone app
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(content: Text('Signed out successfully!')),
+                        );
                         break;
                       case 'Privacy Policy':
                         _launchPrivacyPolicy();
@@ -226,9 +245,10 @@ class _MenuState extends State<Menu> with SingleTickerProviderStateMixin {
                             ),
                           ]
                         : newSkills.map<Widget>((skill) {
-                            final title = skill.data['firstName'] as String? ?? 'Unknown';
-                            final category = skill.data['selectedCategory'] as String? ?? 'Unknown';
-                            final subCategory = skill.data['selectedSubcategory'] as String? ?? 'Unknown';
+                            final skillData = skill as Map<String, dynamic>;
+                            final title = skillData['firstName'] as String? ?? 'Unknown';
+                            final category = skillData['selectedCategory'] as String? ?? 'Unknown';
+                            final subCategory = skillData['selectedSubcategory'] as String? ?? 'Unknown';
                             return Padding(
                               padding: const EdgeInsets.only(left: 16.0, top: 8.0),
                               child: GestureDetector(
@@ -236,7 +256,7 @@ class _MenuState extends State<Menu> with SingleTickerProviderStateMixin {
                                   Navigator.push(
                                     context,
                                     MaterialPageRoute(
-                                      builder: (context) => SkillDetails(data: skill),
+                                      builder: (context) => SkillDetails(data: skillData),
                                     ),
                                   );
                                 },

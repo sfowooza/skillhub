@@ -1,4 +1,4 @@
-import 'package:appwrite/appwrite.dart';
+// Removed Appwrite import for simplified app
 import 'package:skillhub/appwrite/auth_api.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -74,19 +74,9 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
             ),
           ),
         );
-      } on AppwriteException catch (e) {
+      } catch (e) {
         Navigator.pop(context);
-        String errorMessage;
-        switch (e.type) {
-          case 'user_invalid_email':
-            errorMessage = 'The email address provided is invalid or does not exist.';
-            break;
-          case 'general_rate_limit_exceeded':
-            errorMessage = 'Too many attempts. Please try again later.';
-            break;
-          default:
-            errorMessage = e.message ?? 'An error occurred. Please try again.';
-        }
+        String errorMessage = e.toString();
         showAlert(title: 'Password Reset Failed', text: errorMessage);
       }
     }

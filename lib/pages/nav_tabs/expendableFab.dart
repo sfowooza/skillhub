@@ -1,11 +1,8 @@
-import 'package:appwrite/appwrite.dart';
 import 'package:flutter/material.dart';
-import 'package:skillhub/appwrite/auth_api.dart';
-import 'package:skillhub/pages/Auth_screens/manage_skills.dart';
+import 'package:skillhub/pages/Auth_screens/register_page.dart';
 import 'package:skillhub/pages/Auth_screens/rsvp_events.dart';
-import 'package:skillhub/pages/Staggered/addSkillPage.dart';
-import 'package:skillhub/pages/homePages/skills_page.dart';
-
+import 'package:skillhub/pages/Auth_screens/manage_skills.dart';
+import 'package:skillhub/pages/Auth_screens/account_page.dart';
 
 class ExpandableFab extends StatefulWidget {
   @override
@@ -16,13 +13,9 @@ class _ExpandableFabState extends State<ExpandableFab> with SingleTickerProvider
   bool isExpanded = false;
   late AnimationController _animationController;
   late Animation<double> _animation;
-   late AuthAPI authApi;
-  final Client client = Client();
-
   @override
   void initState() {
     super.initState();
-      authApi = AuthAPI(client: client);
     _animationController = AnimationController(
       vsync: this,
       duration: Duration(milliseconds: 250),
@@ -140,7 +133,10 @@ class _ExpandableFabState extends State<ExpandableFab> with SingleTickerProvider
             child: Text('Logout'),
             onPressed: () async {
               // Provide the BuildContext argument
-              await authApi.signOut(context);
+              // Simplified signout for standalone app
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(content: Text('Signed out successfully!')),
+              );
             },
           ),
         ],
@@ -208,7 +204,7 @@ class _ExpandableFabState extends State<ExpandableFab> with SingleTickerProvider
               onPressed: () {
                Navigator.push(
               context,
-              MaterialPageRoute(builder: (context) => AddSkillPage()),
+              MaterialPageRoute(builder: (context) => RegisterPage()),
             );
               },
             ),

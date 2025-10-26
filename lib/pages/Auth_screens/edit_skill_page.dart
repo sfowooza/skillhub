@@ -2,9 +2,6 @@ import 'dart:io';
 import 'package:flutter/services.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:location/location.dart';
-import 'package:skillhub/appwrite/auth_api.dart';
-import 'package:skillhub/appwrite/database_api.dart';
-import 'package:skillhub/appwrite/saved_data.dart';
 import 'package:skillhub/colors.dart';
 import 'package:skillhub/models/registration_fields.dart';
 import 'package:skillhub/pages/Staggered/job_offers.dart';
@@ -12,7 +9,6 @@ import 'package:skillhub/pages/homePages/job_offers.dart';
 import 'package:skillhub/pages/nav_tabs/expendableFab.dart';
 import 'package:skillhub/providers/registration_form_providers.dart';
 import 'package:flutter/material.dart';
-import 'package:appwrite/appwrite.dart';
 import 'package:intl_phone_field/intl_phone_field.dart';
 import 'package:provider/provider.dart';
 import 'package:file_picker/file_picker.dart';
@@ -28,9 +24,6 @@ class EditSkillsPage extends StatefulWidget {
 }
 
 class _EditSkillsPageState extends State<EditSkillsPage> {
-  late Client client;
-  late DatabaseAPI database;
-  late Storage storage;
   TextEditingController messageTextController = TextEditingController();
   TextEditingController descriptionTextController = TextEditingController();
   final TextEditingController _datetimeController = TextEditingController();
@@ -41,7 +34,7 @@ class _EditSkillsPageState extends State<EditSkillsPage> {
   TextEditingController locationTextController = TextEditingController();
   final TextEditingController _gmaplocationController = TextEditingController();
   final TextEditingController _whatsappLinkController = TextEditingController();
-  AuthStatus authStatus = AuthStatus.uninitialized;
+  bool isAuthenticated = false;
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
   bool isUploading = false;
   late String selectedCategory;
@@ -58,20 +51,16 @@ class _EditSkillsPageState extends State<EditSkillsPage> {
   FilePickerResult? _filePickerResult;
   bool inSoleBusiness = true;
   String userName = "User";
-  late AuthAPI auth;
+  // Removed AuthAPI reference for simplified app
   String userId = "";
 
- // In initState:
 @override
 void initState() {
   super.initState();
-  final AuthAPI appwrite = context.read<AuthAPI>();
-  authStatus = appwrite.status;
-  userName = SavedData.getUserName().split(" ")[0];
-  userId = SavedData.getUserId();
-  auth = appwrite;
-  client = appwrite.client;
-  storage = Storage(client);
+  
+  isAuthenticated = true; // Set to true for simplified app
+  userName = "Test User";
+  userId = "test_user_id";
 
   _datetimeController.text = widget.datetime;
   messageTextController.text = widget.message;
@@ -97,8 +86,6 @@ void initState() {
     provider.location = widget.location;
     provider.image = widget.image;
   });
-
-  database = DatabaseAPI(auth: auth);
 }
 
 
@@ -128,19 +115,11 @@ void initState() {
     });
     try {
       if (_filePickerResult != null && _filePickerResult!.files.isNotEmpty) {
-        PlatformFile file = _filePickerResult!.files.first;
-        final fileBytes = await File(file.path!).readAsBytes();
-        final inputFile = InputFile.fromBytes(bytes: fileBytes, filename: file.name);
-
-        final response = await storage.createFile(
-          bucketId: '665a5bb500243dbb9967',
-          fileId: ID.unique(),
-          file: inputFile,
-        );
-        print(response.$id);
-        return response.$id;
+        // Return a placeholder file ID for now
+        await Future.delayed(Duration(seconds: 1)); // Simulate upload delay
+        return 'placeholder_file_id_${DateTime.now().millisecondsSinceEpoch}';
       } else {
-        print("Something went wrong");
+        print("No file selected");
         return null;
       }
     } catch (e) {
@@ -208,29 +187,17 @@ Future<void> _updateSkill(String value) async {
   final categoryEnum = CategoryMapper.toEnumValue(registrationFormProvider.selectedCategory!);
   final subcategoryEnum = SubCategoryMapper.toEnumValue(registrationFormProvider.selectedSubcategory!);
 
-  await database.updateSkill(
-    messageTextController.text,
-    descriptionTextController.text,
-    latitude ?? 0.0,
-    longitude ?? 0.0,
-    _gmaplocationController.text,
-    _whatsappLinkController.text,
-    RegistrationFields(
-      selectedCategory: categoryEnum,
-      selectedSubcategory: subcategoryEnum,
-      firstName: registrationFormProvider.firstName!,
-      lastName: registrationFormProvider.lastName!,
-      phoneNumber: registrationFormProvider.phoneNumber!,
-      email: registrationFormProvider.email!,
-      description: descriptionTextController.text,
-      createdBy: userId,
-      datetime: _datetimeController.text,
-      location: registrationFormProvider.location!,
-      participants: [],
-      inSoleBusiness: inSoleBusiness,
-      image: value,
-    ),
-    widget.docID,
+  // Placeholder for database update - would call real API here
+  print('Would update skill with message: ${messageTextController.text}');
+  print('Description: ${descriptionTextController.text}');
+  print('Latitude: ${latitude ?? 0.0}');
+  print('Longitude: ${longitude ?? 0.0}');
+  print('Category: $categoryEnum');
+  print('Subcategory: $subcategoryEnum');
+  
+  // Show success message
+  ScaffoldMessenger.of(context).showSnackBar(
+    const SnackBar(content: Text('Skill updated successfully!')),
   );
 
   ScaffoldMessenger.of(context).showSnackBar(
@@ -256,7 +223,7 @@ Future<void> _updateSkill(String value) async {
                 mainAxisAlignment: MainAxisAlignment.start,
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
-                  authStatus == AuthStatus.authenticated
+                  isAuthenticated
                       ? Column(
                           children: [
                             GestureDetector(
@@ -554,11 +521,10 @@ if (provider.selectedCategory != null)
                                             actions: [
                                               TextButton(
                                                   onPressed: () {
-                                                    database.deleteSkill(widget.docID)
-                                                        .then((value) async {
-                                                      await storage.deleteFile(
-                                                          bucketId: "665a5bb500243dbb9967",
-                                                          fileId: widget.image);
+                                                    // Placeholder for delete operations
+                                                    Future.delayed(Duration(seconds: 1)).then((value) async {
+                                                      print('Would delete skill: ${widget.docID}');
+                                                      print('Would delete file: ${widget.image}');
                                                       ScaffoldMessenger.of(context)
                                                           .showSnackBar(SnackBar(
                                                               content: Text(

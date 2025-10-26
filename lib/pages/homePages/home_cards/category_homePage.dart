@@ -1,6 +1,6 @@
-import 'package:appwrite/appwrite.dart';
+// Removed Appwrite imports for simplified app
 import 'package:flutter/material.dart';
-import 'package:appwrite/models.dart';
+// import package:appwrite/models.dart - using stubs
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import 'package:skillhub/appwrite/auth_api.dart';
@@ -53,7 +53,7 @@ class CategoryHomePage extends StatefulWidget {
 }
 
 class _CategoryHomePageState extends State<CategoryHomePage> {
-  Map<String, List<Document>> groupedMessages = {};
+  Map<String, List<Map<String, dynamic>>> groupedMessages = {};
   String searchQuery = '';
   bool isLoggedIn = false;
   List<String> allCategories = [
@@ -69,26 +69,30 @@ class _CategoryHomePageState extends State<CategoryHomePage> {
   ];
   List<String> filteredCategories = [];
 
-  Client client = Client();
-  late final Account account;
-  late final Databases databases;
-  late final AuthAPI auth;
-  late final DatabaseAPI database;
+  // Removed Appwrite dependencies for simplified app
 
   @override
   void initState() {
     super.initState();
-    auth = AuthAPI(client: client);
-    databases = Databases(client);
-    account = Account(client);
-    database = DatabaseAPI(auth: auth);
     loadMessages();
     filteredCategories = allCategories;
   }
 
   void loadMessages() async {
     try {
-      final value = await database.getAllSkills();
+      // Load sample data for simplified app
+      final value = [
+        {
+          'selectedCategory': 'Programming',
+          'firstName': 'Sample Programmer',
+          'description': 'Expert in mobile development'
+        },
+        {
+          'selectedCategory': 'Design', 
+          'firstName': 'Sample Designer',
+          'description': 'Professional graphic designer'
+        }
+      ];
       final grouped = groupMessagesByCategory(value);
       setState(() {
         groupedMessages = grouped;
@@ -99,11 +103,11 @@ class _CategoryHomePageState extends State<CategoryHomePage> {
     }
   }
 
-  Map<String, List<Document>> groupMessagesByCategory(List<Document> messages) {
-    final Map<String, List<Document>> categoryMap = {};
+  Map<String, List<Map<String, dynamic>>> groupMessagesByCategory(List<Map<String, dynamic>> messages) {
+    final Map<String, List<Map<String, dynamic>>> categoryMap = {};
 
     for (var message in messages) {
-      final category = message.data['selectedCategory'] as String;
+      final category = message['selectedCategory'] as String;
       if (!categoryMap.containsKey(category)) {
         categoryMap[category] = [];
       }

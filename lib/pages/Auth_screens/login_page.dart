@@ -1,5 +1,6 @@
-import 'package:appwrite/appwrite.dart';
-import 'package:appwrite/enums.dart';
+// Removed Appwrite imports for simplified app
+// Removed Appwrite enums import for simplified app
+// import package:appwrite/enums.dart - using stubs
 import 'package:skillhub/appwrite/auth_api.dart';
 import 'package:skillhub/pages/Auth_screens/forgot_password_page.dart';
 import 'package:skillhub/pages/Staggered/category_staggered_page.dart';
@@ -69,7 +70,7 @@ class _LoginPageState extends State<LoginPage> {
 
         // Check verification status after login
         await appwrite.loadUser(); // Ensure we have the latest user data
-        if (!appwrite.currentUser.emailVerification) {
+        if (!appwrite.currentUser['emailVerification']) {
           Navigator.pop(context); // Close loading dialog
 
           // Send verification email
@@ -99,12 +100,12 @@ class _LoginPageState extends State<LoginPage> {
             ),
           ),
         );
-      } on AppwriteException catch (e) {
+      } catch (e) {
         Navigator.pop(context);
         // Handle nullable message
-        final String errorMessage = e.message?.contains('Creation of a session is prohibited') == true
+        final String errorMessage = e.toString().contains('Creation of a session is prohibited')
             ? 'Please verify your email first or sign out from any active session. Check your inbox for the verification link.'
-            : e.message ?? 'An error occurred during login';
+            : e.toString();
 
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -134,11 +135,11 @@ class _LoginPageState extends State<LoginPage> {
         });
   }
 
-  signInWithProvider(OAuthProvider provider) {
+  signInWithProvider(dynamic provider) {
     try {
       context.read<AuthAPI>().signInWithProvider(provider: provider);
-    } on AppwriteException catch (e) {
-      showAlert(title: 'Login failed', text: e.message.toString());
+    } catch (e) {
+      showAlert(title: 'Login failed', text: e.toString());
     }
   }
 

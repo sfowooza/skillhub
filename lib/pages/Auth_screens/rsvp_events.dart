@@ -1,12 +1,7 @@
-import 'package:appwrite/appwrite.dart';
-import 'package:appwrite/models.dart';
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
-import 'package:skillhub/appwrite/auth_api.dart';
-import 'package:skillhub/appwrite/database_api.dart';
-import 'package:skillhub/appwrite/saved_data.dart';
-import 'package:skillhub/colors.dart';
+import 'package:skillhub/controllers/events_container.dart';
 import 'package:skillhub/pages/homePages/skills_detail.dart';
+import 'package:skillhub/colors.dart';
 
 class RSVPEvents extends StatefulWidget {
   const RSVPEvents({super.key});
@@ -16,11 +11,9 @@ class RSVPEvents extends StatefulWidget {
 }
 
 class _RSVPEventsState extends State<RSVPEvents> {
-  List<Document> skills = [];
-  List<Document> userSkills = [];
+  List<Map<String, dynamic>> skills = [];
+  List<Map<String, dynamic>> userSkills = [];
   bool isLoading = true;
-  late Client client;
-  late DatabaseAPI database;
 
   @override
   void initState() {
@@ -32,22 +25,25 @@ class _RSVPEventsState extends State<RSVPEvents> {
   }
 
   void initializeDatabase() {
-    database = DatabaseAPI(auth: Provider.of<AuthAPI>(context, listen: false));
+    // Simplified initialization
   }
 
   void refresh() {
-    String userId = SavedData.getUserId();
-    database.getAllSkills().then((value) {
-      setState(() {
-        skills = value;
-        for (var skill in skills) {
-          List<dynamic> participants = skill.data["participants"];
-          if (participants.contains(userId)) {
-            userSkills.add(skill);
-          }
+    // Load sample data
+    setState(() {
+      userSkills = [
+        {
+          "firstName": "Sample Skill 1",
+          "location": "Sample Location 1",
+          "datetime": "2024-01-01T10:00:00",
+        },
+        {
+          "firstName": "Sample Skill 2", 
+          "location": "Sample Location 2",
+          "datetime": "2024-01-02T14:00:00",
         }
-        isLoading = false;
-      });
+      ];
+      isLoading = false;
     });
   }
 
@@ -67,11 +63,11 @@ class _RSVPEventsState extends State<RSVPEvents> {
                           builder: (context) =>
                               SkillDetails(data: userSkills[index]))),
                   title: Text(
-                    userSkills[index].data["firstName"],
+                    userSkills[index]["firstName"],
                     style: TextStyle(color: Theme.of(context).primaryColor),
                   ),
                   subtitle: Text(
-                    userSkills[index].data["location"],
+                    userSkills[index]["location"],
                     style: TextStyle(color: BaseColors().baseTextColor),
                   ),
                   trailing: Icon(

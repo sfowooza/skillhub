@@ -1,6 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:appwrite/appwrite.dart';
-import 'package:skillhub/constants/constants.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 class ViewWhatsappLink extends StatefulWidget {
@@ -10,49 +8,16 @@ class ViewWhatsappLink extends StatefulWidget {
 
 class _ViewWhatsappLinkState extends State<ViewWhatsappLink> {
   late Future<String?> _whatsappLink;
-  late Databases databases;
-  late Client client;
-  late Account account;
 
   @override
   void initState() {
     super.initState();
-
-    // Initialize the databases variable before the _whatsappLink variable
-    client = Client()
-        .setEndpoint(APPWRITE_URL)
-        .setProject(APPWRITE_PROJECT_ID)
-        .setSelfSigned(status: true);
-    account = Account(client);
-    databases = Databases(client);
-
-    _whatsappLink = getWhatsappLink();
+    _whatsappLink = _fetchWhatsappLink();
   }
 
-  Future<String?> getWhatsappLink() async {
-    final response = await databases.listDocuments(
-      databaseId: APPWRITE_DATABASE_ID, // Replace with your database ID
-      collectionId: COLLECTION_DB_ID, // Replace with your collection ID
-    );
-
-    // Log the complete response for debugging
-    print('Response: ${response.toMap()}');
-
-    // Check if there are any documents returned
-    if (response.documents.isNotEmpty) {
-      for (var document in response.documents) {
-        print('Document data: ${document.data}');
-        final link = document.data['link'];
-        print('Link value: $link');
-        print('Link data type: ${link.runtimeType}');
-        if (link != null && link is String && link.isNotEmpty) {
-          return link;
-        }
-      }
-      return null;
-    } else {
-      return null;
-    }
+  Future<String?> _fetchWhatsappLink() async {
+    // Return a placeholder WhatsApp link for now
+    return 'https://wa.me/1234567890?text=Hello%20from%20SkillHub!';
   }
 
   Future<void> _launchURL(String url) async {

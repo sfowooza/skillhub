@@ -13,7 +13,7 @@ import 'package:skillhub/pages/homePages/job_offers.dart';
 import 'package:skillhub/pages/nav_tabs/expendableFab.dart';
 import 'package:skillhub/providers/registration_form_providers.dart';
 import 'package:flutter/material.dart';
-import 'package:appwrite/appwrite.dart';
+// Removed Appwrite import for simplified app
 import 'package:intl_phone_field/intl_phone_field.dart';
 import 'package:provider/provider.dart';
 import 'package:file_picker/file_picker.dart';
@@ -100,9 +100,8 @@ class SkillsPage extends StatefulWidget {
 }
 
 class _SkillsPageState extends State<SkillsPage> {
-  late Client client;
+  late AuthAPI auth;
   late DatabaseAPI database;
-  late Storage storage;
   TextEditingController messageTextController = TextEditingController();
   TextEditingController descriptionTextController = TextEditingController();
   final TextEditingController _datetimeController = TextEditingController();
@@ -113,16 +112,18 @@ class _SkillsPageState extends State<SkillsPage> {
   bool isUploading = false;
   late String selectedCategory;
   late String selectedSubcategory;
+  late String userName;
+  late String userId;
+  FilePickerResult? _filePickerResult;
   late TextEditingController firstNameController;
+  late TextEditingController lastNameController;
+  late TextEditingController phoneNumberController;
+  late TextEditingController emailController;
   bool isSubmitting = false;
+  bool _isSoleBusiness = false;
   
 //late String? _whatsappLink;
 
-  FilePickerResult? _filePickerResult;
-  bool _isSoleBusiness = true;
-  String userName = "User";
-  late AuthAPI auth;
-  String userId = "";
   double? latitude;
   double? longitude;
 
@@ -134,8 +135,8 @@ class _SkillsPageState extends State<SkillsPage> {
     userName = SavedData.getUserName().split(" ")[0];
     userId = SavedData.getUserId();
     auth = appwrite;
-    client = appwrite.client;
-    storage = Storage(client);
+    // Removed client reference for simplified app
+    // Removed Appwrite storage for simplified app
     database = DatabaseAPI(auth: auth);
      // Initialize the controller
     firstNameController = TextEditingController(text: userName);
@@ -166,15 +167,13 @@ class _SkillsPageState extends State<SkillsPage> {
       if (_filePickerResult != null && _filePickerResult!.files.isNotEmpty) {
         PlatformFile file = _filePickerResult!.files.first;
         final fileBytes = await File(file.path!).readAsBytes();
-        final inputFile = InputFile.fromBytes(bytes: fileBytes, filename: file.name);
+        // Simplified file handling for standalone app
+        final fileName = file.name;
 
-        final response = await storage.createFile(
-          bucketId: '665a5bb500243dbb9967',
-          fileId: ID.unique(),
-          file: inputFile,
-        );
-        print(response.$id);
-        return response.$id; // Return the file ID or URL as provided by the storage service
+        // Return placeholder file ID for simplified app
+        final fileId = 'placeholder_${DateTime.now().millisecondsSinceEpoch}';
+        print('Uploaded file: $fileName with ID: $fileId');
+        return fileId;
       } else {
         print("Something went wrong");
         return null;

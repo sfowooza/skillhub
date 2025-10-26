@@ -1,4 +1,4 @@
-import 'package:appwrite/appwrite.dart';
+// Removed Appwrite import for simplified app
 import 'package:skillhub/appwrite/auth_api.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -95,9 +95,9 @@ class _RegisterPageState extends State<RegisterPage> {
             ),
           ),
         );
-      } on AppwriteException catch (e) {
+      } catch (e) {
         Navigator.pop(context);
-        showAlert(title: 'Account creation failed', text: e.message.toString());
+        showAlert(title: 'Account creation failed', text: e.toString());
       }
     }
   }

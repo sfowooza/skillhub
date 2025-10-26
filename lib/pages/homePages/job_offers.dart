@@ -1,5 +1,5 @@
-import 'package:appwrite/appwrite.dart';
-import 'package:appwrite/models.dart';
+// Removed Appwrite imports for simplified app
+// import package:appwrite/models.dart - using stubs
 import 'package:carousel_slider/carousel_slider.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -27,22 +27,16 @@ class JobOffersPage extends StatefulWidget {
 }
 
 class _JobOffersPageState extends State<JobOffersPage> {
-  late Client client;
-  late AuthAPI auth;
-  late DatabaseAPI database;
-
-  String userName = "User";
-  List<Document> skills = [];
+  // Removed Appwrite dependencies for simplified app
+  List<Map<String, dynamic>> skills = [];
   bool isLoading = true;
   late String selectedSubCategory;
   String _selectedView = 'All Skills';
+  String userName = 'User';
 
   @override
   void initState() {
     super.initState();
-    client = Client();
-    auth = AuthAPI(client: client);
-    database = DatabaseAPI(auth: auth);
     selectedSubCategory = widget.selectedSubCategory ?? 'All';
     if (SavedData.isLoggedIn()) {
       userName = SavedData.getUserName().split(" ")[0];
@@ -54,26 +48,37 @@ class _JobOffersPageState extends State<JobOffersPage> {
     setState(() {
       isLoading = true;
     });
-
-    if (selectedSubCategory == 'All') {
-      database.getAllSkills().then((value) {
-        setState(() {
-          skills = value;
-          isLoading = false;
-        });
+    // Load sample data for simplified app
+    Future.delayed(Duration(milliseconds: 500), () {
+      setState(() {
+        skills = [
+          {
+            'firstName': 'Sample Skill 1',
+            'selectedCategory': 'Programming',
+            'selectedSubcategory': 'Mobile Development',
+            'description': 'Expert Flutter developer',
+            'location': 'New York',
+            'datetime': DateTime.now().toIso8601String(),
+            'participants': [],
+            'averageRating': 4.5,
+          },
+          {
+            'firstName': 'Sample Skill 2',
+            'selectedCategory': 'Design',
+            'selectedSubcategory': 'Graphic Design',
+            'description': 'Professional designer',
+            'location': 'Los Angeles',
+            'datetime': DateTime.now().toIso8601String(),
+            'participants': [],
+            'averageRating': 4.8,
+          }
+        ];
+        isLoading = false;
       });
-    } else {
-      final enumValue = SubCategoryMapper.toEnumValue(selectedSubCategory);
-      database.getSkillsBySubCategory(enumValue).then((value) {
-        setState(() {
-          skills = value;
-          isLoading = false;
-        });
-      });
-    }
+    });
   }
 
-  List<Document> getFilteredItems() {
+  List<Map<String, dynamic>> getFilteredItems() {
     if (_selectedView == 'Popular Skills') {
       return skills.take(5).toList(); // Replace with actual logic if needed
     } else if (_selectedView == 'New') {
@@ -148,13 +153,14 @@ class _JobOffersPageState extends State<JobOffersPage> {
                         enlargeCenterPage: true,
                         scrollDirection: Axis.horizontal,
                       ),
-                      items: skills.map((skill) {
+                      items: skills.map<Widget>((skill) {
+                        final skillData = skill as Map<String, dynamic>;
                         return GestureDetector(
                           onTap: () {
-                            print("Tapped skill: ${skill.data['title']}");
+                            print("Tapped skill: ${skillData['firstName'] ?? 'Unknown'}");
                             // Example: Navigator.push(context, MaterialPageRoute(builder: (context) => DetailPage(skill: skill)));
                           },
-                          child: EventContainer(data: skill),
+                          child: EventContainer(data: skillData),
                         );
                       }).toList(),
                     ),
@@ -221,7 +227,7 @@ class _JobOffersPageState extends State<JobOffersPage> {
                 (context, index) => GestureDetector(
                   onTap: () {
                     final skill = getFilteredItems()[index];
-                    print("Tapped skill: ${skill.data['title']}");
+                    print("Tapped skill: ${skill['firstName'] ?? 'Unknown'}");
                     // Example: Navigator.push(context, MaterialPageRoute(builder: (context) => DetailPage(skill: skill)));
                   },
                   child: EventContainer(data: getFilteredItems()[index]),

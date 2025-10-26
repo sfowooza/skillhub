@@ -2,49 +2,43 @@ import 'dart:io';
 import 'dart:async';
 
 import 'package:app_links/app_links.dart';
-import 'package:appwrite/appwrite.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:skillhub/appwrite/saved_data.dart';
-import 'package:skillhub/pages/Auth_screens/checkSession.dart';
-import 'package:skillhub/pages/Auth_screens/forgot_password_page.dart';
-import 'package:skillhub/pages/Staggered/my_home_page.dart';
-import 'package:skillhub/pages/nav_tabs/tabs_page.dart';
+import 'package:skillhub/pages/Staggered/category_staggered_page.dart';
 import 'package:skillhub/providers/registration_form_providers.dart';
 import 'package:skillhub/routes/routes.dart';
-import 'appwrite/auth_api.dart';
-import 'package:skillhub/appwrite/database_api.dart';
-import 'package:skillhub/pages/homePages/skills_detail.dart';
+import 'package:skillhub/appwrite/auth_api.dart';
+
+// MyHttpOverrides class at top level
+class MyHttpOverrides extends HttpOverrides {
+  @override
+  HttpClient createHttpClient(SecurityContext? context) {
+    return super.createHttpClient(context)
+      ..badCertificateCallback =
+          (X509Certificate cert, String host, int port) => true;
+  }
+}
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   HttpOverrides.global = MyHttpOverrides();
-  await SavedData.init();
-  final client = Client();
+  
   runApp(
     MultiProvider(
       providers: [
-        ChangeNotifierProvider(create: (_) => AuthAPI(client: client)),
         ChangeNotifierProvider(create: (_) => RegistrationFormProvider()),
-        Provider<Client>(
-          create: (_) => client,
-        ),
-        Provider<Account>(
-          create: (context) => Account(context.read<Client>()),
-        ),
+        ChangeNotifierProvider(create: (_) => AuthAPI()),
       ],
-      child: MyApp(client: client),
+      child: const MyApp(),
     ),
   );
 }
 
 class MyApp extends StatefulWidget {
-  final Client client;
-
-  const MyApp({Key? key, required this.client}) : super(key: key);
+  const MyApp({super.key});
 
   @override
-  _MyAppState createState() => _MyAppState();
+  State<MyApp> createState() => _MyAppState();
 }
 
 class _MyAppState extends State<MyApp> {
@@ -56,7 +50,11 @@ class _MyAppState extends State<MyApp> {
   @override
   void initState() {
     super.initState();
-    initDeepLinks();
+    
+    // Delay deep link initialization to improve startup performance
+    Future.delayed(const Duration(milliseconds: 300), () {
+      initDeepLinks();
+    });
   }
 
   @override
@@ -66,78 +64,84 @@ class _MyAppState extends State<MyApp> {
   }
 
   Future<void> initDeepLinks() async {
-    _appLinks = AppLinks();
+    try {
+      _appLinks = AppLinks();
 
-    // Handle incoming links
-    _linkSubscription = _appLinks.uriLinkStream.listen((Uri? uri) {
-      if (uri != null) {
-        handleDeepLink(uri);
+      // Handle incoming links with error handling
+      _linkSubscription = _appLinks.uriLinkStream.listen((Uri? uri) {
+        if (uri != null) {
+          handleDeepLink(uri);
+        }
+      }, onError: (error) {
+        print('Error in deep link stream: $error');
+      });
+
+      // Handle any initial links with timeout to prevent blocking
+      final initialLink = await _appLinks.getInitialLink().timeout(
+        const Duration(seconds: 2),
+        onTimeout: () {
+          print('Initial link fetch timed out');
+          return null;
+        },
+      );
+      
+      if (initialLink != null) {
+        handleDeepLink(initialLink);
+      }
+    } catch (e) {
+      print('Deep link initialization error: $e');
+      // Continue even if deep link initialization fails
+    }
+  }
+
+  void handleDeepLink(Uri uri) {
+    print('Handling deep link: ${uri.toString()}');
+    
+    // Process deep links off the main thread to avoid UI jank
+    Future.microtask(() {
+      // Reset password handling
+      if (uri.path == '/reset-password') {
+        // Reset password code unchanged
+      }
+      // Skill details handling
+      else if (uri.host == 'skill' || uri.path.contains('/skill/')) {
+        // Extract the skill ID from either host or path
+        String? skillId;
+        
+        if (uri.host == 'skill' && uri.path.isNotEmpty) {
+          // Handle skillhub://skill/123456
+          skillId = uri.path.replaceFirst('/', '');
+        } else if (uri.pathSegments.length >= 2 && uri.pathSegments.contains('skill')) {
+          // Handle https://skillhub.avodahsystems.com/skillhub/skill/123456
+          final index = uri.pathSegments.indexOf('skill');
+          if (index >= 0 && index < uri.pathSegments.length - 1) {
+            skillId = uri.pathSegments[index + 1];
+          }
+        }
+        
+        if (skillId != null && skillId.isNotEmpty) {
+          print('Navigating to SkillDetails with skillId: $skillId');
+          setState(() => _isHandlingDeepLink = true);
+          
+          // Use the non-null skillId since we've checked it's not null
+          final String nonNullSkillId = skillId;
+          
+          // Navigate directly to home page for now
+          navigatorKey.currentState?.pushAndRemoveUntil(
+            MaterialPageRoute(
+              builder: (context) => const MyHomeCategoryPage(),
+            ),
+            (route) => false,
+          ).then((_) {
+            setState(() => _isHandlingDeepLink = false);
+          });
+        } else {
+          print('Skill ID is null or empty, navigation failed.');
+          setState(() => _isHandlingDeepLink = false);
+        }
       }
     });
-
-    // Handle any initial links when the app is launched
-    final initialLink = await _appLinks.getInitialLink();
-    if (initialLink != null) {
-      handleDeepLink(initialLink);
-    }
   }
-
-void handleDeepLink(Uri uri) {
-  print('Handling deep link: ${uri.toString()}');
-  
-  // Reset password handling
-  if (uri.path == '/reset-password') {
-    // Reset password code unchanged
-  }
-  // Skill details handling
-  else if (uri.host == 'skill' || uri.path.contains('/skill/')) {
-    // Extract the skill ID from either host or path
-    String? skillId;
-    
-    if (uri.host == 'skill' && uri.path.isNotEmpty) {
-      // Handle skillhub://skill/123456
-      skillId = uri.path.replaceFirst('/', '');
-    } else if (uri.pathSegments.length >= 2 && uri.pathSegments.contains('skill')) {
-      // Handle https://skillhub.avodahsystems.com/skillhub/skill/123456
-      final index = uri.pathSegments.indexOf('skill');
-      if (index >= 0 && index < uri.pathSegments.length - 1) {
-        skillId = uri.pathSegments[index + 1];
-      }
-    }
-    
-    if (skillId != null && skillId.isNotEmpty) {
-      print('Navigating to SkillDetails with skillId: $skillId');
-      setState(() => _isHandlingDeepLink = true);
-      
-      // Use the non-null skillId since we've checked it's not null
-      final String nonNullSkillId = skillId;
-      
-      // Call database to get the skill data
-      final databaseAPI = DatabaseAPI(auth: Provider.of<AuthAPI>(context, listen: false));
-      
-      databaseAPI.getSkillById(nonNullSkillId).then((skillData) {
-        navigatorKey.currentState?.pushAndRemoveUntil(
-          MaterialPageRoute(
-            builder: (context) => SkillDetails(skillId: nonNullSkillId),
-          ),
-          (route) => false,
-        ).then((_) {
-          setState(() => _isHandlingDeepLink = false);
-        });
-      }).catchError((error) {
-        print('Error fetching skill data: $error');
-        setState(() => _isHandlingDeepLink = false);
-        // Show error message to user
-        ScaffoldMessenger.of(navigatorKey.currentContext!).showSnackBar(
-          SnackBar(content: Text('Error loading skill data. Please try again.')),
-        );
-      });
-    } else {
-      print('Skill ID is null or empty, navigation failed.');
-      setState(() => _isHandlingDeepLink = false);
-    }
-  }
-}
 
   @override
   Widget build(BuildContext context) {
@@ -149,13 +153,6 @@ void handleDeepLink(Uri uri) {
       ),
       navigatorKey: navigatorKey,
       onGenerateRoute: (settings) {
-        // Handle skill details route
-        if (settings.name?.startsWith('/skill/') ?? false) {
-          final skillId = settings.name!.split('/').last;
-          return MaterialPageRoute(
-            builder: (context) => SkillDetails(skillId: skillId),
-          );
-        }
         // Handle reset password route
         if (settings.name?.startsWith('/reset-password') ?? false) {
           final uri = Uri.parse(settings.name!);
@@ -173,39 +170,12 @@ void handleDeepLink(Uri uri) {
         }
         // Use the routes defined in routes.dart for other routes
         return MaterialPageRoute(
-          builder: routes[settings.name] ?? (context) => const MyHomePage(title: ''),
+          builder: routes[settings.name] ?? (context) => const MyHomeCategoryPage(),
           settings: settings,
         );
       },
       debugShowCheckedModeBanner: false,
-      home: _isHandlingDeepLink ? null : const CheckSessions(),
-    );
-  }
-}
-
-class MyHttpOverrides extends HttpOverrides {
-  @override
-  HttpClient createHttpClient(SecurityContext? context) {
-    return super.createHttpClient(context)
-      ..badCertificateCallback =
-          (X509Certificate cert, String host, int port) => true;
-  }
-}
-
-class SkillDetails extends StatelessWidget {
-  final String skillId;
-
-  const SkillDetails({Key? key, required this.skillId}) : super(key: key);
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Text('Skill Details'),
-      ),
-      body: Center(
-        child: Text('Displaying details for skill: $skillId'),
-      ),
+      home: _isHandlingDeepLink ? null : const MyHomeCategoryPage(),
     );
   }
 }
@@ -214,13 +184,13 @@ class ResetPasswordPage extends StatelessWidget {
   final String userId;
   final String secret;
 
-  const ResetPasswordPage({Key? key, required this.userId, required this.secret}) : super(key: key);
+  const ResetPasswordPage({super.key, required this.userId, required this.secret});
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Reset Password'),
+        title: const Text('Reset Password'),
       ),
       body: Center(
         child: Text('Reset Password for User ID: $userId with Secret: $secret'),

@@ -1,4 +1,4 @@
-import 'package:appwrite/appwrite.dart';
+// Removed Appwrite import for simplified app
 import 'package:skillhub/appwrite/auth_api.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -87,9 +87,9 @@ void _updatePassword() async {
           ),
         ),
       );
-    } on AppwriteException catch (e) {
+    } catch (e) {
       Navigator.pop(context);
-      showAlert(title: 'Password Reset Failed', text: e.message.toString());
+      showAlert(title: 'Password Reset Failed', text: e.toString());
     }
   }
 }

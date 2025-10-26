@@ -1,5 +1,5 @@
-import 'package:appwrite/appwrite.dart';
-import 'package:appwrite/models.dart';
+// Removed Appwrite import for simplified app
+// import package:appwrite/models.dart - using stubs
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:skillhub/appwrite/auth_api.dart';

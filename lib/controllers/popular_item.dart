@@ -1,4 +1,4 @@
-import 'package:appwrite/models.dart';
+// import package:appwrite/models.dart - using stubs
 
 
 import 'package:flutter/material.dart';

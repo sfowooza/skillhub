@@ -6,14 +6,15 @@ import 'package:skillhub/pages/Staggered/category_staggered_page.dart';
 import 'package:skillhub/pages/Staggered/job_offers.dart';
 
 import 'package:skillhub/pages/Staggered/my_home_page.dart';
+import 'package:skillhub/pages/homePages/home_page.dart';
 
 import 'package:flutter/material.dart';
 import 'package:skillhub/pages/Auth_screens/reset_password_page.dart'; 
 
 // Define the routes using a Map
 final Map<String, WidgetBuilder> routes = {
-  //'/': (context) => const MyHomePage(title: 'Explore SkillsHub',),
-  '/':(context) => MyHomeCategoryPage(),
+  '/': (context) => const MyHomeCategoryPage(),
+  '/home':(context) => const MyHomeCategoryPage(),
    '/jobs': (context) => const JobOffersStaggeredPage(
   title: '',
   selectedSubCategory: null, // or 'All' depending on your preference

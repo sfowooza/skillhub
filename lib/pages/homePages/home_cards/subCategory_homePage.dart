@@ -1,14 +1,11 @@
-import 'package:appwrite/appwrite.dart';
 import 'package:flutter/material.dart';
-import 'package:appwrite/models.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
-import 'package:skillhub/appwrite/auth_api.dart';
-import 'package:skillhub/appwrite/database_api.dart';
+import 'package:skillhub/pages/homePages/skills_detail.dart';
+import 'package:skillhub/utils/category_mappers.dart';
+import 'package:skillhub/pages/Auth_screens/login_page.dart';
+import 'package:skillhub/pages/Auth_screens/register_page.dart';
 import 'package:skillhub/pages/Staggered/job_offers.dart';
 import 'package:skillhub/providers/registration_form_providers.dart';
-import 'package:skillhub/pages/Auth_screens/login_page.dart'; // Add this import
-import 'package:skillhub/pages/Auth_screens/register_page.dart'; // Add this import
 
 class SubCategoryMapper {
   static String toEnumValue(String displayName) {
@@ -88,52 +85,12 @@ class SubCategoryHomePage extends StatefulWidget {
 }
 
 class _SubCategoryHomePageState extends State<SubCategoryHomePage> {
-  Map<String, List<Document>> groupedMessages = {};
   String searchQuery = '';
   List<String> filteredSubcategories = [];
-
-  Client client = Client();
-  late final Account account;
-  late final Databases databases;
-  late final AuthAPI auth;
-  late final DatabaseAPI database;
 
   @override
   void initState() {
     super.initState();
-    auth = AuthAPI(client: client);
-    databases = Databases(client);
-    account = Account(client);
-    database = DatabaseAPI(auth: auth);
-    loadMessages();
-  }
-
-  void loadMessages() async {
-    try {
-      final value = await database.getAllSkills();
-      final grouped = groupMessagesBySubCategory(value);
-      setState(() {
-        groupedMessages = grouped;
-      });
-    } catch (e) {
-      print(e);
-    }
-  }
-
-  Map<String, List<Document>> groupMessagesBySubCategory(List<Document> messages) {
-    final Map<String, List<Document>> subCategoryMap = {};
-
-    for (var message in messages) {
-      final enumValue = message.data['selectedSubcategory'] as String;
-      final displayName = SubCategoryMapper.toDisplayName(enumValue);
-
-      if (!subCategoryMap.containsKey(displayName)) {
-        subCategoryMap[displayName] = [];
-      }
-      subCategoryMap[displayName]!.add(message);
-    }
-
-    return subCategoryMap;
   }
 
   String getImageUrlForSubCategory(String displayName) {
@@ -187,7 +144,7 @@ class _SubCategoryHomePageState extends State<SubCategoryHomePage> {
     return imageUrls[enumValue] ?? 'https://images.pexels.com/photos/5222/snow-mountains-forest-winter.jpg?auto=compress&cs=tinysrgb&dpr=2&h=750&w=1260';
   }
 
-  void _viewMessage(Document message, String displayName) {
+  void _viewMessage(String displayName) {
     final enumValue = SubCategoryMapper.toEnumValue(displayName);
     print('Viewing message for category: $displayName (enum: $enumValue)');
 
@@ -256,9 +213,7 @@ class _SubCategoryHomePageState extends State<SubCategoryHomePage> {
                     itemCount: filteredSubcategories.length,
                     itemBuilder: (context, index) {
                       final displayName = filteredSubcategories[index];
-                      final enumValue = SubCategoryMapper.toEnumValue(displayName);
                       final imageUrl = getImageUrlForSubCategory(displayName);
-                      final messages = groupedMessages[displayName] ?? [];
 
                       return ProductCard(
                         productItem: ProductItem(
@@ -266,48 +221,7 @@ class _SubCategoryHomePageState extends State<SubCategoryHomePage> {
                           category: displayName,
                         ),
                         onViewMessage: () {
-                          if (messages.isNotEmpty) {
-                            _viewMessage(messages.first, displayName);
-                          } else {
-                            print('No messages found for category: $displayName (enum: $enumValue)');
-                            showDialog(
-                              context: context,
-                              builder: (context) {
-                                return AlertDialog(
-                                  title: const Text('No Items Available'),
-                                  content: Text(
-                                    'No items available for $displayName. Would you like to add your own?',
-                                  ),
-                                  actions: [
-                                    TextButton(
-                                      onPressed: () {
-                                        Navigator.pop(context); // Close dialog
-                                        Navigator.push(
-                                          context,
-                                          MaterialPageRoute(
-                                            builder: (context) => const LoginPage(),
-                                          ),
-                                        );
-                                      },
-                                      child: const Text('Login'),
-                                    ),
-                                    TextButton(
-                                      onPressed: () {
-                                        Navigator.pop(context); // Close dialog
-                                        Navigator.push(
-                                          context,
-                                          MaterialPageRoute(
-                                            builder: (context) => const RegisterPage(),
-                                          ),
-                                        );
-                                      },
-                                      child: const Text('Sign Up'),
-                                    ),
-                                  ],
-                                );
-                              },
-                            );
-                          }
+                          _viewMessage(displayName);
                         },
                       );
                     },

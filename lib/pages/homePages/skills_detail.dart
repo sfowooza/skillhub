@@ -1,17 +1,15 @@
-import 'package:appwrite/models.dart';
+// import package:appwrite/models.dart - using stubs
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:skillhub/appwrite/saved_data.dart';
 import 'package:skillhub/colors.dart';
 import 'package:skillhub/controllers/formart_datetime.dart';
-import 'package:skillhub/pages/Staggered/category_staggered_page.dart';
+import 'package:skillhub/pages/Auth_screens/edit_skill_page.dart';
 import 'package:skillhub/pages/gmap/view_location.dart';
 import 'package:skillhub/pages/gmap/view_whatsapp_link.dart';
-import 'package:skillhub/pages/nav_tabs/expendableFab.dart';
+import 'package:skillhub/utils/category_mappers.dart';
+import 'package:flutter_rating_bar/flutter_rating_bar.dart';
+import 'package:share_plus/share_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
-import 'package:skillhub/appwrite/database_api.dart';
-import 'package:provider/provider.dart';
-import 'package:skillhub/appwrite/auth_api.dart';
 import 'package:flutter_rating_bar/flutter_rating_bar.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:intl/intl.dart';
@@ -94,7 +92,7 @@ class ModernInfoTile extends StatelessWidget {
 }
 
 class SkillDetails extends StatefulWidget {
-  final Document data;
+  final Map<String, dynamic> data;
 
   const SkillDetails({Key? key, required this.data}) : super(key: key);
 
@@ -105,7 +103,7 @@ class SkillDetails extends StatefulWidget {
 class _SkillDetailsState extends State<SkillDetails> with SingleTickerProviderStateMixin {
   bool isRSVPedEvent = false;
   String id = "";
-  late DatabaseAPI database;
+  // Removed DatabaseAPI reference for simplified app
   double userRating = 0;
   late AnimationController _controller;
   late Animation<double> _animation;
@@ -123,18 +121,17 @@ class _SkillDetailsState extends State<SkillDetails> with SingleTickerProviderSt
     _controller.forward();
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      initializeDatabase();
       setState(() {
-        id = SavedData.getUserId();
-        isRSVPedEvent = isUserPresent(widget.data.data["participants"] as List<dynamic>? ?? [], id);
-        userRating = (widget.data.data["averageRating"] as num?)?.toDouble() ?? 0;
-        isAvailable = widget.data.data['isAvailable'] ?? true;
+        id = "test_user_id";
+        isRSVPedEvent = isUserPresent(widget.data["participants"] as List<dynamic>? ?? [], id);
+        userRating = (widget.data["averageRating"] as num?)?.toDouble() ?? 0;
+        isAvailable = widget.data['isAvailable'] ?? true;
       });
     });
   }
 
   void initializeDatabase() {
-    database = DatabaseAPI(auth: Provider.of<AuthAPI>(context, listen: false));
+    // Simplified initialization for standalone app
   }
 
   bool isUserPresent(List<dynamic> participants, String userId) {
@@ -184,18 +181,16 @@ class _SkillDetailsState extends State<SkillDetails> with SingleTickerProviderSt
 
   @override
   Widget build(BuildContext context) {
-    final isAuthenticated = Provider.of<AuthAPI>(context).status == AuthStatus.authenticated;
+    final isAuthenticated = true; // Simplified for standalone app
 
-    final String firstName = widget.data.data["firstName"] as String? ?? "Unknown";
-    final String description = widget.data.data["description"] as String? ?? "No description available";
-    final String imageUrl = widget.data.data["image"] != null
-        ? "https://skillhub.avodahsystems.com/v1/storage/buckets/665a5bb500243dbb9967/files/${widget.data.data["image"]}/view?project=665a50350038457d0eb9"
-        : "https://placeholder.com/300";
-    final String datetime = widget.data.data["datetime"] as String? ?? DateTime.now().toIso8601String();
-    final String location = widget.data.data["location"] as String? ?? "Unknown location";
-    final List<dynamic> participants = widget.data.data["participants"] as List<dynamic>? ?? [];
-    final bool isInPerson = widget.data.data["isInPerson"] as bool? ?? false;
-    final String selectedCategory = widget.data.data["selectedCategory"] as String? ?? "Uncategorized";
+    final String firstName = widget.data["firstName"] as String? ?? "Unknown";
+    final String description = widget.data["description"] as String? ?? "No description available";
+    final String imageUrl = "https://images.pexels.com/photos/3861969/pexels-photo-3861969.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=750&w=1260";
+    final String datetime = widget.data["datetime"] as String? ?? DateTime.now().toIso8601String();
+    final String location = widget.data["location"] as String? ?? "Unknown location";
+    final List<dynamic> participants = widget.data["participants"] as List<dynamic>? ?? [];
+    final bool isInPerson = widget.data["isInPerson"] as bool? ?? false;
+    final String selectedCategory = widget.data["selectedCategory"] as String? ?? "Uncategorized";
 
     return Scaffold(
       floatingActionButton: isAuthenticated
@@ -203,7 +198,15 @@ class _SkillDetailsState extends State<SkillDetails> with SingleTickerProviderSt
               padding: EdgeInsets.only(left: 30), // Moves FAB to the left with some padding
               child: Align(
                 alignment: Alignment.bottomLeft,
-                child: ExpandableFab(),
+                child: FloatingActionButton(
+                  onPressed: () {
+                    // Simplified action button
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text('Feature coming soon!')),
+                    );
+                  },
+                  child: Icon(Icons.add),
+                ),
               ),
             )
           : null,
@@ -305,7 +308,7 @@ class _SkillDetailsState extends State<SkillDetails> with SingleTickerProviderSt
                                   ),
                                   ElevatedButton.icon(
                                     onPressed: () {
-                                      _launchUrl('tel:${widget.data.data["phoneNumber"]}');
+                                      _launchUrl('tel:${widget.data["phoneNumber"] ?? "1234567890"}');
                                     },
                                     icon: Icon(Icons.phone, size: 18),
                                     label: Text("Call Now"),
@@ -345,7 +348,7 @@ class _SkillDetailsState extends State<SkillDetails> with SingleTickerProviderSt
                                   IconButton(
                                     icon: Icon(Icons.share, color: BaseColors().customTheme.primaryColor),
                                     onPressed: () async {
-                                      final shareLink = 'https://skillhub.avodahsystems.com/skillhub/skill/${widget.data.$id}';
+                                      final shareLink = 'https://skillhub.avodahsystems.com/skillhub/skill/${widget.data["id"] ?? "sample"}';
                                       await Share.share('Check out this skill: $firstName\n$shareLink');
                                     },
                                   ),
@@ -377,11 +380,11 @@ class _SkillDetailsState extends State<SkillDetails> with SingleTickerProviderSt
                               SizedBox(height: 16),
 
                               // Key Features
-                              if (widget.data.data['keyFeatures'] != null)
+                              if (widget.data['keyFeatures'] != null)
                                 ExpansionTile(
                                   leading: Icon(Icons.star, color: Colors.yellow[700]),
                                   title: Text("Key Features", style: TextStyle(fontWeight: FontWeight.bold)),
-                                  children: List<String>.from(widget.data.data['keyFeatures'])
+                                  children: List<String>.from(widget.data['keyFeatures'])
                                       .map((feature) => ListTile(
                                             leading: Icon(Icons.check_circle, color: Colors.green),
                                             title: Text(feature),
@@ -393,7 +396,7 @@ class _SkillDetailsState extends State<SkillDetails> with SingleTickerProviderSt
                               ModernInfoTile(
                                 icon: Icons.access_time,
                                 title: "Service Hours",
-                                value: widget.data.data['serviceHours'] ?? 'Available 24/7',
+                                value: widget.data['serviceHours'] ?? 'Available 24/7',
                                 accentColor: Colors.blue,
                               ),
 
@@ -402,17 +405,17 @@ class _SkillDetailsState extends State<SkillDetails> with SingleTickerProviderSt
                                 leading: CircularPercentIndicator(
                                   radius: 20.0,
                                   lineWidth: 4.0,
-                                  percent: (widget.data.data['experienceYears'] ?? 0) / 20, // Assuming max 20 years
+                                  percent: (widget.data['experienceYears'] ?? 0) / 20, // Assuming max 20 years
                                   center: Text(
-                                    "${widget.data.data['experienceYears'] ?? 0}",
+                                    "${widget.data['experienceYears'] ?? 0}",
                                     style: TextStyle(fontSize: 12),
                                   ),
                                   progressColor: Colors.amber,
                                 ),
                                 title: Text("Experience"),
-                                subtitle: Text("${widget.data.data['experienceYears'] ?? 'Not specified'} years"),
+                                subtitle: Text("${widget.data['experienceYears'] ?? 'Not specified'} years"),
                                 trailing: Chip(
-                                  label: Text(widget.data.data['certification'] ?? 'Professional'),
+                                  label: Text(widget.data['certification'] ?? 'Professional'),
                                   backgroundColor: Colors.blue[100],
                                 ),
                               ),
@@ -437,7 +440,7 @@ class _SkillDetailsState extends State<SkillDetails> with SingleTickerProviderSt
                                               onChanged: (value) {
                                                 setState(() {
                                                   estimatedPrice = (double.tryParse(value) ?? 0) *
-                                                      (widget.data.data['hourlyRate'] ?? 50);
+                                                      (widget.data['hourlyRate'] ?? 50);
                                                 });
                                               },
                                             ),
@@ -496,7 +499,7 @@ class _SkillDetailsState extends State<SkillDetails> with SingleTickerProviderSt
                               ),
 
                               // Social Proof Carousel
-                              if (widget.data.data['portfolioImages'] != null)
+                              if (widget.data['portfolioImages'] != null)
                                 Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
@@ -515,7 +518,7 @@ class _SkillDetailsState extends State<SkillDetails> with SingleTickerProviderSt
                                         autoPlay: true,
                                         enlargeCenterPage: true,
                                       ),
-                                      items: List<String>.from(widget.data.data['portfolioImages'])
+                                      items: List<String>.from(widget.data['portfolioImages'])
                                           .map((image) => ClipRRect(
                                                 borderRadius: BorderRadius.circular(12),
                                                 child: Image.network(image, fit: BoxFit.cover),
@@ -570,7 +573,7 @@ class _SkillDetailsState extends State<SkillDetails> with SingleTickerProviderSt
               children: [
                 FloatingActionButton(
                   heroTag: "call",
-                  onPressed: () => _launchUrl('tel:${widget.data.data["phoneNumber"]}'),
+                  onPressed: () => _launchUrl('tel:${widget.data["phoneNumber"] ?? "1234567890"}'),
                   backgroundColor: Colors.green,
                   child: Icon(Icons.phone),
                 ),

@@ -1,10 +1,9 @@
-import 'package:appwrite/models.dart';
 import 'package:flutter/material.dart';
-import 'package:skillhub/controllers/formart_datetime.dart';
 import 'package:skillhub/pages/homePages/skills_detail.dart';
+import 'package:skillhub/controllers/formart_datetime.dart';
 
 class EventContainer extends StatelessWidget {
-  final Document data;
+  final Map<String, dynamic> data;
   const EventContainer({super.key, required this.data});
 
   @override
@@ -39,7 +38,7 @@ class EventContainer extends StatelessWidget {
                     BlendMode.darken,
                   ),
                   child: Image.network(
-                    "https://skillhub.avodahsystems.com/v1/storage/buckets/665a5bb500243dbb9967/files/${data.data["image"]}/view?project=665a50350038457d0eb9",
+                    "https://images.pexels.com/photos/3861969/pexels-photo-3861969.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=750&w=1260",
                     fit: BoxFit.cover,
                   ),
                 ),
@@ -51,7 +50,7 @@ class EventContainer extends StatelessWidget {
               child: SizedBox(
                 width: MediaQuery.of(context).size.width * 0.9,
                 child: Text(
-                  data.data["firstName"],
+                  data["firstName"] ?? "Sample Skill",
                   overflow: TextOverflow.ellipsis,
                   style: const TextStyle(
                     overflow: TextOverflow.ellipsis,
@@ -70,7 +69,7 @@ class EventContainer extends StatelessWidget {
                   const Icon(Icons.calendar_month_outlined, size: 18),
                   const SizedBox(width: 4),
                   Text(
-                    formatDate(data.data["datetime"]),
+                    formatDate(data["datetime"] ?? "2024-01-01T10:00:00"),
                     style: const TextStyle(
                       color: Colors.white,
                       fontSize: 14,
@@ -81,7 +80,7 @@ class EventContainer extends StatelessWidget {
                   const Icon(Icons.access_time_rounded, size: 18),
                   const SizedBox(width: 4),
                   Text(
-                    formatTime(data.data["datetime"]),
+                    formatTime(data["datetime"] ?? "2024-01-01T10:00:00"),
                     style: const TextStyle(
                       color: Colors.white,
                       fontSize: 14,
@@ -99,7 +98,7 @@ class EventContainer extends StatelessWidget {
                     const Icon(Icons.location_on_outlined, size: 18),
                     const SizedBox(width: 4),
                     Text(
-                      data.data["location"],
+                      data["location"] ?? "Sample Location",
                       style: const TextStyle(
                         color: Colors.white,
                         fontSize: 14,
