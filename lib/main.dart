@@ -1,13 +1,16 @@
 import 'dart:io';
-import 'dart:async';
-
-import 'package:app_links/app_links.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:skillhub/pages/Staggered/category_staggered_page.dart';
-import 'package:skillhub/providers/registration_form_providers.dart';
-import 'package:skillhub/routes/routes.dart';
 import 'package:skillhub/appwrite/auth_api.dart';
+import 'package:skillhub/appwrite/database_api.dart';
+import 'package:skillhub/providers/registration_form_providers.dart';
+import 'package:skillhub/pages/Staggered/category_staggered_page.dart';
+import 'package:skillhub/pages/homePages/home_cards/category_homePage.dart';
+import 'package:skillhub/routes/routes.dart';
+import 'package:app_links/app_links.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:skillhub/models/registration_fields.dart';
+import 'dart:async';
 
 // MyHttpOverrides class at top level
 class MyHttpOverrides extends HttpOverrides {
@@ -21,12 +24,11 @@ class MyHttpOverrides extends HttpOverrides {
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  await dotenv.load(fileName: ".env");
   HttpOverrides.global = MyHttpOverrides();
-  
   runApp(
     MultiProvider(
       providers: [
-        ChangeNotifierProvider(create: (_) => RegistrationFormProvider()),
         ChangeNotifierProvider(create: (_) => AuthAPI()),
       ],
       child: const MyApp(),
@@ -97,15 +99,16 @@ class _MyAppState extends State<MyApp> {
   void handleDeepLink(Uri uri) {
     print('Handling deep link: ${uri.toString()}');
     
-    // Process deep links off the main thread to avoid UI jank
-    Future.microtask(() {
-      // Reset password handling
-      if (uri.path == '/reset-password') {
-        // Reset password code unchanged
-      }
-      // Skill details handling
-      else if (uri.host == 'skill' || uri.path.contains('/skill/')) {
-        // Extract the skill ID from either host or path
+    try {
+      // Process deep links off the main thread to avoid UI jank
+      Future.microtask(() {
+        // Reset password handling
+        if (uri.path == '/reset-password') {
+          // Reset password code unchanged
+        }
+        // Skill details handling
+        else if (uri.host == 'skill' || uri.path.contains('/skill/')) {
+          // Extract the skill ID from either host or path
         String? skillId;
         
         if (uri.host == 'skill' && uri.path.isNotEmpty) {
@@ -129,7 +132,7 @@ class _MyAppState extends State<MyApp> {
           // Navigate directly to home page for now
           navigatorKey.currentState?.pushAndRemoveUntil(
             MaterialPageRoute(
-              builder: (context) => const MyHomeCategoryPage(),
+              builder: (context) => const CategoryHomePage(),
             ),
             (route) => false,
           ).then((_) {
@@ -140,42 +143,58 @@ class _MyAppState extends State<MyApp> {
           setState(() => _isHandlingDeepLink = false);
         }
       }
-    });
+      });
+    } catch (e) {
+      print('Deep link handling error: $e');
+      setState(() => _isHandlingDeepLink = false);
+    }
   }
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'SkillsHub',
-      theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
-        useMaterial3: true,
-      ),
-      navigatorKey: navigatorKey,
+    return MultiProvider(
+      providers: [
+        ChangeNotifierProvider(create: (context) => AuthAPI()),
+        ChangeNotifierProxyProvider<AuthAPI, DatabaseAPI>(
+          create: (context) => DatabaseAPI(auth: Provider.of<AuthAPI>(context, listen: false)),
+          update: (context, auth, previous) => DatabaseAPI(auth: auth),
+        ),
+        ChangeNotifierProvider(create: (context) => RegistrationFormProvider()),
+      ],
+      child: MaterialApp(
+        title: 'SkillsHub',
+        theme: ThemeData(
+          colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
+          useMaterial3: true,
+        ),
+        navigatorKey: navigatorKey,
       onGenerateRoute: (settings) {
-        // Handle reset password route
-        if (settings.name?.startsWith('/reset-password') ?? false) {
-          final uri = Uri.parse(settings.name!);
-          final userId = uri.queryParameters['userId'];
-          final secret = uri.queryParameters['secret'];
-          
-          if (userId != null && secret != null) {
-            return MaterialPageRoute(
-              builder: (context) => ResetPasswordPage(
-                userId: userId,
-                secret: secret,
-              ),
-            );
+        try {
+          // Handle reset password route
+          if (settings.name?.startsWith('/reset-password') ?? false) {
+            final uri = Uri.parse(settings.name!);
+            final userId = uri.queryParameters['userId'];
+            final secret = uri.queryParameters['secret'];
+            
+            if (userId != null && secret != null) {
+              // For now, redirect to home page instead of ResetPasswordPage
+              return MaterialPageRoute(
+                builder: (context) => const CategoryHomePage(),
+              );
+            }
           }
+        } catch (e) {
+          print('Route generation error: $e');
         }
         // Use the routes defined in routes.dart for other routes
         return MaterialPageRoute(
-          builder: routes[settings.name] ?? (context) => const MyHomeCategoryPage(),
+          builder: routes[settings.name] ?? (context) => const CategoryHomePage(),
           settings: settings,
         );
       },
-      debugShowCheckedModeBanner: false,
-      home: _isHandlingDeepLink ? null : const MyHomeCategoryPage(),
+        debugShowCheckedModeBanner: false,
+        home: _isHandlingDeepLink ? null : const CategoryHomePage(),
+      ),
     );
   }
 }

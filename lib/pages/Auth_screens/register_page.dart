@@ -1,5 +1,7 @@
 // Removed Appwrite import for simplified app
 import 'package:skillhub/appwrite/auth_api.dart';
+import 'package:skillhub/pages/Auth_screens/login_page.dart';
+import 'package:skillhub/pages/Staggered/category_staggered_page.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
@@ -44,59 +46,35 @@ class _RegisterPageState extends State<RegisterPage> {
 
       try {
         final AuthAPI appwrite = context.read<AuthAPI>();
-        final user = await appwrite.createUser(
+        final result = await appwrite.createUserAccount(
           email: emailTextController.text,
           password: passwordTextController.text,
           username: usernameTextController.text,
         );
 
-        // Create session to ensure verification can be sent
-        await appwrite.createEmailSession(
-          email: emailTextController.text,
-          password: passwordTextController.text,
-        );
+        Navigator.pop(context); // Close loading dialog
 
-        // Send email verification with the correct URL host
-        await appwrite.createEmailVerification(
-          url: 'https://verify.skillhub.avodahsystems.com/verification',
-        );
-
-        Navigator.pop(context);
-        // Display Snackbar in the middle center with rounded corners and staying until clicked
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            behavior: SnackBarBehavior.floating,
-            margin: EdgeInsets.only(
-              bottom: MediaQuery.of(context).size.height / 2 - 40, // Adjust for desired vertical position
-              left: 20,
-              right: 20,
-            ),
-            content: Text(
-              'Account created! Check your email for verification.',
-              textAlign: TextAlign.center,
-              style: TextStyle(color: Colors.white),
-            ),
-            backgroundColor: Colors.green,
-            elevation: 6.0,
-            // Rounded corners
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(10.0),
-            ),
-            duration: const Duration(days: 365), // Set a very long duration to keep it until clicked
-            action: SnackBarAction(
-              label: 'Login',
-              textColor: Colors.blue,
-              onPressed: () {
-                // Dismiss the Snackbar
-                ScaffoldMessenger.of(context).hideCurrentSnackBar();
-                // Navigate to login page
-                Navigator.pushNamed(context, '/login');
-              },
-            ),
-          ),
-        );
+        if (result['success']) {
+          print('Registration and login successful');
+          
+          // Show success message
+          showAlert(
+            title: 'Registration Successful', 
+            text: 'Welcome to SkillHub! You are now logged in.',
+          );
+          
+          // Navigate to home page after successful registration and login
+          Future.delayed(Duration(seconds: 2), () {
+            Navigator.pushReplacementNamed(context, '/');
+          });
+        } else {
+          showAlert(
+            title: 'Registration Failed', 
+            text: result['message'] ?? 'Unable to create account. Please try again.',
+          );
+        }
       } catch (e) {
-        Navigator.pop(context);
+        Navigator.pop(context); // Close loading dialog
         showAlert(title: 'Account creation failed', text: e.toString());
       }
     }
@@ -331,9 +309,18 @@ class _RegisterPageState extends State<RegisterPage> {
                       Navigator.pop(context);
                     },
                   ),
-                  const Text(
-                    'Back',
-                    style: TextStyle(fontSize: 16),
+                  GestureDetector(
+                    onTap: () {
+                      Navigator.pop(context);
+                    },
+                    child: const Text(
+                      'Back',
+                      style: TextStyle(
+                        fontSize: 16,
+                        color: Colors.blue,
+                        decoration: TextDecoration.underline,
+                      ),
+                    ),
                   ),
                 ],
               ),

@@ -56,32 +56,26 @@ class _MenuState extends State<Menu> with SingleTickerProviderStateMixin {
   }
 
   void _loadNewSkills() async {
-    // Load sample data for simplified app
-    setState(() {
-      newSkills = [
-        {
-          'firstName': 'Sample Skill 1',
-          'selectedCategory': 'Programming',
-          'selectedSubcategory': 'Software',
-          'location': 'Sample Location 1',
-          'datetime': '2024-01-01T10:00:00',
-        },
-        {
-          'firstName': 'Sample Skill 2',
-          'selectedCategory': 'Design',
-          'selectedSubcategory': 'GraphicDesign',
-          'location': 'Sample Location 2',
-          'datetime': '2024-01-02T14:00:00',
-        },
-        {
-          'firstName': 'Sample Skill 3',
-          'selectedCategory': 'Engineering',
-          'selectedSubcategory': 'Mechanical',
-          'location': 'Sample Location 3',
-          'datetime': '2024-01-03T16:00:00',
-        }
-      ];
-    });
+    try {
+      final databaseAPI = DatabaseAPI(auth: Provider.of<AuthAPI>(context, listen: false));
+      final skills = await databaseAPI.getAllSkills();
+      
+      // Get the 10 most recent skills
+      final sortedSkills = skills..sort((a, b) {
+        final dateA = DateTime.tryParse(a['datetime'] ?? '') ?? DateTime(1970);
+        final dateB = DateTime.tryParse(b['datetime'] ?? '') ?? DateTime(1970);
+        return dateB.compareTo(dateA);
+      });
+      
+      setState(() {
+        newSkills = sortedSkills.take(10).toList();
+      });
+    } catch (e) {
+      print('Error loading new skills: $e');
+      setState(() {
+        newSkills = [];
+      });
+    }
   }
 
   void _createAnimationIntervals() {
@@ -196,7 +190,8 @@ class _MenuState extends State<Menu> with SingleTickerProviderStateMixin {
                         );
                         break;
                       case 'Logout':
-                        // Simplified signout for standalone app
+                        // Call the actual logout method
+                        Provider.of<AuthAPI>(context, listen: false).signOutUser(context);
                         ScaffoldMessenger.of(context).showSnackBar(
                           SnackBar(content: Text('Signed out successfully!')),
                         );

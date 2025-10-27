@@ -1,13 +1,15 @@
 // Removed Appwrite imports for simplified app
 import 'package:flutter/material.dart';
 // import package:appwrite/models.dart - using stubs
-import 'package:google_fonts/google_fonts.dart';
+import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:skillhub/appwrite/auth_api.dart';
 import 'package:skillhub/appwrite/database_api.dart';
-import 'package:skillhub/constants/constants.dart';
-import 'package:skillhub/pages/Auth_screens/login_page.dart';
-import 'package:skillhub/pages/Auth_screens/register_page.dart';
+import 'package:skillhub/appwrite/auth_api.dart';
+import 'package:skillhub/pages/homePages/home_cards/subCategory_homePage.dart';
+import 'package:skillhub/pages/Staggered/subCategory_homePag.dart';
+import 'package:skillhub/providers/registration_form_providers.dart';
+import 'package:skillhub/controllers/custom_widgets.dart';
+import 'package:skillhub/pages/nav_tabs/expendableFab.dart';
 import 'package:skillhub/pages/Staggered/job_offers.dart';
 import 'package:skillhub/pages/Staggered/subCategory_homePag.dart';
 import 'package:skillhub/pages/homePages/skills_page.dart';
@@ -52,7 +54,7 @@ class CategoryHomePage extends StatefulWidget {
   _CategoryHomePageState createState() => _CategoryHomePageState();
 }
 
-class _CategoryHomePageState extends State<CategoryHomePage> {
+class _CategoryHomePageState extends State<CategoryHomePage> with SingleTickerProviderStateMixin {
   Map<String, List<Map<String, dynamic>>> groupedMessages = {};
   String searchQuery = '';
   bool isLoggedIn = false;
@@ -68,14 +70,41 @@ class _CategoryHomePageState extends State<CategoryHomePage> {
     'Transport'
   ];
   List<String> filteredCategories = [];
+  late AnimationController _drawerSlideController;
 
   // Removed Appwrite dependencies for simplified app
 
   @override
   void initState() {
     super.initState();
+    _drawerSlideController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 150),
+    );
     loadMessages();
     filteredCategories = allCategories;
+  }
+
+  @override
+  void dispose() {
+    _drawerSlideController.dispose();
+    super.dispose();
+  }
+
+  void _toggleDrawer() {
+    if (_isDrawerOpen() || _isDrawerOpening()) {
+      _drawerSlideController.reverse();
+    } else {
+      _drawerSlideController.forward();
+    }
+  }
+
+  bool _isDrawerOpen() {
+    return _drawerSlideController.value == 1.0;
+  }
+
+  bool _isDrawerOpening() {
+    return _drawerSlideController.status == AnimationStatus.forward;
   }
 
   void loadMessages() async {
@@ -154,53 +183,64 @@ class _CategoryHomePageState extends State<CategoryHomePage> {
   @override
   Widget build(BuildContext context) {
     final formProvider = Provider.of<RegistrationFormProvider>(context);
+    final authAPI = Provider.of<AuthAPI>(context);
+    final isAuthenticated = authAPI.status == AuthStatus.authenticated;
+    
     return Scaffold(
-      appBar: AppBar(
-        title: const Center(child: Text('Choose Category')),
-      ),
-      body: Column(
+      backgroundColor: Colors.white,
+      appBar: CustomAppBar(onMenuPressed: _toggleDrawer),
+      floatingActionButton: isAuthenticated ? ExpandableFab() : null,
+      body: Stack(
         children: [
-          Padding(
-            padding: const EdgeInsets.all(8.0),
-            child: TextField(
-              onChanged: filterCategories,
-              decoration: const InputDecoration(
-                labelText: 'Search',
-                prefixIcon: Icon(Icons.search),
-                border: OutlineInputBorder(),
+          Column(
+            children: [
+              Padding(
+                padding: const EdgeInsets.all(8.0),
+                child: TextField(
+                  onChanged: filterCategories,
+                  decoration: const InputDecoration(
+                    labelText: 'Search',
+                    prefixIcon: Icon(Icons.search),
+                    border: OutlineInputBorder(),
+                  ),
+                ),
               ),
-            ),
-          ),
-          Expanded(
-            child: filteredCategories.isNotEmpty
-                ? GridView.builder(
-                    gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                      crossAxisCount: 2,
-                      crossAxisSpacing: 8.0,
-                      mainAxisSpacing: 8.0,
-                    ),
-                    itemCount: filteredCategories.length,
-                    itemBuilder: (context, index) {
-                      final category = filteredCategories[index];
-                      final imageUrl = getImageUrlForCategory(category);
-                      return ProductCard(
-                        productItem: ProductItem(
-                          messageImageUrl: imageUrl,
-                          category: category,
+              Expanded(
+                child: filteredCategories.isNotEmpty
+                    ? GridView.builder(
+                        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                          crossAxisCount: 2,
+                          crossAxisSpacing: 8.0,
+                          mainAxisSpacing: 8.0,
                         ),
-                        onViewMessage: () {
-                          formProvider.selectedCategory = category;
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => SubCategoryStaggeredHomePage(title: 'Skillhub'),
+                        itemCount: filteredCategories.length,
+                        itemBuilder: (context, index) {
+                          final category = filteredCategories[index];
+                          final imageUrl = getImageUrlForCategory(category);
+                          return ProductCard(
+                            productItem: ProductItem(
+                              messageImageUrl: imageUrl,
+                              category: category,
                             ),
+                            onViewMessage: () {
+                              formProvider.selectedCategory = category;
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) => SubCategoryStaggeredHomePage(title: 'Skillhub'),
+                                ),
+                              );
+                            },
                           );
                         },
-                      );
-                    },
-                  )
-                : const Center(child: Text('No matching categories found')),
+                      )
+                    : const Center(child: Text('No matching categories found')),
+              ),
+            ],
+          ),
+          CustomStaggeredMenu(
+            drawerSlideController: _drawerSlideController,
+            toggleDrawer: _toggleDrawer,
           ),
         ],
       ),

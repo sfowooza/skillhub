@@ -176,7 +176,12 @@ class _SubCategoryHomePageState extends State<SubCategoryHomePage> {
   Widget build(BuildContext context) {
     final formProvider = Provider.of<RegistrationFormProvider>(context);
     final selectedCategory = formProvider.selectedCategory;
+    
+    print('Selected category: $selectedCategory');
+    print('Available categories: ${formProvider.subcategories.keys.toList()}');
+    
     final subcategories = formProvider.subcategories[selectedCategory] ?? [];
+    print('Subcategories for $selectedCategory: $subcategories');
 
     if (filteredSubcategories.isEmpty && searchQuery.isEmpty) {
       filteredSubcategories = subcategories;
@@ -203,30 +208,52 @@ class _SubCategoryHomePageState extends State<SubCategoryHomePage> {
             ),
           ),
           Expanded(
-            child: filteredSubcategories.isNotEmpty
-                ? GridView.builder(
-                    gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                      crossAxisCount: 2,
-                      crossAxisSpacing: 8.0,
-                      mainAxisSpacing: 8.0,
+            child: selectedCategory == null 
+                ? const Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(Icons.warning, size: 64, color: Colors.orange),
+                        SizedBox(height: 16),
+                        Text('No category selected'),
+                        Text('Please go back and select a category first'),
+                      ],
                     ),
-                    itemCount: filteredSubcategories.length,
-                    itemBuilder: (context, index) {
-                      final displayName = filteredSubcategories[index];
-                      final imageUrl = getImageUrlForSubCategory(displayName);
-
-                      return ProductCard(
-                        productItem: ProductItem(
-                          messageImageUrl: imageUrl,
-                          category: displayName,
-                        ),
-                        onViewMessage: () {
-                          _viewMessage(displayName);
-                        },
-                      );
-                    },
                   )
-                : const Center(child: Text('No matching subcategories found')),
+                : filteredSubcategories.isNotEmpty
+                    ? GridView.builder(
+                        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                          crossAxisCount: 2,
+                          crossAxisSpacing: 8.0,
+                          mainAxisSpacing: 8.0,
+                        ),
+                        itemCount: filteredSubcategories.length,
+                        itemBuilder: (context, index) {
+                          final displayName = filteredSubcategories[index];
+                          final imageUrl = getImageUrlForSubCategory(displayName);
+
+                          return ProductCard(
+                            productItem: ProductItem(
+                              messageImageUrl: imageUrl,
+                              category: displayName,
+                            ),
+                            onViewMessage: () {
+                              _viewMessage(displayName);
+                            },
+                          );
+                        },
+                      )
+                    : Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            const Icon(Icons.category, size: 64, color: Colors.grey),
+                            const SizedBox(height: 16),
+                            Text('No subcategories found for "$selectedCategory"'),
+                            const Text('Try selecting a different category'),
+                          ],
+                        ),
+                      ),
           ),
         ],
       ),

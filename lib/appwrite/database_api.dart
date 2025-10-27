@@ -1,56 +1,47 @@
+import 'package:appwrite/appwrite.dart';
+import 'package:appwrite/models.dart';
 import 'package:skillhub/appwrite/auth_api.dart';
 import 'package:skillhub/models/registration_fields.dart';
+import 'package:skillhub/constants/constants.dart';
+import 'package:flutter/material.dart';
 
-class DatabaseAPI {
-  late final AuthAPI auth;
+class DatabaseAPI extends ChangeNotifier {
+  final AuthAPI auth;
+  late final Databases databases;
 
-  DatabaseAPI({required AuthAPI auth}) {
-    this.auth = auth;
+  DatabaseAPI({required this.auth}) {
+    databases = Databases(auth.client);
   }
 
-  // Simplified methods that return sample data instead of making real API calls
-
   Future<List<Map<String, dynamic>>> getAllSkills() async {
-    // Return sample skills data
-    return [
-      {
-        'id': 'skill1',
-        'firstName': 'John',
-        'lastName': 'Doe',
-        'description': 'Expert in Flutter development',
-        'selectedCategory': 'Programming',
-        'selectedSubcategory': 'Mobile Development',
-        'location': 'New York',
-        'phoneNumber': '+1234567890',
-        'email': 'john@example.com',
-        'datetime': DateTime.now().toIso8601String(),
-        'participants': [],
-        'averageRating': 4.5,
-        'isAvailable': true,
-        'portfolioImages': [],
-      },
-      {
-        'id': 'skill2',
-        'firstName': 'Jane',
-        'lastName': 'Smith',
-        'description': 'Professional graphic designer',
-        'selectedCategory': 'Design',
-        'selectedSubcategory': 'Graphic Design',
-        'location': 'Los Angeles',
-        'phoneNumber': '+1987654321',
-        'email': 'jane@example.com',
-        'datetime': DateTime.now().toIso8601String(),
-        'participants': [],
-        'averageRating': 4.8,
-        'isAvailable': true,
-        'portfolioImages': [],
-      }
-    ];
+    try {
+      final response = await databases.listDocuments(
+        databaseId: Constants.databaseId,
+        collectionId: Constants.skillsCollectionId,
+      );
+      
+      return response.documents.map((doc) => doc.data).toList();
+    } catch (e) {
+      print('Error getting all skills: $e');
+      return [];
+    }
   }
 
   Future<List<Map<String, dynamic>>> getSkillsBySubCategory(String subCategory) async {
-    final allSkills = await getAllSkills();
-    return allSkills.where((skill) => skill['selectedSubcategory'] == subCategory).toList();
+    try {
+      final response = await databases.listDocuments(
+        databaseId: Constants.databaseId,
+        collectionId: Constants.skillsCollectionId,
+        queries: [
+          Query.equal('selectedSubcategory', subCategory),
+        ],
+      );
+      
+      return response.documents.map((doc) => doc.data).toList();
+    } catch (e) {
+      print('Error getting skills by subcategory: $e');
+      return [];
+    }
   }
 
   Future<List<Map<String, dynamic>>> getMessages() async {
@@ -66,55 +57,171 @@ class DatabaseAPI {
     required double longitude,
     required String whatsappLinkController,
   }) async {
-    // Return a sample created skill
-    return {
-      'id': 'new_skill_${DateTime.now().millisecondsSinceEpoch}',
-      'text': message,
-      'datetime': DateTime.now().toString(),
-      'user_id': 'test_user_id',
-      'description': description,
-      'firstName': registrationFields.firstName,
-      'lastName': registrationFields.lastName,
-      'phoneNumber': registrationFields.phoneNumber,
-      'location': registrationFields.location,
-      'email': registrationFields.email,
-      'selectedCategory': registrationFields.selectedCategory,
-      'selectedSubcategory': registrationFields.selectedSubcategory,
-      'participants': registrationFields.participants,
-      'createdBy': registrationFields.createdBy,
-      'inSoleBusiness': registrationFields.inSoleBusiness,
-      'image': registrationFields.image,
-      'gmap_location': gmaplocation,
-      'lat': latitude,
-      'long': longitude,
-      'link': whatsappLinkController,
-    };
+    try {
+      final data = {
+        'text': message,
+        'description': description,
+        'gmaplocation': gmaplocation,
+        'firstName': registrationFields.firstName,
+        'lastName': registrationFields.lastName,
+        'phoneNumber': registrationFields.phoneNumber,
+        'location': registrationFields.location,
+        'email': registrationFields.email,
+        'selectedCategory': registrationFields.selectedCategory,
+        'selectedSubcategory': registrationFields.selectedSubcategory,
+        'participants': registrationFields.participants,
+        'createdBy': registrationFields.createdBy,
+        'inSoleBusiness': registrationFields.inSoleBusiness,
+        'image': registrationFields.image,
+        'gmap_location': gmaplocation,
+        'lat': latitude,
+        'long': longitude,
+        'link': whatsappLinkController,
+        'datetime': DateTime.now().toIso8601String(),
+        'user_id': auth.userid ?? '',
+      };
+
+      final response = await databases.createDocument(
+        databaseId: Constants.databaseId,
+        collectionId: Constants.skillsCollectionId,
+        documentId: ID.unique(),
+        data: data,
+      );
+
+      return response.data;
+    } catch (e) {
+      print('Error creating skill: $e');
+      rethrow;
+    }
   }
 
   Future<bool> deleteMessage({required String id}) async {
-    print('Deleted skill with id: $id');
-    return true;
+    try {
+      await databases.deleteDocument(
+        databaseId: Constants.databaseId,
+        collectionId: Constants.skillsCollectionId,
+        documentId: id,
+      );
+      return true;
+    } catch (e) {
+      print('Error deleting skill: $e');
+      return false;
+    }
   }
 
   Future<void> saveUserData(String userId, String username, String email) async {
-    print('Saved user data: $userId, $username, $email');
+    try {
+      final data = {
+        'userId': userId,
+        'username': username,
+        'email': email,
+        'createdAt': DateTime.now().toIso8601String(),
+      };
+
+      await databases.createDocument(
+        databaseId: Constants.databaseId,
+        collectionId: Constants.usersCollectionId,
+        documentId: userId,
+        data: data,
+      );
+    } catch (e) {
+      print('Error saving user data: $e');
+    }
   }
 
   Future<Map<String, dynamic>?> getUserData() async {
-    return {
-      'userId': 'test_user_id',
-      'name': 'Test User',
-      'email': 'test@example.com'
-    };
+    try {
+      if (auth.userid == null) return null;
+      
+      final response = await databases.getDocument(
+        databaseId: Constants.databaseId,
+        collectionId: Constants.usersCollectionId,
+        documentId: auth.userid!,
+      );
+      
+      return response.data;
+    } catch (e) {
+      print('Error getting user data: $e');
+      return null;
+    }
   }
 
   Future<bool> rsvpEvent(List participants, String documentId) async {
-    print('RSVP event: $documentId');
-    return true;
+    try {
+      await databases.updateDocument(
+        databaseId: Constants.databaseId,
+        collectionId: Constants.skillsCollectionId,
+        documentId: documentId,
+        data: {'participants': participants},
+      );
+      return true;
+    } catch (e) {
+      print('Error updating RSVP: $e');
+      return false;
+    }
   }
 
   Future<List<Map<String, dynamic>>> manageSkills() async {
-    return await getAllSkills();
+    try {
+      if (auth.userid == null) return [];
+      
+      final response = await databases.listDocuments(
+        databaseId: Constants.databaseId,
+        collectionId: Constants.skillsCollectionId,
+        queries: [
+          Query.equal('user_id', auth.userid!),
+        ],
+      );
+      
+      return response.documents.map((doc) => doc.data).toList();
+    } catch (e) {
+      print('Error getting user skills: $e');
+      return [];
+    }
+  }
+
+  Future<void> createSkillNew(
+    String message,
+    String description,
+    double? latitude,
+    double? longitude,
+    String gmaplocation,
+    String whatsappLinkController,
+    RegistrationFields registrationFields,
+  ) async {
+    try {
+      final data = {
+        'text': message,
+        'description': description,
+        'lat': latitude,
+        'long': longitude,
+        'gmaplocation': gmaplocation,
+        'link': whatsappLinkController,
+        'firstName': registrationFields.firstName,
+        'lastName': registrationFields.lastName,
+        'phoneNumber': registrationFields.phoneNumber,
+        'location': registrationFields.location,
+        'email': registrationFields.email,
+        'selectedCategory': registrationFields.selectedCategory,
+        'selectedSubcategory': registrationFields.selectedSubcategory,
+        'participants': registrationFields.participants,
+        'createdBy': registrationFields.createdBy,
+        'inSoleBusiness': registrationFields.inSoleBusiness,
+        'image': registrationFields.image,
+        'datetime': DateTime.now().toIso8601String(),
+        'user_id': auth.userid ?? '',
+      };
+
+      await databases.createDocument(
+        databaseId: Constants.databaseId,
+        collectionId: Constants.skillsCollectionId,
+        documentId: ID.unique(),
+        data: data,
+      );
+    } catch (e) {
+      print('Error creating new skill: $e');
+      rethrow;
+    }
   }
 
   Future<void> updateSkill(
@@ -127,30 +234,165 @@ class DatabaseAPI {
     RegistrationFields registrationFields,
     String docID,
   ) async {
-    print('Updated skill: $docID');
+    try {
+      final data = {
+        'text': message,
+        'description': description,
+        'lat': latitude,
+        'long': longitude,
+        'gmaplocation': gmaplocation,
+        'link': whatsappLinkController,
+        'firstName': registrationFields.firstName,
+        'lastName': registrationFields.lastName,
+        'phoneNumber': registrationFields.phoneNumber,
+        'location': registrationFields.location,
+        'email': registrationFields.email,
+        'selectedCategory': registrationFields.selectedCategory,
+        'selectedSubcategory': registrationFields.selectedSubcategory,
+        'participants': registrationFields.participants,
+        'createdBy': registrationFields.createdBy,
+        'inSoleBusiness': registrationFields.inSoleBusiness,
+        'image': registrationFields.image,
+        'datetime': DateTime.now().toIso8601String(),
+      };
+
+      await databases.updateDocument(
+        databaseId: Constants.databaseId,
+        collectionId: Constants.skillsCollectionId,
+        documentId: docID,
+        data: data,
+      );
+    } catch (e) {
+      print('Error updating skill: $e');
+      rethrow;
+    }
   }
 
   Future<void> deleteSkill(String docID) async {
-    print('Deleted skill: $docID');
+    try {
+      await databases.deleteDocument(
+        databaseId: Constants.databaseId,
+        collectionId: Constants.skillsCollectionId,
+        documentId: docID,
+      );
+    } catch (e) {
+      print('Error deleting skill: $e');
+      rethrow;
+    }
   }
 
   Stream<Map<String, dynamic>> getSkillRatings(String skillId) {
-    return Stream.value({
-      'id': skillId,
-      'averageRating': 4.5,
-      'ratings': {'test_user_id': 4.5}
-    });
+    return Stream.fromFuture(_getSkillRatings(skillId));
+  }
+
+  Future<Map<String, dynamic>> _getSkillRatings(String skillId) async {
+    try {
+      final response = await databases.listDocuments(
+        databaseId: Constants.databaseId,
+        collectionId: Constants.ratingsCollectionId,
+        queries: [
+          Query.equal('skillId', skillId),
+        ],
+      );
+
+      final ratings = response.documents.map((doc) => doc.data).toList();
+      double averageRating = 0.0;
+      Map<String, double> userRatings = {};
+
+      if (ratings.isNotEmpty) {
+        double totalRating = 0.0;
+        for (var rating in ratings) {
+          totalRating += rating['rating'] ?? 0.0;
+          userRatings[rating['userId']] = rating['rating'] ?? 0.0;
+        }
+        averageRating = totalRating / ratings.length;
+      }
+
+      return {
+        'id': skillId,
+        'averageRating': averageRating,
+        'ratings': userRatings,
+      };
+    } catch (e) {
+      print('Error getting skill ratings: $e');
+      return {
+        'id': skillId,
+        'averageRating': 0.0,
+        'ratings': <String, double>{},
+      };
+    }
   }
 
   Future<void> updateRating(String skillId, double rating) async {
-    print('Updated rating for skill $skillId: $rating');
+    try {
+      if (auth.userid == null) return;
+
+      final data = {
+        'skillId': skillId,
+        'userId': auth.userid!,
+        'rating': rating,
+        'createdAt': DateTime.now().toIso8601String(),
+      };
+
+      // Try to update existing rating first
+      try {
+        final existingRatings = await databases.listDocuments(
+          databaseId: Constants.databaseId,
+          collectionId: Constants.ratingsCollectionId,
+          queries: [
+            Query.equal('skillId', skillId),
+            Query.equal('userId', auth.userid!),
+          ],
+        );
+
+        if (existingRatings.documents.isNotEmpty) {
+          // Update existing rating
+          await databases.updateDocument(
+            databaseId: Constants.databaseId,
+            collectionId: Constants.ratingsCollectionId,
+            documentId: existingRatings.documents.first.$id,
+            data: data,
+          );
+        } else {
+          // Create new rating
+          await databases.createDocument(
+            databaseId: Constants.databaseId,
+            collectionId: Constants.ratingsCollectionId,
+            documentId: ID.unique(),
+            data: data,
+          );
+        }
+      } catch (e) {
+        // If query fails, just create new rating
+        await databases.createDocument(
+          databaseId: Constants.databaseId,
+          collectionId: Constants.ratingsCollectionId,
+          documentId: ID.unique(),
+          data: data,
+        );
+      }
+    } catch (e) {
+      print('Error updating rating: $e');
+    }
   }
 
   Future<Map<String, dynamic>> getSkillById(String skillId) async {
-    final skills = await getAllSkills();
-    return skills.firstWhere(
-      (skill) => skill['id'] == skillId,
-      orElse: () => skills.first,
-    );
+    try {
+      final response = await databases.getDocument(
+        databaseId: Constants.databaseId,
+        collectionId: Constants.skillsCollectionId,
+        documentId: skillId,
+      );
+      
+      return response.data;
+    } catch (e) {
+      print('Error getting skill by ID: $e');
+      // Fallback to getting from all skills
+      final skills = await getAllSkills();
+      return skills.firstWhere(
+        (skill) => skill['\$id'] == skillId,
+        orElse: () => skills.isNotEmpty ? skills.first : {},
+      );
+    }
   }
 }

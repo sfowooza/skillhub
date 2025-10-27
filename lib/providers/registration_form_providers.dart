@@ -17,16 +17,17 @@ class RegistrationFormProvider with ChangeNotifier {
 
   final Map<String, List<String>> _subcategories = {
     'Engineering': [
-  'Civil Engineering', 
+  'Civil', 
   'Mechanical', 
   'Electrical',
   'Architecture',
+  'Painting',
   'Plumbing',
   'Interior Design',
   'Exterior Design',
   'Building & Construction'
 ],
-    'IT': ['Software Engineering', 'Data Science', 'AI'],
+    'IT': ['Software', 'Data Science', 'AI'],
     'Design': ['Graphic Design', 'Illustration', 'Animation'],
     'Medicine': ['General Medicine', 'Pediatrics', 'Cardiology'],
     'Leisure & Hospitality': ['Tours & Travel', 'Hotels', 'Rest Gardens', 'Game Parks', 'Game Reserves', 'Beaches', 'Camp Sites'],

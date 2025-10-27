@@ -243,9 +243,18 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
                       Navigator.pop(context);
                     },
                   ),
-                  const Text(
-                    'Back',
-                    style: TextStyle(fontSize: 16),
+                  GestureDetector(
+                    onTap: () {
+                      Navigator.pop(context);
+                    },
+                    child: const Text(
+                      'Back',
+                      style: TextStyle(
+                        fontSize: 16,
+                        color: Colors.blue,
+                        decoration: TextDecoration.underline,
+                      ),
+                    ),
                   ),
                 ],
               ),

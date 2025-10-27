@@ -1,8 +1,12 @@
-const String APPWRITE_PROJECT_ID = "665a50350038457d0eb9";
-const String APPWRITE_URL = "https://skillhub.avodahsystems.com/v1";
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 
-const String APPWRITE_DATABASE_ID = "665a51130023590b5e21";
-const String COLLECTION_USER_ID = "665a5137001cebf964ab";
-const String COLLECTION_DB_ID = "665a5516000b61b3093f";
-
-const String BUCKET_ID = "665a5bb500243dbb9967";
+class Constants {
+  static String get endpoint => dotenv.env['APPWRITE_ENDPOINT'] ?? 'https://skillhub.avodahsystems.com/v1';
+  static String get projectId => dotenv.env['APPWRITE_PROJECT_ID'] ?? '68fbf8c7000da2a66231';
+  static String get apiSecret => dotenv.env['APPWRITE_API_SECRET'] ?? '';
+  static String get databaseId => dotenv.env['APPWRITE_DATABASE_ID'] ?? '68fbfa9400035f96086e';
+  static String get skillsCollectionId => dotenv.env['APPWRITE_SKILLS_COLLECTION_ID'] ?? '68fbfb01002ca99ab18e';
+  static String get usersCollectionId => dotenv.env['APPWRITE_USERS_COLLECTION_ID'] ?? '68fbfac7001c7f6979e3';
+  static String get ratingsCollectionId => dotenv.env['APPWRITE_RATINGS_COLLECTION_ID'] ?? 'ratings';
+  static const String bucketId = "665a5bb500243dbb9967";
+}

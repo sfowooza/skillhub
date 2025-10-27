@@ -3,9 +3,8 @@
 // import package:appwrite/enums.dart - using stubs
 import 'package:skillhub/appwrite/auth_api.dart';
 import 'package:skillhub/pages/Auth_screens/forgot_password_page.dart';
-import 'package:skillhub/pages/Staggered/category_staggered_page.dart';
-import 'package:skillhub/pages/Staggered/job_offers.dart';
 import 'package:skillhub/pages/Auth_screens/register_page.dart';
+import 'package:skillhub/pages/Staggered/category_staggered_page.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:provider/provider.dart';
@@ -52,54 +51,25 @@ class _LoginPageState extends State<LoginPage> {
 
         // Clear any existing session before attempting to log in
         try {
-          await appwrite.signOut(context);
+          await appwrite.signOutUser(context);
         } catch (e) {
           // If no session exists, this will throw an error, which we can ignore
         }
 
         // Attempt login
-        final loginSuccess = await appwrite.createEmailSession(
+        final loginResult = await appwrite.createEmailSession(
           email: emailTextController.text,
           password: passwordTextController.text,
         );
 
-        if (!loginSuccess) {
-          Navigator.pop(context);
-          return;
-        }
-
-        // Check verification status after login
-        await appwrite.loadUser(); // Ensure we have the latest user data
-        if (!appwrite.currentUser['emailVerification']) {
-          Navigator.pop(context); // Close loading dialog
-
-          // Send verification email
-          await appwrite.createEmailVerification(
-            url: 'https://verify.skillhub.avodahsystems.com/verification',
-          );
-
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Please verify your email before logging in. Check your inbox for the verification link.'),
-              duration: Duration(seconds: 5),
-            ),
-          );
-
-          // Do not sign out, let the user verify their email or try again
-          return;
-        }
-
-        // Email is verified - proceed with login
         Navigator.pop(context); // Close loading dialog
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (context) => const JobOffersStaggeredPage(
-              title: 'Job Offers',
-              selectedSubCategory: null, // or 'All'
-            ),
-          ),
-        );
+
+        if (loginResult['success']) {
+          // Navigate to home page on successful login
+          Navigator.pushReplacementNamed(context, '/');
+        } else {
+          showAlert(title: 'Login Failed', text: loginResult['message'] ?? 'Invalid email or password');
+        }
       } catch (e) {
         Navigator.pop(context);
         // Handle nullable message
@@ -318,9 +288,18 @@ class _LoginPageState extends State<LoginPage> {
         Navigator.pop(context);
       },
     ),
-    const Text(
-      'Back',
-      style: TextStyle(fontSize: 16),
+    GestureDetector(
+      onTap: () {
+        Navigator.pop(context);
+      },
+      child: const Text(
+        'Back',
+        style: TextStyle(
+          fontSize: 16,
+          color: Colors.blue,
+          decoration: TextDecoration.underline,
+        ),
+      ),
     ),
   ],
 ),

@@ -3,6 +3,7 @@ import 'package:skillhub/pages/Auth_screens/register_page.dart';
 import 'package:skillhub/pages/Auth_screens/rsvp_events.dart';
 import 'package:skillhub/pages/Auth_screens/manage_skills.dart';
 import 'package:skillhub/pages/Auth_screens/account_page.dart';
+import 'package:skillhub/pages/Auth_screens/add_skill_page.dart';
 
 class ExpandableFab extends StatefulWidget {
   @override
@@ -110,9 +111,11 @@ class _ExpandableFabState extends State<ExpandableFab> with SingleTickerProvider
             FloatingActionButton(
               onPressed: _toggle,
               tooltip: 'Expand',
+              backgroundColor: Colors.deepPurple,
               child: AnimatedIcon(
                 icon: AnimatedIcons.menu_close,
                 progress: _animationController,
+                color: Colors.white,
               ),
             ),
           ],
@@ -197,14 +200,14 @@ class _ExpandableFabState extends State<ExpandableFab> with SingleTickerProvider
       builder: (BuildContext context) {
         return AlertDialog(
           title: Text('Add Your Skill'),
-          content: Text('Please add the mandatory Required fileds'),
+          content: Text('Please add the mandatory required fields'),
           actions: <Widget>[
             TextButton(
               child: Center(child: Text('Add Skill')),
               onPressed: () {
                Navigator.push(
               context,
-              MaterialPageRoute(builder: (context) => RegisterPage()),
+              MaterialPageRoute(builder: (context) => AddSkillPage()),
             );
               },
             ),
