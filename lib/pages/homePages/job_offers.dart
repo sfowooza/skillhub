@@ -1,16 +1,27 @@
 // Removed Appwrite imports for simplified app
 // import package:appwrite/models.dart - using stubs
 import 'package:carousel_slider/carousel_slider.dart';
+import 'package:skillhub/widgets/skill_display_card.dart';
 import 'package:flutter/material.dart';
+import 'package:skillhub/widgets/skill_display_card.dart';
 import 'package:provider/provider.dart';
+import 'package:skillhub/widgets/skill_display_card.dart';
 import 'package:skillhub/appwrite/auth_api.dart';
+import 'package:skillhub/widgets/skill_display_card.dart';
 import 'package:skillhub/appwrite/saved_data.dart';
+import 'package:skillhub/widgets/skill_display_card.dart';
 import 'package:skillhub/colors.dart';
+import 'package:skillhub/widgets/skill_display_card.dart';
 import 'package:skillhub/controllers/events_container.dart';
+import 'package:skillhub/widgets/skill_display_card.dart';
 import 'package:skillhub/pages/Auth_screens/login_page.dart';
+import 'package:skillhub/widgets/skill_display_card.dart';
 import 'package:skillhub/appwrite/database_api.dart';
+import 'package:skillhub/widgets/skill_display_card.dart';
 import 'package:skillhub/pages/nav_tabs/expendableFab.dart';
+import 'package:skillhub/widgets/skill_display_card.dart';
 import 'package:skillhub/utils/category_mappers.dart';
+import 'package:skillhub/widgets/skill_display_card.dart';
 
 class JobOffersPage extends StatefulWidget {
   final String title;
@@ -163,7 +174,7 @@ class _JobOffersPageState extends State<JobOffersPage> {
                             print("Tapped skill: ${skillData['firstName'] ?? 'Unknown'}");
                             // Example: Navigator.push(context, MaterialPageRoute(builder: (context) => DetailPage(skill: skill)));
                           },
-                          child: EventContainer(data: skillData),
+                          child: SkillDisplayCard(skillData: skillData),
                         );
                       }).toList(),
                     ),
@@ -266,7 +277,7 @@ class _JobOffersPageState extends State<JobOffersPage> {
                     print("Tapped skill: ${skill['firstName'] ?? 'Unknown'}");
                     // Example: Navigator.push(context, MaterialPageRoute(builder: (context) => DetailPage(skill: skill)));
                   },
-                  child: EventContainer(data: getFilteredItems()[index]),
+                  child: SkillDisplayCard(skillData: getFilteredItems()[index]),
                 ),
                 childCount: getFilteredItems().length,
               ),
