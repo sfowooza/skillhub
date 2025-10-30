@@ -1,4 +1,6 @@
 import 'package:appwrite/appwrite.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
 import 'package:appwrite/models.dart';
 import 'package:skillhub/appwrite/auth_api.dart';
 import 'package:skillhub/models/registration_fields.dart';
@@ -27,10 +29,41 @@ class DatabaseAPI extends ChangeNotifier {
     } catch (e) {
       print('ERROR in getAllSkills: $e');
       print('Error type: ${e.runtimeType}');
-      // Work around SDK parsing bug by returning empty list
+      // Try HTTP fallback if SDK fails
       if (e.toString().contains("type 'Null' is not a subtype of type 'int'")) {
-        print('⚠️ SDK parsing bug in getAllSkills - returning empty list');
+        print('⚠️ SDK parsing bug in getAllSkills - trying HTTP fallback...');
+        return await _getAllSkillsHttp();
       }
+      return [];
+    }
+  }
+
+  Future<List<Map<String, dynamic>>> _getAllSkillsHttp() async {
+    try {
+      print('🔄 Using HTTP fallback for getAllSkills');
+      final url = 'https://skillhub.avodahsystems.com/v1/databases/68fbfa9400035f96086e/collections/68fbfb01002ca99ab18e/documents';
+      
+      final response = await http.get(
+        Uri.parse(url),
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Appwrite-Project': '68fbf8c7000da2a66231',
+          'X-Appwrite-Key': 'standard_a3a0efd7839e0ab111d146e1a5bdf05dbffce9c8ea2342721daa14f3ee57cf8b049710ac06db1ab7bb8ac54aff005e182332e6edd0049278821232deaf7524f0a43e770f5cead85372409b8aa317179985830072307c441ed65d58bb9714c8c7a35e3f72be74d78752db69744bb4285a50ae6bc8429c6374ff565fbc53ffb401',
+        },
+      );
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        final documents = data['documents'] as List?;
+        if (documents != null) {
+          print('✅ HTTP fallback successful! Fetched ${documents.length} documents');
+          return documents.map((doc) => doc as Map<String, dynamic>).toList();
+        }
+      }
+      print('❌ HTTP fallback failed with status: ${response.statusCode}');
+      return [];
+    } catch (e) {
+      print('❌ HTTP fallback error: $e');
       return [];
     }
   }
