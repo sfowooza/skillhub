@@ -41,178 +41,39 @@ class _JobOffersPageState extends State<JobOffersPage> {
     if (SavedData.isLoggedIn()) {
       userName = SavedData.getUserName().split(" ")[0];
     }
-    refresh();
+    // Call refresh after the widget is built
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      refresh();
+    });
   }
 
-  void refresh() {
+  void refresh() async {
     setState(() {
       isLoading = true;
     });
-    // Simulate loading real data from database
-    Future.delayed(Duration(milliseconds: 500), () {
-      setState(() {
-        // Sample skills data that matches different subcategories
-        final allSkills = [
-          {
-            'firstName': 'John',
-            'lastName': 'Doe',
-            'selectedCategory': 'IT',
-            'selectedSubcategory': 'Mobile Development',
-            'description': 'Expert Flutter Developer with 5+ years experience. I specialize in building beautiful, performant mobile applications.',
-            'location': 'Kampala, Uganda',
-            'phoneNumber': '+256701234567',
-            'email': 'john.doe@example.com',
-            'datetime': DateTime.now().subtract(Duration(days: 5)).toIso8601String(),
-            'participants': [],
-            'averageRating': 4.8,
-            'text': 'Expert Flutter Developer with 5+ years experience',
-            'inSoleBusiness': true,
-            'image': 'default_image',
-            'user_id': 'sample_user_1',
-            '\$id': 'sample_1',
-          },
-          {
-            'firstName': 'Sarah',
-            'lastName': 'Johnson',
-            'selectedCategory': 'Design',
-            'selectedSubcategory': 'Graphic Design',
-            'description': 'Creative graphic designer specializing in logo design, brand identity, and marketing materials.',
-            'location': 'Nairobi, Kenya',
-            'phoneNumber': '+256702345678',
-            'email': 'sarah.design@example.com',
-            'datetime': DateTime.now().subtract(Duration(days: 3)).toIso8601String(),
-            'participants': [],
-            'averageRating': 4.5,
-            'text': 'Professional Graphic Designer - Logo & Branding',
-            'inSoleBusiness': false,
-            'image': 'default_image',
-            'user_id': 'sample_user_2',
-            '\$id': 'sample_2',
-          },
-          {
-            'firstName': 'Michael',
-            'lastName': 'Brown',
-            'selectedCategory': 'Engineering',
-            'selectedSubcategory': 'Civil',
-            'description': 'Licensed civil engineer with expertise in construction project management, structural design, and infrastructure development.',
-            'location': 'Dar es Salaam, Tanzania',
-            'phoneNumber': '+256703456789',
-            'email': 'michael.engineer@example.com',
-            'datetime': DateTime.now().subtract(Duration(days: 7)).toIso8601String(),
-            'participants': [],
-            'averageRating': 4.2,
-            'text': 'Certified Civil Engineer - Construction & Project Management',
-            'inSoleBusiness': true,
-            'image': 'default_image',
-            'user_id': 'sample_user_3',
-            '\$id': 'sample_3',
-          },
-          {
-            'firstName': 'Emma',
-            'lastName': 'Wilson',
-            'selectedCategory': 'Health & Beauty',
-            'selectedSubcategory': 'Beauty Therapy',
-            'description': 'Professional beauty therapist offering hair styling, makeup, manicure/pedicure, and skincare treatments.',
-            'location': 'Kigali, Rwanda',
-            'phoneNumber': '+256704567890',
-            'email': 'emma.beauty@example.com',
-            'datetime': DateTime.now().subtract(Duration(days: 2)).toIso8601String(),
-            'participants': [],
-            'averageRating': 4.7,
-            'text': 'Beauty Therapist & Hair Stylist - Salon Services',
-            'inSoleBusiness': false,
-            'image': 'default_image',
-            'user_id': 'sample_user_4',
-            '\$id': 'sample_4',
-          },
-          {
-            'firstName': 'David',
-            'lastName': 'Lee',
-            'selectedCategory': 'IT',
-            'selectedSubcategory': 'Web Development',
-            'description': 'Experienced full-stack developer specializing in MongoDB, Express.js, React.js, and Node.js.',
-            'location': 'Lagos, Nigeria',
-            'phoneNumber': '+256705678901',
-            'email': 'david.web@example.com',
-            'datetime': DateTime.now().subtract(Duration(days: 1)).toIso8601String(),
-            'participants': [],
-            'averageRating': 4.9,
-            'text': 'Full-Stack Web Developer - MERN Stack Expert',
-            'inSoleBusiness': true,
-            'image': 'default_image',
-            'user_id': 'sample_user_5',
-            '\$id': 'sample_5',
-          },
-          {
-            'firstName': 'Grace',
-            'lastName': 'Okafor',
-            'selectedCategory': 'Fashion',
-            'selectedSubcategory': 'Fashion Design',
-            'description': 'Creative fashion designer specializing in custom clothing, wedding dresses, and traditional attire.',
-            'location': 'Accra, Ghana',
-            'phoneNumber': '+256706789012',
-            'email': 'grace.fashion@example.com',
-            'datetime': DateTime.now().subtract(Duration(days: 4)).toIso8601String(),
-            'participants': [],
-            'averageRating': 4.6,
-            'text': 'Fashion Designer - Custom Clothing & Tailoring',
-            'inSoleBusiness': false,
-            'image': 'default_image',
-            'user_id': 'sample_user_6',
-            '\$id': 'sample_6',
-          },
-          {
-            'firstName': 'Dr. James',
-            'lastName': 'Smith',
-            'selectedCategory': 'Medicine',
-            'selectedSubcategory': 'General Practice',
-            'description': 'Licensed medical doctor providing general healthcare services, consultations, and medical advice.',
-            'location': 'Addis Ababa, Ethiopia',
-            'phoneNumber': '+256707890123',
-            'email': 'dr.smith@example.com',
-            'datetime': DateTime.now().subtract(Duration(days: 6)).toIso8601String(),
-            'participants': [],
-            'averageRating': 4.8,
-            'text': 'Medicine Doctor - General Practitioner',
-            'inSoleBusiness': true,
-            'image': 'default_image',
-            'user_id': 'sample_user_7',
-            '\$id': 'sample_7',
-          },
-          {
-            'firstName': 'Peter',
-            'lastName': 'Nkosi',
-            'selectedCategory': 'Farming & Agriculture',
-            'selectedSubcategory': 'Crop Farming',
-            'description': 'Agricultural expert providing consulting services for crop farming, livestock management, and sustainable farming practices.',
-            'location': 'Harare, Zimbabwe',
-            'phoneNumber': '+256708901234',
-            'email': 'peter.agri@example.com',
-            'datetime': DateTime.now().subtract(Duration(days: 8)).toIso8601String(),
-            'participants': [],
-            'averageRating': 4.3,
-            'text': 'Agriculture Consultant - Crop Farming & Livestock',
-            'inSoleBusiness': true,
-            'image': 'default_image',
-            'user_id': 'sample_user_8',
-            '\$id': 'sample_8',
-          },
-        ];
 
-        // Filter skills by subcategory if one is selected
-        if (selectedSubCategory != 'All') {
-          // Convert display name to enum value for comparison
-          final enumValue = SubCategoryMapper.toEnumValue(selectedSubCategory);
-          skills = allSkills.where((skill) =>
-              skill['selectedSubcategory'] == enumValue ||
-              skill['selectedSubcategory'] == selectedSubCategory).toList();
-        } else {
-          skills = allSkills;
-        }
+    try {
+      final databaseAPI = Provider.of<DatabaseAPI>(context, listen: false);
 
-        isLoading = false;
-      });
-    });
+      if (selectedSubCategory != 'All') {
+        // Fetch skills by subcategory
+        final enumValue = SubCategoryMapper.toEnumValue(selectedSubCategory);
+        skills = await databaseAPI.getSkillsBySubCategory(enumValue);
+      } else {
+        // Fetch all skills
+        skills = await databaseAPI.getAllSkills();
+      }
+    } catch (e) {
+      print('Error fetching skills: $e');
+      // Fallback to empty list if there's an error
+      skills = [];
+    } finally {
+      if (mounted) {
+        setState(() {
+          isLoading = false;
+        });
+      }
+    }
   }
 
   List<Map<String, dynamic>> getFilteredItems() {
@@ -233,6 +94,11 @@ class _JobOffersPageState extends State<JobOffersPage> {
     subCategories.removeWhere((element) => element == 'All');
     subCategories.sort();
     subCategories.insert(0, 'All');
+    
+    // Convert enum value to display name for dropdown
+    final displaySubCategory = selectedSubCategory == 'All' 
+        ? 'All' 
+        : SubCategoryMapper.toDisplayName(selectedSubCategory);
 
     return Scaffold(
       appBar: AppBar(
@@ -309,12 +175,15 @@ class _JobOffersPageState extends State<JobOffersPage> {
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: DropdownButton<String>(
-                      value: selectedSubCategory,
+                      value: displaySubCategory,
                       isExpanded: true,
                       underline: Container(),
                       onChanged: (String? newValue) {
                         setState(() {
-                          selectedSubCategory = newValue!;
+                          // Convert display name back to enum value for filtering
+                          selectedSubCategory = newValue == 'All' 
+                              ? 'All' 
+                              : SubCategoryMapper.toEnumValue(newValue!);
                           isLoading = true;
                         });
                         refresh();

@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:skillhub/appwrite/auth_api.dart';
 import 'package:skillhub/appwrite/database_api.dart';
+import 'package:skillhub/appwrite/storage_api.dart';
 import 'package:skillhub/providers/registration_form_providers.dart';
 import 'package:skillhub/pages/Staggered/category_staggered_page.dart';
 import 'package:skillhub/pages/homePages/home_cards/category_homePage.dart';
@@ -30,6 +31,14 @@ void main() async {
     MultiProvider(
       providers: [
         ChangeNotifierProvider(create: (_) => AuthAPI()),
+        ChangeNotifierProxyProvider<AuthAPI, DatabaseAPI>(
+          create: (context) => DatabaseAPI(auth: context.read<AuthAPI>()),
+          update: (context, auth, previous) => previous ?? DatabaseAPI(auth: auth),
+        ),
+        ChangeNotifierProxyProvider<AuthAPI, StorageAPI>(
+          create: (context) => StorageAPI(auth: context.read<AuthAPI>()),
+          update: (context, auth, previous) => previous ?? StorageAPI(auth: auth),
+        ),
       ],
       child: const MyApp(),
     ),

@@ -13,6 +13,9 @@ import 'package:intl_phone_field/intl_phone_field.dart';
 import 'package:provider/provider.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:skillhub/utils/category_mappers.dart';
+import 'package:skillhub/appwrite/database_api.dart';
+import 'package:skillhub/appwrite/storage_api.dart';
+import 'package:skillhub/appwrite/auth_api.dart';
 
 class EditSkillsPage extends StatefulWidget {
   final String image, firstName, lastName, email, phoneNumber, message, selectedCategory, selectedSubcategory, location, description, datetime, docID,link, gmaplocation;
@@ -51,16 +54,21 @@ class _EditSkillsPageState extends State<EditSkillsPage> {
   FilePickerResult? _filePickerResult;
   bool inSoleBusiness = true;
   String userName = "User";
-  // Removed AuthAPI reference for simplified app
   String userId = "";
 
 @override
 void initState() {
   super.initState();
   
-  isAuthenticated = true; // Set to true for simplified app
-  userName = "Test User";
-  userId = "test_user_id";
+  // Check authentication status
+  WidgetsBinding.instance.addPostFrameCallback((_) {
+    final authAPI = Provider.of<AuthAPI>(context, listen: false);
+    setState(() {
+      isAuthenticated = authAPI.status == AuthStatus.authenticated;
+      userName = authAPI.currentUser?.name ?? "User";
+      userId = authAPI.userid ?? "";
+    });
+  });
 
   _datetimeController.text = widget.datetime;
   messageTextController.text = widget.message;
@@ -115,15 +123,16 @@ void initState() {
     });
     try {
       if (_filePickerResult != null && _filePickerResult!.files.isNotEmpty) {
-        // Return a placeholder file ID for now
-        await Future.delayed(Duration(seconds: 1)); // Simulate upload delay
-        return 'placeholder_file_id_${DateTime.now().millisecondsSinceEpoch}';
+        final storageAPI = Provider.of<StorageAPI>(context, listen: false);
+        final file = File(_filePickerResult!.files.first.path!);
+        final fileId = await storageAPI.uploadFile(file);
+        return fileId;
       } else {
         print("No file selected");
         return null;
       }
     } catch (e) {
-      print(e);
+      print('Error uploading image: $e');
       return null;
     } finally {
       setState(() {
@@ -180,30 +189,59 @@ void initState() {
     }
   }
 
-Future<void> _updateSkill(String value) async {
+Future<void> _updateSkill(String imageFileId) async {
   final registrationFormProvider = context.read<RegistrationFormProvider>();
+  final databaseAPI = context.read<DatabaseAPI>();
 
   // Convert display names to enum values for storage
   final categoryEnum = CategoryMapper.toEnumValue(registrationFormProvider.selectedCategory!);
   final subcategoryEnum = SubCategoryMapper.toEnumValue(registrationFormProvider.selectedSubcategory!);
 
-  // Placeholder for database update - would call real API here
-  print('Would update skill with message: ${messageTextController.text}');
-  print('Description: ${descriptionTextController.text}');
-  print('Latitude: ${latitude ?? 0.0}');
-  print('Longitude: ${longitude ?? 0.0}');
-  print('Category: $categoryEnum');
-  print('Subcategory: $subcategoryEnum');
-  
-  // Show success message
-  ScaffoldMessenger.of(context).showSnackBar(
-    const SnackBar(content: Text('Skill updated successfully!')),
-  );
+  try {
+    // Create RegistrationFields object
+    final registrationFields = RegistrationFields(
+      firstName: firstNameTextController.text,
+      lastName: lastNameTextController.text,
+      email: emailTextController.text,
+      phoneNumber: phoneNumberTextController.text,
+      location: locationTextController.text,
+      selectedCategory: categoryEnum,
+      selectedSubcategory: subcategoryEnum,
+      participants: widget.inSoleBusiness ? [] : (widget.message as List? ?? []),
+      createdBy: '${firstNameTextController.text} ${lastNameTextController.text}',
+      inSoleBusiness: inSoleBusiness,
+      image: imageFileId,
+      datetime: widget.datetime,
+      description: descriptionTextController.text,
+    );
 
-  ScaffoldMessenger.of(context).showSnackBar(
-    const SnackBar(content: Text("Skill Updated Successfully!")),
-  );
-  Navigator.pop(context, true);
+    // Update skill in database
+    await databaseAPI.updateSkill(
+      messageTextController.text,
+      descriptionTextController.text,
+      latitude,
+      longitude,
+      _gmaplocationController.text,
+      _whatsappLinkController.text,
+      registrationFields,
+      widget.docID,
+    );
+
+    // Show success message
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Skill updated successfully!')),
+      );
+      Navigator.pop(context, true);
+    }
+  } catch (e) {
+    print('Error updating skill: $e');
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error updating skill: $e')),
+      );
+    }
+  }
 }
 
 
@@ -473,24 +511,38 @@ if (provider.selectedCategory != null)
                             ),
                             SizedBox(height: 20),
                             ElevatedButton(
-                              onPressed: () async {
-                                final registrationFormProvider = context.read<RegistrationFormProvider>();
+                              onPressed: isUploading ? null : () async {
                                 if (_formKey.currentState!.validate()) {
+                                  String imageFileId = widget.image;
+                                  
+                                  // If user selected a new image, upload it
                                   if (_filePickerResult != null) {
-                                    String? value = await uploadEventImage();
-                                    if (value != null) {
-                                      await _updateSkill(value);
+                                    final newImageId = await uploadEventImage();
+                                    if (newImageId != null) {
+                                      imageFileId = newImageId;
+                                      // Delete old image if it exists and is not default
+                                      if (widget.image.isNotEmpty && widget.image != 'default_image') {
+                                        final storageAPI = Provider.of<StorageAPI>(context, listen: false);
+                                        await storageAPI.deleteFile(widget.image);
+                                      }
                                     } else {
                                       ScaffoldMessenger.of(context).showSnackBar(
-                                        SnackBar(content: Text("Image upload failed")),
+                                        const SnackBar(content: Text("Image upload failed")),
                                       );
+                                      return;
                                     }
-                                  } else {
-                                    await _updateSkill(widget.image);
                                   }
+                                  
+                                  await _updateSkill(imageFileId);
                                 }
                               },
-                              child: const Text('Update Skill'),
+                              child: isUploading 
+                                  ? const SizedBox(
+                                      height: 20,
+                                      width: 20,
+                                      child: CircularProgressIndicator(strokeWidth: 2),
+                                    )
+                                  : const Text('Update Skill'),
                             ),
                             SizedBox(height: 12),
                             Text(
@@ -510,37 +562,54 @@ if (provider.selectedCategory != null)
                                   showDialog(
                                       context: context,
                                       builder: (context) => AlertDialog(
-                                            title: Text(
-                                              "Are you Sure ?",
-                                              style: TextStyle(color: Color.fromARGB(255, 131, 84, 175)),
-                                            ),
-                                            content: Text(
-                                              "Your event will be deleted",
-                                              style: TextStyle(color: BaseColors().baseTextColor),
-                                            ),
-                                            actions: [
-                                              TextButton(
-                                                  onPressed: () {
-                                                    // Placeholder for delete operations
-                                                    Future.delayed(Duration(seconds: 1)).then((value) async {
-                                                      print('Would delete skill: ${widget.docID}');
-                                                      print('Would delete file: ${widget.image}');
-                                                      ScaffoldMessenger.of(context)
-                                                          .showSnackBar(SnackBar(
-                                                              content: Text(
-                                                                  "Skill Deleted Successfully.")));
-                                                      Navigator.pop(context);
-                                                      Navigator.pop(context);
-                                                    });
-                                                  },
-                                                  child: Text("Yes")),
-                                              TextButton(
-                                                  onPressed: () {
+                                        title: Text(
+                                          "Are you Sure ?",
+                                          style: TextStyle(color: Color.fromARGB(255, 131, 84, 175)),
+                                        ),
+                                        content: Text(
+                                          "Your skill will be deleted",
+                                          style: TextStyle(color: BaseColors().baseTextColor),
+                                        ),
+                                        actions: [
+                                          TextButton(
+                                              onPressed: () async {
+                                                try {
+                                                  final databaseAPI = context.read<DatabaseAPI>();
+                                                  final storageAPI = context.read<StorageAPI>();
+                                                  
+                                                  // Delete skill from database
+                                                  await databaseAPI.deleteSkill(widget.docID);
+                                                  
+                                                  // Delete image from storage if it exists
+                                                  if (widget.image.isNotEmpty && widget.image != 'default_image') {
+                                                    await storageAPI.deleteFile(widget.image);
+                                                  }
+                                                  
+                                                  if (mounted) {
+                                                    ScaffoldMessenger.of(context).showSnackBar(
+                                                      const SnackBar(content: Text("Skill Deleted Successfully.")),
+                                                    );
+                                                    Navigator.pop(context); // Close dialog
+                                                    Navigator.pop(context, true); // Go back with refresh flag
+                                                  }
+                                                } catch (e) {
+                                                  print('Error deleting skill: $e');
+                                                  if (mounted) {
+                                                    ScaffoldMessenger.of(context).showSnackBar(
+                                                      SnackBar(content: Text('Error deleting skill: $e')),
+                                                    );
                                                     Navigator.pop(context);
-                                                  },
-                                                  child: Text("No")),
-                                            ],
-                                          ));
+                                                  }
+                                                }
+                                              },
+                                              child: Text("Yes")),
+                                          TextButton(
+                                              onPressed: () {
+                                                Navigator.pop(context);
+                                              },
+                                              child: Text("No")),
+                                        ],
+                                      ));
                                 },
                                 child: Text(
                                   "Delete Skill",

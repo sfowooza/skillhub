@@ -72,6 +72,25 @@ class AuthAPI extends ChangeNotifier {
       // Automatically log in the user after account creation
       final loginResult = await createEmailSession(email: email, password: password);
       if (loginResult['success']) {
+        // Save user data to Users collection
+        final databaseAPI = databases;
+        try {
+          await databaseAPI.createDocument(
+            databaseId: Constants.databaseId,
+            collectionId: Constants.usersCollectionId,
+            documentId: user.$id,
+            data: {
+              'userId': user.$id,
+              'username': username,
+              'email': email,
+              'createdAt': DateTime.now().toIso8601String(),
+            },
+          );
+          print('User data saved to Users collection');
+        } catch (e) {
+          print('Error saving user data to collection: $e');
+        }
+        
         print('User account created and logged in successfully');
         return {'success': true, 'message': 'Account created and logged in successfully'};
       } else {

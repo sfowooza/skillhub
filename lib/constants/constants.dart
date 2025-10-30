@@ -8,5 +8,5 @@ class Constants {
   static String get skillsCollectionId => dotenv.env['APPWRITE_SKILLS_COLLECTION_ID'] ?? '68fbfb01002ca99ab18e';
   static String get usersCollectionId => dotenv.env['APPWRITE_USERS_COLLECTION_ID'] ?? '68fbfac7001c7f6979e3';
   static String get ratingsCollectionId => dotenv.env['APPWRITE_RATINGS_COLLECTION_ID'] ?? 'ratings';
-  static const String bucketId = "665a5bb500243dbb9967";
+  static String get bucketId => dotenv.env['APPWRITE_BUCKET_ID'] ?? '68fbfb3a000e00303687';
 }

@@ -45,6 +45,7 @@ dependencies:
   url_launcher: ^6.2.4
   flutter_staggered_grid_view: ^0.7.0
   appwrite: ^20.2.1
+  flutter_web_auth_2: ^4.1.0
   flutter_dotenv: ^5.1.0
   shared_preferences: ^2.2.3
   carousel_slider: ^5.0.0
@@ -53,6 +54,7 @@ dependencies:
   intl_phone_field: ^3.2.0
   intl: ^0.19.0
   percent_indicator: ^4.2.3
+  http: ^1.2.1
 
 dev_dependencies:
   flutter_test:

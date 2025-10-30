@@ -13,6 +13,9 @@ import 'package:intl_phone_field/intl_phone_field.dart';
 import 'package:provider/provider.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:skillhub/utils/category_mappers.dart';
+import 'package:skillhub/appwrite/database_api.dart';
+import 'package:skillhub/appwrite/storage_api.dart';
+import 'package:skillhub/appwrite/auth_api.dart';
 
 class AddSkillPage extends StatefulWidget {
   const AddSkillPage({Key? key}) : super(key: key);
@@ -41,16 +44,21 @@ class _AddSkillPageState extends State<AddSkillPage> {
   FilePickerResult? _filePickerResult;
   bool inSoleBusiness = true;
   String userName = "User";
-  // Removed AuthAPI reference for simplified app
   String userId = "";
 
 @override
 void initState() {
   super.initState();
-
-  isAuthenticated = true; // Set to true for simplified app
-  userName = "Test User";
-  userId = "test_user_id";
+  
+  // Check authentication status
+  WidgetsBinding.instance.addPostFrameCallback((_) {
+    final authAPI = Provider.of<AuthAPI>(context, listen: false);
+    setState(() {
+      isAuthenticated = authAPI.status == AuthStatus.authenticated;
+      userName = authAPI.currentUser?.name ?? "User";
+      userId = authAPI.userid ?? "";
+    });
+  });
 }
 
   @override
@@ -79,15 +87,16 @@ void initState() {
     });
     try {
       if (_filePickerResult != null && _filePickerResult!.files.isNotEmpty) {
-        // Return a placeholder file ID for now
-        await Future.delayed(Duration(seconds: 1)); // Simulate upload delay
-        return 'placeholder_file_id_${DateTime.now().millisecondsSinceEpoch}';
+        final storageAPI = Provider.of<StorageAPI>(context, listen: false);
+        final file = File(_filePickerResult!.files.first.path!);
+        final fileId = await storageAPI.uploadFile(file);
+        return fileId;
       } else {
         print("No file selected");
         return null;
       }
     } catch (e) {
-      print(e);
+      print('Error uploading image: $e');
       return null;
     } finally {
       setState(() {
@@ -144,28 +153,59 @@ void initState() {
     }
   }
 
-Future<void> _addSkill(String value) async {
+Future<void> _addSkill(String imageFileId) async {
   final registrationFormProvider = context.read<RegistrationFormProvider>();
+  final databaseAPI = context.read<DatabaseAPI>();
 
   // Convert display names to enum values for storage
   final categoryEnum = CategoryMapper.toEnumValue(registrationFormProvider.selectedCategory!);
   final subcategoryEnum = SubCategoryMapper.toEnumValue(registrationFormProvider.selectedSubcategory!);
 
-  // Placeholder for database save - would call real API here
-  print('Would add new skill with message: ${messageTextController.text}');
-  print('Description: ${descriptionTextController.text}');
-  print('Latitude: ${latitude ?? 0.0}');
-  print('Longitude: ${longitude ?? 0.0}');
-  print('Category: $categoryEnum');
-  print('Subcategory: $subcategoryEnum');
+  try {
+    // Create RegistrationFields object
+    final registrationFields = RegistrationFields(
+      firstName: firstNameTextController.text,
+      lastName: lastNameTextController.text,
+      email: emailTextController.text,
+      phoneNumber: phoneNumberTextController.text,
+      location: locationTextController.text,
+      selectedCategory: categoryEnum,
+      selectedSubcategory: subcategoryEnum,
+      participants: [],
+      createdBy: '${firstNameTextController.text} ${lastNameTextController.text}',
+      inSoleBusiness: inSoleBusiness,
+      image: imageFileId,
+      datetime: DateTime.now().toIso8601String(),
+      description: descriptionTextController.text,
+    );
 
-  // Show success message
-  ScaffoldMessenger.of(context).showSnackBar(
-    const SnackBar(content: Text('Skill added successfully!')),
-  );
+    // Add skill to database
+    await databaseAPI.createSkillNew(
+      messageTextController.text,
+      descriptionTextController.text,
+      latitude,
+      longitude,
+      _gmaplocationController.text,
+      _whatsappLinkController.text,
+      registrationFields,
+    );
 
-  // Navigate back to previous screen
-  Navigator.pop(context, true);
+    // Show success message
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Skill added successfully!')),
+      );
+      // Navigate back to previous screen
+      Navigator.pop(context, true);
+    }
+  } catch (e) {
+    print('Error adding skill: $e');
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error adding skill: $e')),
+      );
+    }
+  }
 }
 
 
@@ -446,24 +486,43 @@ if (provider.selectedCategory != null)
                             ),
                             SizedBox(height: 20),
                             ElevatedButton(
-                              onPressed: () async {
-                                final registrationFormProvider = context.read<RegistrationFormProvider>();
+                              onPressed: isUploading ? null : () async {
                                 if (_formKey.currentState!.validate()) {
+                                  // Check if user is authenticated
+                                  final authAPI = Provider.of<AuthAPI>(context, listen: false);
+                                  if (authAPI.status != AuthStatus.authenticated) {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      const SnackBar(content: Text('Please login to add a skill')),
+                                    );
+                                    return;
+                                  }
+
+                                  String? imageFileId;
                                   if (_filePickerResult != null) {
-                                    String? value = await uploadEventImage();
-                                    if (value != null) {
-                                      await _addSkill(value);
-                                    } else {
+                                    imageFileId = await uploadEventImage();
+                                    if (imageFileId == null) {
                                       ScaffoldMessenger.of(context).showSnackBar(
-                                        SnackBar(content: Text("Image upload failed")),
+                                        const SnackBar(content: Text("Image upload failed")),
                                       );
+                                      return;
                                     }
                                   } else {
-                                    await _addSkill('default_image');
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      const SnackBar(content: Text("Please select an image")),
+                                    );
+                                    return;
                                   }
+                                  
+                                  await _addSkill(imageFileId);
                                 }
                               },
-                              child: const Text('Add Skill'),
+                              child: isUploading 
+                                  ? const SizedBox(
+                                      height: 20,
+                                      width: 20,
+                                      child: CircularProgressIndicator(strokeWidth: 2),
+                                    )
+                                  : const Text('Add Skill'),
                             ),
                           ],
                         )
