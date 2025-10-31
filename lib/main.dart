@@ -8,6 +8,7 @@ import 'package:skillhub/appwrite/likes_api.dart';
 import 'package:skillhub/providers/registration_form_providers.dart';
 import 'package:skillhub/pages/Staggered/category_staggered_page.dart';
 import 'package:skillhub/pages/homePages/home_cards/category_homePage.dart';
+import 'package:skillhub/pages/homePages/explore_skills_page.dart';
 import 'package:skillhub/pages/homePages/skill_detail_loader.dart';
 import 'package:skillhub/routes/routes.dart';
 import 'package:app_links/app_links.dart';
@@ -147,7 +148,7 @@ class _MyAppState extends State<MyApp> {
           // Navigate directly to home page for now
           navigatorKey.currentState?.pushAndRemoveUntil(
             MaterialPageRoute(
-              builder: (context) => const CategoryHomePage(),
+              builder: (context) => const ExploreSkillsPage(),
             ),
             (route) => false,
           ).then((_) {
@@ -194,7 +195,7 @@ class _MyAppState extends State<MyApp> {
             if (userId != null && secret != null) {
               // For now, redirect to home page instead of ResetPasswordPage
               return MaterialPageRoute(
-                builder: (context) => const CategoryHomePage(),
+                builder: (context) => const ExploreSkillsPage(),
               );
             }
           }
@@ -213,12 +214,12 @@ class _MyAppState extends State<MyApp> {
         }
         // Use the routes defined in routes.dart for other routes
         return MaterialPageRoute(
-          builder: routes[settings.name] ?? (context) => const CategoryHomePage(),
+          builder: routes[settings.name] ?? (context) => const ExploreSkillsPage(),
           settings: settings,
         );
       },
         debugShowCheckedModeBanner: false,
-        home: _isHandlingDeepLink ? null : const CategoryHomePage(),
+        home: _isHandlingDeepLink ? null : const ExploreSkillsPage(),
       ),
     );
   }
