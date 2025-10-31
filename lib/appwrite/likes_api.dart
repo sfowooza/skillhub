@@ -108,10 +108,23 @@ class LikesAPI extends ChangeNotifier {
         documentId: skillId,
       );
 
-      final currentLikes = skill.data['likesCount'] ?? 0;
+      // Handle null and convert to int safely
+      final likesValue = skill.data['likesCount'];
+      int currentLikes = 0;
+      if (likesValue != null) {
+        if (likesValue is int) {
+          currentLikes = likesValue;
+        } else if (likesValue is double) {
+          currentLikes = likesValue.toInt();
+        }
+      }
+      
+      // Calculate new value, ensuring it doesn't go below 0
       final newLikes = (currentLikes + increment).clamp(0, double.infinity).toInt();
+      
+      print('Updating likesCount for skill $skillId: $currentLikes -> $newLikes');
 
-      // Update likes count
+      // Update likes count - always set it even if null
       await databases.updateDocument(
         databaseId: Constants.databaseId,
         collectionId: Constants.skillsCollectionId,
@@ -120,8 +133,25 @@ class LikesAPI extends ChangeNotifier {
           'likesCount': newLikes,
         },
       );
+      
+      print('Successfully updated likesCount to $newLikes');
     } catch (e) {
       print('Error updating likes count: $e');
+      // If update fails, try to initialize the field
+      try {
+        print('Attempting to initialize likesCount field...');
+        await databases.updateDocument(
+          databaseId: Constants.databaseId,
+          collectionId: Constants.skillsCollectionId,
+          documentId: skillId,
+          data: {
+            'likesCount': increment > 0 ? 1 : 0,
+          },
+        );
+        print('Initialized likesCount successfully');
+      } catch (e2) {
+        print('Failed to initialize likesCount: $e2');
+      }
     }
   }
 

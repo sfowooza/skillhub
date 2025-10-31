@@ -1,5 +1,6 @@
 import 'package:skillhub/controllers/menu.dart';
 import 'package:flutter/material.dart';
+import 'package:skillhub/pages/homePages/search_page.dart';
 
 class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
   final VoidCallback onMenuPressed;
@@ -21,6 +22,18 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
       elevation: 0.0,
       automaticallyImplyLeading: false,
       actions: [
+        IconButton(
+          onPressed: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => SearchPage()),
+            );
+          },
+          icon: const Icon(
+            Icons.search,
+            color: Colors.black,
+          ),
+        ),
         IconButton(
           onPressed: onMenuPressed,
           icon: const Icon(

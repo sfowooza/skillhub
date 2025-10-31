@@ -13,6 +13,7 @@ import 'package:skillhub/pages/nav_tabs/expendableFab.dart';
 import 'package:skillhub/pages/Staggered/job_offers.dart';
 import 'package:skillhub/pages/Staggered/subCategory_homePag.dart';
 import 'package:skillhub/pages/homePages/skills_page.dart';
+import 'package:skillhub/pages/homePages/search_page.dart';
 import 'package:skillhub/providers/registration_form_providers.dart';
 
 class CategoryMapper {

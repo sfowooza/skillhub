@@ -247,12 +247,16 @@ class _SkillDetailsState extends State<SkillDetails> with SingleTickerProviderSt
       final skillId = widget.data['\$id'] ?? '';
       
       if (skillId.isNotEmpty) {
+        // Toggle like status
         final newLikeStatus = await likesAPI.toggleLike(skillId);
+        
+        // Reload the actual count from database to ensure accuracy
+        final updatedCount = await likesAPI.getLikesCount(skillId);
         
         if (mounted) {
           setState(() {
             isLiked = newLikeStatus;
-            likesCount = newLikeStatus ? likesCount + 1 : likesCount - 1;
+            likesCount = updatedCount;
             isLoadingLike = false;
           });
         }
