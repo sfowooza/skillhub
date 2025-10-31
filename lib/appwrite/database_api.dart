@@ -225,6 +225,8 @@ class DatabaseAPI extends ChangeNotifier {
     String? priceRange,
     String? openingTimes,
     String? businessStartDate,
+    String? productOrService,
+    List<String>? photos,
   }) async {
     try {
       // Ensure lat/long are proper doubles
@@ -263,6 +265,8 @@ class DatabaseAPI extends ChangeNotifier {
         'openingTimes': openingTimes,
         'businessStartDate': businessStartDate,
         'likesCount': 0,
+        'productOrService': productOrService ?? 'Service',
+        'photos': photos ?? [],
       };
 
       print('Creating skill document...');

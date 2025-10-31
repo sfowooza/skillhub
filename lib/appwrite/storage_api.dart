@@ -31,6 +31,24 @@ class StorageAPI extends ChangeNotifier {
     }
   }
 
+  Future<String?> uploadFileToPhotosBucket(io.File file) async {
+    try {
+      final fileId = ID.unique();
+      
+      final response = await storage.createFile(
+        bucketId: Constants.photosBucketId,
+        fileId: fileId,
+        file: InputFile.fromPath(path: file.path),
+      );
+
+      print('Photo uploaded successfully to photos bucket: ${response.$id}');
+      return response.$id;
+    } catch (e) {
+      print('Error uploading photo to photos bucket: $e');
+      return null;
+    }
+  }
+
   Future<bool> deleteFile(String fileId) async {
     try {
       await storage.deleteFile(

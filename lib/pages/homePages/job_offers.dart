@@ -99,7 +99,19 @@ class _JobOffersPageState extends State<JobOffersPage> {
 
   @override
   Widget build(BuildContext context) {
-    final isAuthenticated = Provider.of<AuthAPI>(context).status == AuthStatus.authenticated;
+    final authAPI = Provider.of<AuthAPI>(context);
+    final isAuthenticated = authAPI.status == AuthStatus.authenticated;
+    
+    // Get username from AuthAPI or SavedData
+    String displayName = 'User';
+    if (isAuthenticated) {
+      // Try to get from current user first
+      if (authAPI.currentUser?.name != null && authAPI.currentUser!.name.isNotEmpty) {
+        displayName = authAPI.currentUser!.name.split(' ')[0];
+      } else if (SavedData.isLoggedIn()) {
+        displayName = SavedData.getUserName().split(' ')[0];
+      }
+    }
 
     final subCategories = ['All', ...SubCategoryMapper.displayToEnum.keys].toList();
     subCategories.removeWhere((element) => element == 'All');
@@ -119,7 +131,7 @@ class _JobOffersPageState extends State<JobOffersPage> {
           children: [
             if (isAuthenticated)
               Text(
-                "Hi $userName \u{1F44B}\u{FE0F}",
+                "Hi $displayName 👋",
                 style: TextStyle(
                   color: Theme.of(context).primaryColor,
                   fontSize: 16,

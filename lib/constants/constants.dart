@@ -10,4 +10,5 @@ class Constants {
   static String get ratingsCollectionId => dotenv.env['APPWRITE_RATINGS_COLLECTION_ID'] ?? 'ratings';
   static String get likesCollectionId => dotenv.env['APPWRITE_LIKES_COLLECTION_ID'] ?? 'likes_collection';
   static String get bucketId => dotenv.env['APPWRITE_BUCKET_ID'] ?? '68fbfb3a000e00303687';
+  static String get photosBucketId => dotenv.env['APPWRITE_PHOTOS_BUCKET_ID'] ?? '690467e10027d9964429';
 }

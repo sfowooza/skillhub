@@ -258,6 +258,7 @@ class SkillDisplayCard extends StatelessWidget {
     }
 
     // Use Appwrite Storage URL with proper image ID from skill data
+    // Using original bucket where existing images are stored
     final imageId = skillData['image'].toString();
     final imageUrl = '${Constants.endpoint}/storage/buckets/${Constants.bucketId}/files/$imageId/view?project=${Constants.projectId}';
 

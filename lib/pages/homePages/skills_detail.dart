@@ -10,6 +10,7 @@ import 'package:skillhub/pages/nav_tabs/expendableFab.dart';
 import 'package:skillhub/utils/category_mappers.dart';
 import 'package:skillhub/appwrite/likes_api.dart';
 import 'package:skillhub/appwrite/auth_api.dart';
+import 'package:skillhub/constants/constants.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_rating_bar/flutter_rating_bar.dart';
 import 'package:share_plus/share_plus.dart';
@@ -282,12 +283,26 @@ class _SkillDetailsState extends State<SkillDetails> with SingleTickerProviderSt
 
     final String firstName = widget.data["firstName"] as String? ?? "Unknown";
     final String description = widget.data["description"] as String? ?? "No description available";
-    final String imageUrl = "https://images.pexels.com/photos/3861969/pexels-photo-3861969.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=750&w=1260";
+    
+    // Get actual skill image from database
+    final String? imageId = widget.data["image"] as String?;
+    final String imageUrl = imageId != null && imageId.isNotEmpty
+        ? '${Constants.endpoint}/storage/buckets/${Constants.bucketId}/files/$imageId/view?project=${Constants.projectId}'
+        : "https://images.pexels.com/photos/3861969/pexels-photo-3861969.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=750&w=1260";
+    
     final String datetime = widget.data["datetime"] as String? ?? DateTime.now().toIso8601String();
     final String location = widget.data["location"] as String? ?? "Unknown location";
     final List<dynamic> participants = widget.data["participants"] as List<dynamic>? ?? [];
     final bool isInPerson = widget.data["isInPerson"] as bool? ?? false;
     final String selectedCategory = widget.data["selectedCategory"] as String? ?? "Uncategorized";
+    final String selectedSubcategory = widget.data["selectedSubcategory"] as String? ?? "";
+    final String productOrService = widget.data["productOrService"] as String? ?? "Service";
+    final List<dynamic> photos = widget.data["photos"] as List<dynamic>? ?? [];
+    
+    // Debug: Print photo data
+    print('📸 Skill Photos Debug:');
+    print('  Photo count: ${photos.length}');
+    print('  Photos data: $photos');
 
     return Scaffold(
       floatingActionButton: isAuthenticated ? ExpandableFab() : null,
@@ -335,16 +350,18 @@ class _SkillDetailsState extends State<SkillDetails> with SingleTickerProviderSt
                               Row(
                                 children: [
                                   Chip(
-                                    label: Text(formatDate(datetime)),
-                                    avatar: Icon(Icons.calendar_today, size: 16, color: Colors.white),
+                                    label: Text(selectedCategory),
+                                    avatar: Icon(Icons.category, size: 16, color: Colors.white),
                                     backgroundColor: Colors.white.withOpacity(0.2),
                                   ),
-                                  SizedBox(width: 8),
-                                  Chip(
-                                    label: Text(formatTime(datetime)),
-                                    avatar: Icon(Icons.access_time, size: 16, color: Colors.white),
-                                    backgroundColor: Colors.white.withOpacity(0.2),
-                                  ),
+                                  if (selectedSubcategory.isNotEmpty) ...[
+                                    SizedBox(width: 8),
+                                    Chip(
+                                      label: Text(selectedSubcategory),
+                                      avatar: Icon(Icons.subdirectory_arrow_right, size: 16, color: Colors.white),
+                                      backgroundColor: Colors.white.withOpacity(0.2),
+                                    ),
+                                  ],
                                 ],
                               ),
                             ],
@@ -406,6 +423,34 @@ class _SkillDetailsState extends State<SkillDetails> with SingleTickerProviderSt
                                 ],
                               ),
                               Divider(height: 24),
+                              
+                              // Category & Subcategory Info
+                              Row(
+                                children: [
+                                  Icon(Icons.business_center, color: BaseColors().customTheme.primaryColor, size: 20),
+                                  SizedBox(width: 8),
+                                  Text(
+                                    "Category: ",
+                                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                                  ),
+                                  Text(
+                                    selectedCategory,
+                                    style: TextStyle(fontSize: 14, color: Colors.black87),
+                                  ),
+                                  if (selectedSubcategory.isNotEmpty) ...[
+                                    Text(
+                                      " • ",
+                                      style: TextStyle(fontSize: 14, color: Colors.grey),
+                                    ),
+                                    Text(
+                                      selectedSubcategory,
+                                      style: TextStyle(fontSize: 14, color: Colors.black87),
+                                    ),
+                                  ],
+                                ],
+                              ),
+                              SizedBox(height: 12),
+                              
                               Text(
                                 "About",
                                 style: TextStyle(
@@ -470,7 +515,124 @@ class _SkillDetailsState extends State<SkillDetails> with SingleTickerProviderSt
                         ),
                       ),
 
-                      // Service Details Card
+                      // Photo Gallery Card (if photos exist)
+                      if (photos.isNotEmpty) ...[
+                        SizedBox(height: 16),
+                        Card(
+                          elevation: 4,
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                          child: Padding(
+                            padding: EdgeInsets.all(16),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  "Gallery",
+                                  style: TextStyle(
+                                    fontSize: 20,
+                                    fontWeight: FontWeight.bold,
+                                    color: BaseColors().customTheme.primaryColor,
+                                  ),
+                                ),
+                                SizedBox(height: 12),
+                                GridView.builder(
+                                  shrinkWrap: true,
+                                  physics: NeverScrollableScrollPhysics(),
+                                  gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                                    crossAxisCount: 2,
+                                    crossAxisSpacing: 8,
+                                    mainAxisSpacing: 8,
+                                    childAspectRatio: 1,
+                                  ),
+                                  itemCount: photos.length,
+                                  itemBuilder: (context, index) {
+                                    final photoId = photos[index].toString();
+                                    final photoUrl = '${Constants.endpoint}/storage/buckets/${Constants.photosBucketId}/files/$photoId/view?project=${Constants.projectId}';
+                                    print('🖼️ Loading gallery photo $index: $photoUrl');
+                                    
+                                    return GestureDetector(
+                                      onTap: () {
+                                        // Show full screen image on tap
+                                        showDialog(
+                                          context: context,
+                                          builder: (context) => Dialog(
+                                            backgroundColor: Colors.black,
+                                            child: Stack(
+                                              children: [
+                                                Center(
+                                                  child: Image.network(
+                                                    photoUrl,
+                                                    fit: BoxFit.contain,
+                                                  ),
+                                                ),
+                                                Positioned(
+                                                  top: 16,
+                                                  right: 16,
+                                                  child: IconButton(
+                                                    icon: Icon(Icons.close, color: Colors.white),
+                                                    onPressed: () => Navigator.pop(context),
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                                          ),
+                                        );
+                                      },
+                                      child: ClipRRect(
+                                        borderRadius: BorderRadius.circular(8),
+                                        child: Container(
+                                          decoration: BoxDecoration(
+                                            border: Border.all(color: Colors.grey[300]!, width: 1),
+                                            borderRadius: BorderRadius.circular(8),
+                                          ),
+                                          child: Image.network(
+                                            photoUrl,
+                                            fit: BoxFit.cover,
+                                            errorBuilder: (context, error, stackTrace) {
+                                              print('❌ Error loading gallery photo $index: $error');
+                                              return Container(
+                                                color: Colors.grey[300],
+                                                child: Column(
+                                                  mainAxisAlignment: MainAxisAlignment.center,
+                                                  children: [
+                                                    Icon(Icons.image_not_supported, color: Colors.grey[600], size: 32),
+                                                    SizedBox(height: 4),
+                                                    Text(
+                                                      'Image not available',
+                                                      style: TextStyle(fontSize: 10, color: Colors.grey[600]),
+                                                      textAlign: TextAlign.center,
+                                                    ),
+                                                  ],
+                                                ),
+                                              );
+                                            },
+                                            loadingBuilder: (context, child, loadingProgress) {
+                                              if (loadingProgress == null) return child;
+                                              return Container(
+                                                color: Colors.grey[100],
+                                                child: Center(
+                                                  child: CircularProgressIndicator(
+                                                    value: loadingProgress.expectedTotalBytes != null
+                                                        ? loadingProgress.cumulativeBytesLoaded / loadingProgress.expectedTotalBytes!
+                                                        : null,
+                                                    strokeWidth: 2,
+                                                  ),
+                                                ),
+                                              );
+                                            },
+                                          ),
+                                        ),
+                                      ),
+                                    );
+                                  },
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ],
+
+                      // Service/Product Details Card
                       SizedBox(height: 16),
                       Card(
                         elevation: 4,
@@ -481,7 +643,7 @@ class _SkillDetailsState extends State<SkillDetails> with SingleTickerProviderSt
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
-                                "Service Details",
+                                "$productOrService Details",
                                 style: TextStyle(
                                   fontSize: 20,
                                   fontWeight: FontWeight.bold,

@@ -35,7 +35,7 @@ class _AddSkillPageState extends State<AddSkillPage> {
   TextEditingController locationTextController = TextEditingController();
   final TextEditingController _gmaplocationController = TextEditingController();
   final TextEditingController _whatsappLinkController = TextEditingController();
-  final TextEditingController _priceRangeController = TextEditingController();
+  String? selectedPriceRange;
   final TextEditingController _openingTimesController = TextEditingController();
   bool isAuthenticated = false;
   bool isLoading = true;
@@ -45,6 +45,8 @@ class _AddSkillPageState extends State<AddSkillPage> {
   double? longitude;
 
   FilePickerResult? _filePickerResult;
+  List<File> _photoGallery = [];
+  String productOrService = "Service";
   bool inSoleBusiness = true;
   String userName = "User";
   String userId = "";
@@ -78,7 +80,7 @@ void initState() {
     _datetimeController.dispose();
     _gmaplocationController.dispose();
     _whatsappLinkController.dispose();
-    _priceRangeController.dispose();
+    // Price range is now dropdown, no controller to dispose
     _openingTimesController.dispose();
   }
 
@@ -86,6 +88,37 @@ void initState() {
     FilePickerResult? result = await FilePicker.platform.pickFiles(type: FileType.image);
     setState(() {
       _filePickerResult = result;
+    });
+  }
+
+  void _openPhotoGalleryPicker() async {
+    if (_photoGallery.length >= 4) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Maximum 4 photos allowed')),
+      );
+      return;
+    }
+    
+    FilePickerResult? result = await FilePicker.platform.pickFiles(
+      type: FileType.image,
+      allowMultiple: true,
+    );
+    
+    if (result != null) {
+      setState(() {
+        // Add selected photos up to max 4
+        for (var file in result.files) {
+          if (_photoGallery.length < 4 && file.path != null) {
+            _photoGallery.add(File(file.path!));
+          }
+        }
+      });
+    }
+  }
+
+  void _removePhotoFromGallery(int index) {
+    setState(() {
+      _photoGallery.removeAt(index);
     });
   }
 
@@ -97,19 +130,47 @@ void initState() {
       if (_filePickerResult != null && _filePickerResult!.files.isNotEmpty) {
         final storageAPI = Provider.of<StorageAPI>(context, listen: false);
         final file = File(_filePickerResult!.files.first.path!);
+        // Upload to original bucket where existing images are stored
         final fileId = await storageAPI.uploadFile(file);
+        print('Main image uploaded to original bucket: $fileId');
         return fileId;
       } else {
         print("No file selected");
         return null;
       }
     } catch (e) {
-      print('Error uploading image: $e');
+      print('Error uploading main image: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to upload image: $e')),
+        );
+      }
       return null;
     } finally {
       setState(() {
         isUploading = false;
       });
+    }
+  }
+
+  Future<List<String>> uploadPhotoGallery() async {
+    List<String> photoIds = [];
+    try {
+      if (_photoGallery.isNotEmpty) {
+        final storageAPI = Provider.of<StorageAPI>(context, listen: false);
+        
+        for (var photo in _photoGallery) {
+          // Upload to photos bucket
+          final photoId = await storageAPI.uploadFileToPhotosBucket(photo);
+          if (photoId != null) {
+            photoIds.add(photoId);
+          }
+        }
+      }
+      return photoIds;
+    } catch (e) {
+      print('Error uploading photo gallery: $e');
+      return photoIds;
     }
   }
 
@@ -170,6 +231,11 @@ Future<void> _addSkill(String imageFileId) async {
   final subcategoryEnum = SubCategoryMapper.toEnumValue(registrationFormProvider.selectedSubcategory!);
 
   try {
+    // Upload photo gallery
+    print('Uploading photo gallery...');
+    final photoIds = await uploadPhotoGallery();
+    print('Photo gallery uploaded: ${photoIds.length} photos');
+
     // Create RegistrationFields object
     final registrationFields = RegistrationFields(
       firstName: firstNameTextController.text,
@@ -187,7 +253,7 @@ Future<void> _addSkill(String imageFileId) async {
       description: descriptionTextController.text,
     );
 
-    // Add skill to database
+    // Add skill to database with new fields
     await databaseAPI.createSkillNew(
       messageTextController.text,
       descriptionTextController.text,
@@ -196,9 +262,11 @@ Future<void> _addSkill(String imageFileId) async {
       _gmaplocationController.text,
       _whatsappLinkController.text,
       registrationFields,
-      priceRange: _priceRangeController.text,
+      priceRange: selectedPriceRange,
       openingTimes: _openingTimesController.text,
       businessStartDate: _datetimeController.text,
+      productOrService: productOrService,
+      photos: photoIds,
     );
 
     // Show success message
@@ -246,6 +314,73 @@ Future<void> _addSkill(String imageFileId) async {
                   else if (isAuthenticated)
                     Column(
                           children: [
+                            // Product/Service Selector at the very top
+                            Card(
+                              elevation: 2,
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                              child: Padding(
+                                padding: EdgeInsets.all(16),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      'What are you offering?',
+                                      style: TextStyle(
+                                        fontSize: 18,
+                                        fontWeight: FontWeight.bold,
+                                        color: BaseColors().customTheme.primaryColor,
+                                      ),
+                                    ),
+                                    SizedBox(height: 12),
+                                    Row(
+                                      children: [
+                                        Expanded(
+                                          child: RadioListTile<String>(
+                                            title: Row(
+                                              children: [
+                                                Icon(Icons.shopping_bag, color: Colors.blue),
+                                                SizedBox(width: 8),
+                                                Text('Product'),
+                                              ],
+                                            ),
+                                            value: 'Product',
+                                            groupValue: productOrService,
+                                            onChanged: (value) {
+                                              setState(() {
+                                                productOrService = value!;
+                                              });
+                                            },
+                                            activeColor: BaseColors().customTheme.primaryColor,
+                                          ),
+                                        ),
+                                        Expanded(
+                                          child: RadioListTile<String>(
+                                            title: Row(
+                                              children: [
+                                                Icon(Icons.work, color: Colors.green),
+                                                SizedBox(width: 8),
+                                                Text('Service'),
+                                              ],
+                                            ),
+                                            value: 'Service',
+                                            groupValue: productOrService,
+                                            onChanged: (value) {
+                                              setState(() {
+                                                productOrService = value!;
+                                              });
+                                            },
+                                            activeColor: BaseColors().customTheme.primaryColor,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                            SizedBox(height: 16),
+                            
+                            // Main image upload
                             GestureDetector(
                               onTap: () => _openFilePicker(),
                               child: Container(
@@ -273,7 +408,7 @@ Future<void> _addSkill(String imageFileId) async {
                                         ),
                                         SizedBox(height: 16),
                                         Text(
-                                          'Tap to add skill image',
+                                          'Tap to add main image',
                                           style: TextStyle(
                                             color: Colors.grey[600],
                                             fontSize: 16,
@@ -281,6 +416,127 @@ Future<void> _addSkill(String imageFileId) async {
                                         ),
                                       ],
                                     ),
+                              ),
+                            ),
+                            SizedBox(height: 16),
+                            
+                            // Photo Gallery Upload Section
+                            Card(
+                              elevation: 2,
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                              child: Padding(
+                                padding: EdgeInsets.all(16),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Row(
+                                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                      children: [
+                                        Text(
+                                          'Gallery Photos (Max 4)',
+                                          style: TextStyle(
+                                            fontSize: 16,
+                                            fontWeight: FontWeight.bold,
+                                          ),
+                                        ),
+                                        Text(
+                                          '${_photoGallery.length}/4',
+                                          style: TextStyle(
+                                            color: Colors.grey[600],
+                                            fontSize: 14,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                    SizedBox(height: 12),
+                                    if (_photoGallery.isEmpty)
+                                      GestureDetector(
+                                        onTap: _openPhotoGalleryPicker,
+                                        child: Container(
+                                          height: 120,
+                                          decoration: BoxDecoration(
+                                            border: Border.all(color: Colors.grey[300]!, width: 2),
+                                            borderRadius: BorderRadius.circular(8),
+                                            color: Colors.grey[50],
+                                          ),
+                                          child: Center(
+                                            child: Column(
+                                              mainAxisAlignment: MainAxisAlignment.center,
+                                              children: [
+                                                Icon(Icons.add_photo_alternate, size: 48, color: Colors.grey[400]),
+                                                SizedBox(height: 8),
+                                                Text(
+                                                  'Add Photos',
+                                                  style: TextStyle(color: Colors.grey[600]),
+                                                ),
+                                              ],
+                                            ),
+                                          ),
+                                        ),
+                                      )
+                                    else
+                                      Column(
+                                        children: [
+                                          GridView.builder(
+                                            shrinkWrap: true,
+                                            physics: NeverScrollableScrollPhysics(),
+                                            gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                                              crossAxisCount: 2,
+                                              crossAxisSpacing: 8,
+                                              mainAxisSpacing: 8,
+                                              childAspectRatio: 1,
+                                            ),
+                                            itemCount: _photoGallery.length,
+                                            itemBuilder: (context, index) {
+                                              return Stack(
+                                                children: [
+                                                  ClipRRect(
+                                                    borderRadius: BorderRadius.circular(8),
+                                                    child: Image.file(
+                                                      _photoGallery[index],
+                                                      fit: BoxFit.cover,
+                                                      width: double.infinity,
+                                                      height: double.infinity,
+                                                    ),
+                                                  ),
+                                                  Positioned(
+                                                    top: 4,
+                                                    right: 4,
+                                                    child: GestureDetector(
+                                                      onTap: () => _removePhotoFromGallery(index),
+                                                      child: Container(
+                                                        decoration: BoxDecoration(
+                                                          color: Colors.red,
+                                                          shape: BoxShape.circle,
+                                                        ),
+                                                        padding: EdgeInsets.all(4),
+                                                        child: Icon(
+                                                          Icons.close,
+                                                          color: Colors.white,
+                                                          size: 16,
+                                                        ),
+                                                      ),
+                                                    ),
+                                                  ),
+                                                ],
+                                              );
+                                            },
+                                          ),
+                                          if (_photoGallery.length < 4) ...[
+                                            SizedBox(height: 12),
+                                            OutlinedButton.icon(
+                                              onPressed: _openPhotoGalleryPicker,
+                                              icon: Icon(Icons.add),
+                                              label: Text('Add More Photos'),
+                                              style: OutlinedButton.styleFrom(
+                                                foregroundColor: BaseColors().customTheme.primaryColor,
+                                              ),
+                                            ),
+                                          ],
+                                        ],
+                                      ),
+                                  ],
+                                ),
                               ),
                             ),
                             SizedBox(height: 8,),
@@ -491,17 +747,33 @@ if (provider.selectedCategory != null)
                 },
               ),
                             const SizedBox(height: 20),
-              TextFormField(
-                controller: _priceRangeController,
+              DropdownButtonFormField<String>(
+                value: selectedPriceRange,
                 decoration: InputDecoration(
                   labelText: 'Price Range (Ug Shs)',
-                  hintText: 'e.g., 50,000 - 200,000',
-                  prefixText: 'Ug Shs ',
-                  helperText: 'Enter the price range for your service/product',
+                  helperText: 'Select the price range for your service/product',
+                  prefixIcon: Icon(Icons.attach_money),
+                  border: OutlineInputBorder(),
                 ),
+                items: [
+                  DropdownMenuItem(value: 'Below 50,000', child: Text('Below Ug Shs 50,000')),
+                  DropdownMenuItem(value: '50,000 - 100,000', child: Text('Ug Shs 50,000 - 100,000')),
+                  DropdownMenuItem(value: '100,000 - 200,000', child: Text('Ug Shs 100,000 - 200,000')),
+                  DropdownMenuItem(value: '200,000 - 500,000', child: Text('Ug Shs 200,000 - 500,000')),
+                  DropdownMenuItem(value: '500,000 - 1,000,000', child: Text('Ug Shs 500,000 - 1M')),
+                  DropdownMenuItem(value: '1,000,000 - 5,000,000', child: Text('Ug Shs 1M - 5M')),
+                  DropdownMenuItem(value: 'Above 5,000,000', child: Text('Above Ug Shs 5M')),
+                  DropdownMenuItem(value: 'Negotiable', child: Text('Negotiable')),
+                  DropdownMenuItem(value: 'Free', child: Text('Free')),
+                ],
+                onChanged: (value) {
+                  setState(() {
+                    selectedPriceRange = value;
+                  });
+                },
                 validator: (value) {
                   if (value == null || value.isEmpty) {
-                    return 'Please enter your price range';
+                    return 'Please select a price range';
                   }
                   return null;
                 },
