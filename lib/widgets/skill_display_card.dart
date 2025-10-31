@@ -11,6 +11,17 @@ class SkillDisplayCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Debug: Print skill data fields
+    print('🔍 SkillCard Debug:');
+    print('  Title: ${skillData['text']}');
+    print('  Description: ${skillData['description']}');
+    print('  Creator: ${skillData['firstName']} ${skillData['lastName']}');
+    print('  Business: ${skillData['inSoleBusiness']}');
+    print('  Rating: ${skillData['averageRating']}');
+    print('  Location: ${skillData['location']}');
+    print('  Email: ${skillData['email']}');
+    print('  Phone: ${skillData['phoneNumber']}');
+    
     return GestureDetector(
       onTap: () => _navigateToDetails(context),
       child: Padding(
@@ -18,7 +29,7 @@ class SkillDisplayCard extends StatelessWidget {
         child: Stack(
           children: [
             Container(
-              height: 200,
+              height: 250,
               width: double.infinity,
               margin: const EdgeInsets.all(8),
               decoration: BoxDecoration(
@@ -38,78 +49,134 @@ class SkillDisplayCard extends StatelessWidget {
               ),
             ),
 
-            // Title at bottom
+            // Content overlay at bottom
             Positioned(
-              bottom: 70,
-              left: 16,
-              right: 16,
-              child: Text(
-                skillData['text'] ?? 'No Title',
-                overflow: TextOverflow.ellipsis,
-                style: const TextStyle(
-                  overflow: TextOverflow.ellipsis,
-                  color: Colors.white,
-                  fontSize: 24,
-                  fontWeight: FontWeight.w900,
+              bottom: 0,
+              left: 0,
+              right: 0,
+              child: Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: [
+                      Colors.transparent,
+                      Colors.black.withOpacity(0.8),
+                    ],
+                  ),
                 ),
-              ),
-            ),
-
-            // Date and Time info
-            Positioned(
-              bottom: 45,
-              left: 16,
-              right: 16,
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  const Icon(Icons.calendar_month_outlined, size: 18, color: Colors.white),
-                  const SizedBox(width: 4),
-                  Text(
-                    _formatDate(skillData['datetime']),
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 14,
-                      fontWeight: FontWeight.w400,
-                    ),
-                  ),
-                  const SizedBox(width: 14),
-                  const Icon(Icons.access_time_rounded, size: 18, color: Colors.white),
-                  const SizedBox(width: 4),
-                  Text(
-                    _formatTime(skillData['datetime']),
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 14,
-                      fontWeight: FontWeight.w400,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-
-            // Location info
-            Positioned(
-              bottom: 20,
-              left: 16,
-              right: 100,
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  const Icon(Icons.location_on_outlined, size: 18, color: Colors.white),
-                  const SizedBox(width: 4),
-                  Flexible(
-                    child: Text(
-                      skillData['location'] ?? 'N/A',
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    // Title
+                    Text(
+                      skillData['text'] ?? 'No Title',
+                      overflow: TextOverflow.ellipsis,
+                      maxLines: 1,
                       style: const TextStyle(
                         color: Colors.white,
-                        fontSize: 14,
-                        fontWeight: FontWeight.w400,
+                        fontSize: 22,
+                        fontWeight: FontWeight.w900,
                       ),
-                      overflow: TextOverflow.ellipsis,
                     ),
-                  ),
-                ],
+                    const SizedBox(height: 4),
+                    // Description
+                    if (skillData['description'] != null && skillData['description'].toString().isNotEmpty)
+                      Text(
+                        skillData['description'],
+                        overflow: TextOverflow.ellipsis,
+                        maxLines: 2,
+                        style: const TextStyle(
+                          color: Colors.white70,
+                          fontSize: 13,
+                          fontWeight: FontWeight.w400,
+                        ),
+                      ),
+                    const SizedBox(height: 8),
+                    // Creator and Business Type
+                    Row(
+                      children: [
+                        const Icon(Icons.person, size: 16, color: Colors.white70),
+                        const SizedBox(width: 4),
+                        Flexible(
+                          child: Text(
+                            '${skillData['firstName'] ?? ''} ${skillData['lastName'] ?? ''}'.trim(),
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
+                              color: Colors.white70,
+                              fontSize: 12,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        if (skillData['inSoleBusiness'] == true)
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                            decoration: BoxDecoration(
+                              color: Colors.orange.withOpacity(0.8),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: const Text(
+                              'Sole Business',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 10,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                        if (skillData['averageRating'] != null)
+                          Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const SizedBox(width: 8),
+                              const Icon(Icons.star, size: 14, color: Colors.amber),
+                              const SizedBox(width: 2),
+                              Text(
+                                skillData['averageRating'].toString(),
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ],
+                          ),
+                      ],
+                    ),
+                    const SizedBox(height: 6),
+                    // Location and Date
+                    Row(
+                      children: [
+                        const Icon(Icons.location_on_outlined, size: 14, color: Colors.white70),
+                        const SizedBox(width: 4),
+                        Flexible(
+                          child: Text(
+                            skillData['location'] ?? 'N/A',
+                            style: const TextStyle(
+                              color: Colors.white70,
+                              fontSize: 11,
+                            ),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        const Icon(Icons.calendar_month_outlined, size: 14, color: Colors.white70),
+                        const SizedBox(width: 4),
+                        Text(
+                          _formatDate(skillData['datetime']),
+                          style: const TextStyle(
+                            color: Colors.white70,
+                            fontSize: 11,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
               ),
             ),
 

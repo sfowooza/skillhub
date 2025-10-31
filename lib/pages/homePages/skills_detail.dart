@@ -6,7 +6,11 @@ import 'package:skillhub/controllers/formart_datetime.dart';
 import 'package:skillhub/pages/Auth_screens/edit_skill_page.dart';
 import 'package:skillhub/pages/gmap/view_location.dart';
 import 'package:skillhub/pages/gmap/view_whatsapp_link.dart';
+import 'package:skillhub/pages/nav_tabs/expendableFab.dart';
 import 'package:skillhub/utils/category_mappers.dart';
+import 'package:skillhub/appwrite/likes_api.dart';
+import 'package:skillhub/appwrite/auth_api.dart';
+import 'package:provider/provider.dart';
 import 'package:flutter_rating_bar/flutter_rating_bar.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -109,6 +113,11 @@ class _SkillDetailsState extends State<SkillDetails> with SingleTickerProviderSt
   late Animation<double> _animation;
   bool isAvailable = true; // For live availability toggle
   double estimatedPrice = 0.0; // For dynamic pricing calculator
+  
+  // Likes functionality
+  bool isLiked = false;
+  int likesCount = 0;
+  bool isLoadingLike = false;
 
   @override
   void initState() {
@@ -120,13 +129,17 @@ class _SkillDetailsState extends State<SkillDetails> with SingleTickerProviderSt
     _animation = CurvedAnimation(parent: _controller, curve: Curves.easeInOut);
     _controller.forward();
 
-    WidgetsBinding.instance.addPostFrameCallback((_) {
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
       setState(() {
         id = "test_user_id";
         isRSVPedEvent = isUserPresent(widget.data["participants"] as List<dynamic>? ?? [], id);
         userRating = (widget.data["averageRating"] as num?)?.toDouble() ?? 0;
         isAvailable = widget.data['isAvailable'] ?? true;
+        likesCount = (widget.data['likesCount'] as num?)?.toInt() ?? 0;
       });
+      
+      // Load likes data
+      await _loadLikesData();
     });
   }
 
@@ -173,6 +186,89 @@ class _SkillDetailsState extends State<SkillDetails> with SingleTickerProviderSt
     }
   }
 
+  int calculateExperience(String? startDate) {
+    if (startDate == null || startDate.isEmpty) return 0;
+    try {
+      final start = DateTime.parse(startDate);
+      final now = DateTime.now();
+      final difference = now.difference(start);
+      return (difference.inDays / 365).floor();
+    } catch (e) {
+      print('Error calculating experience: $e');
+      return 0;
+    }
+  }
+
+  Future<void> _loadLikesData() async {
+    try {
+      final likesAPI = context.read<LikesAPI>();
+      final skillId = widget.data['\$id'] ?? '';
+      
+      if (skillId.isNotEmpty) {
+        final liked = await likesAPI.hasLikedSkill(skillId);
+        final count = await likesAPI.getLikesCount(skillId);
+        
+        if (mounted) {
+          setState(() {
+            isLiked = liked;
+            likesCount = count;
+          });
+        }
+      }
+    } catch (e) {
+      print('Error loading likes data: $e');
+    }
+  }
+
+  Future<void> _toggleLike() async {
+    final authAPI = context.read<AuthAPI>();
+    if (authAPI.status != AuthStatus.authenticated) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Please login to like this skill'),
+          action: SnackBarAction(
+            label: 'Login',
+            onPressed: () {
+              // Navigate to login
+            },
+          ),
+        ),
+      );
+      return;
+    }
+
+    setState(() {
+      isLoadingLike = true;
+    });
+
+    try {
+      final likesAPI = context.read<LikesAPI>();
+      final skillId = widget.data['\$id'] ?? '';
+      
+      if (skillId.isNotEmpty) {
+        final newLikeStatus = await likesAPI.toggleLike(skillId);
+        
+        if (mounted) {
+          setState(() {
+            isLiked = newLikeStatus;
+            likesCount = newLikeStatus ? likesCount + 1 : likesCount - 1;
+            isLoadingLike = false;
+          });
+        }
+      }
+    } catch (e) {
+      print('Error toggling like: $e');
+      if (mounted) {
+        setState(() {
+          isLoadingLike = false;
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to update like status')),
+        );
+      }
+    }
+  }
+
   @override
   void dispose() {
     _controller.dispose();
@@ -181,7 +277,8 @@ class _SkillDetailsState extends State<SkillDetails> with SingleTickerProviderSt
 
   @override
   Widget build(BuildContext context) {
-    final isAuthenticated = true; // Simplified for standalone app
+    final authAPI = Provider.of<AuthAPI>(context);
+    final isAuthenticated = authAPI.status == AuthStatus.authenticated;
 
     final String firstName = widget.data["firstName"] as String? ?? "Unknown";
     final String description = widget.data["description"] as String? ?? "No description available";
@@ -193,23 +290,8 @@ class _SkillDetailsState extends State<SkillDetails> with SingleTickerProviderSt
     final String selectedCategory = widget.data["selectedCategory"] as String? ?? "Uncategorized";
 
     return Scaffold(
-      floatingActionButton: isAuthenticated
-          ? Padding(
-              padding: EdgeInsets.only(left: 30), // Moves FAB to the left with some padding
-              child: Align(
-                alignment: Alignment.bottomLeft,
-                child: FloatingActionButton(
-                  onPressed: () {
-                    // Simplified action button
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text('Feature coming soon!')),
-                    );
-                  },
-                  child: Icon(Icons.add),
-                ),
-              ),
-            )
-          : null,
+      floatingActionButton: isAuthenticated ? ExpandableFab() : null,
+      floatingActionButtonLocation: isAuthenticated ? FloatingActionButtonLocation.startFloat : null,
       body: Stack(
         children: [
           CustomScrollView(
@@ -306,15 +388,19 @@ class _SkillDetailsState extends State<SkillDetails> with SingleTickerProviderSt
                                       Text(firstName, style: TextStyle(fontSize: 16)),
                                     ],
                                   ),
-                                  ElevatedButton.icon(
+                                  OutlinedButton.icon(
                                     onPressed: () {
                                       _launchUrl('tel:${widget.data["phoneNumber"] ?? "1234567890"}');
                                     },
-                                    icon: Icon(Icons.phone, size: 18),
-                                    label: Text("Call Now"),
-                                    style: ElevatedButton.styleFrom(
-                                      backgroundColor: BaseColors().customTheme.primaryColor,
+                                    icon: Icon(Icons.phone, size: 18, color: BaseColors().customTheme.primaryColor),
+                                    label: Text(
+                                      "Call Now",
+                                      style: TextStyle(color: BaseColors().customTheme.primaryColor),
+                                    ),
+                                    style: OutlinedButton.styleFrom(
+                                      side: BorderSide(color: BaseColors().customTheme.primaryColor, width: 2),
                                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                                      padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                                     ),
                                   ),
                                 ],
@@ -339,16 +425,41 @@ class _SkillDetailsState extends State<SkillDetails> with SingleTickerProviderSt
                                 children: [
                                   Row(
                                     children: [
-                                      Icon(Icons.thumb_up, color: BaseColors().customTheme.primaryColor),
-                                      SizedBox(width: 8),
-                                      Text("${participants.length} likes",
-                                          style: TextStyle(fontWeight: FontWeight.bold)),
+                                      AnimatedContainer(
+                                        duration: Duration(milliseconds: 200),
+                                        child: IconButton(
+                                          icon: Icon(
+                                            isLiked ? Icons.favorite : Icons.favorite_border,
+                                            color: isLiked ? Colors.red : BaseColors().customTheme.primaryColor,
+                                            size: 28,
+                                          ),
+                                          onPressed: isLoadingLike ? null : _toggleLike,
+                                        ),
+                                      ),
+                                      SizedBox(width: 4),
+                                      Text(
+                                        "$likesCount",
+                                        style: TextStyle(
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 18,
+                                          color: isLiked ? Colors.red : Colors.black87,
+                                        ),
+                                      ),
+                                      SizedBox(width: 4),
+                                      Text(
+                                        likesCount == 1 ? "like" : "likes",
+                                        style: TextStyle(
+                                          color: Colors.grey[600],
+                                          fontSize: 14,
+                                        ),
+                                      ),
                                     ],
                                   ),
                                   IconButton(
                                     icon: Icon(Icons.share, color: BaseColors().customTheme.primaryColor),
                                     onPressed: () async {
-                                      final shareLink = 'https://skillhub.avodahsystems.com/skillhub/skill/${widget.data["id"] ?? "sample"}';
+                                      final skillId = widget.data["\$id"] ?? widget.data["id"] ?? "unknown";
+                                      final shareLink = 'https://skillhub.avodahsystems.com/skill/$skillId';
                                       await Share.share('Check out this skill: $firstName\n$shareLink');
                                     },
                                   ),
@@ -392,92 +503,279 @@ class _SkillDetailsState extends State<SkillDetails> with SingleTickerProviderSt
                                       .toList(),
                                 ),
 
-                              // Service Hours
-                              ModernInfoTile(
-                                icon: Icons.access_time,
-                                title: "Service Hours",
-                                value: widget.data['serviceHours'] ?? 'Available 24/7',
-                                accentColor: Colors.blue,
-                              ),
+                              // Business Hours
+                              if (widget.data['openingTimes'] != null && widget.data['openingTimes'].toString().isNotEmpty)
+                                ModernInfoTile(
+                                  icon: Icons.access_time,
+                                  title: "Business Hours",
+                                  value: widget.data['openingTimes'],
+                                  accentColor: Colors.blue,
+                                ),
 
                               // Experience Level with Progress Indicator
-                              ListTile(
-                                leading: CircularPercentIndicator(
-                                  radius: 20.0,
-                                  lineWidth: 4.0,
-                                  percent: (widget.data['experienceYears'] ?? 0) / 20, // Assuming max 20 years
-                                  center: Text(
-                                    "${widget.data['experienceYears'] ?? 0}",
-                                    style: TextStyle(fontSize: 12),
-                                  ),
-                                  progressColor: Colors.amber,
-                                ),
-                                title: Text("Experience"),
-                                subtitle: Text("${widget.data['experienceYears'] ?? 'Not specified'} years"),
-                                trailing: Chip(
-                                  label: Text(widget.data['certification'] ?? 'Professional'),
-                                  backgroundColor: Colors.blue[100],
-                                ),
+                              Builder(
+                                builder: (context) {
+                                  final experienceYears = calculateExperience(widget.data['businessStartDate']);
+                                  return ListTile(
+                                    leading: CircularPercentIndicator(
+                                      radius: 20.0,
+                                      lineWidth: 4.0,
+                                      percent: (experienceYears / 20).clamp(0.0, 1.0), // Assuming max 20 years
+                                      center: Text(
+                                        "$experienceYears",
+                                        style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
+                                      ),
+                                      progressColor: Colors.amber,
+                                    ),
+                                    title: Text("Experience", style: TextStyle(fontWeight: FontWeight.bold)),
+                                    subtitle: Text(
+                                      experienceYears > 0 
+                                        ? "$experienceYears ${experienceYears == 1 ? 'year' : 'years'} in business"
+                                        : "New business",
+                                    ),
+                                    trailing: Chip(
+                                      label: Text(
+                                        experienceYears >= 5 ? 'Expert' : experienceYears >= 2 ? 'Professional' : 'Starter',
+                                      ),
+                                      backgroundColor: experienceYears >= 5 ? Colors.green[100] : Colors.blue[100],
+                                    ),
+                                  );
+                                },
                               ),
 
-                              // Pricing with Dynamic Calculator
-                              ListTile(
-                                leading: Icon(Icons.attach_money, color: Colors.green),
-                                title: Text("Pricing"),
-                                subtitle: Row(
-                                  children: [
-                                    Text("Estimate: \$$estimatedPrice"),
-                                    SizedBox(width: 8),
-                                    ElevatedButton(
-                                      onPressed: () {
-                                        showDialog(
-                                          context: context,
-                                          builder: (context) => AlertDialog(
-                                            title: Text("Estimate Your Cost"),
-                                            content: TextField(
-                                              keyboardType: TextInputType.number,
-                                              decoration: InputDecoration(labelText: "Enter hours"),
-                                              onChanged: (value) {
-                                                setState(() {
-                                                  estimatedPrice = (double.tryParse(value) ?? 0) *
-                                                      (widget.data['hourlyRate'] ?? 50);
-                                                });
-                                              },
+                              // Pricing
+                              if (widget.data['priceRange'] != null && widget.data['priceRange'].toString().isNotEmpty)
+                                ModernInfoTile(
+                                  icon: Icons.payments,
+                                  title: "Price Range",
+                                  value: "Ug Shs ${widget.data['priceRange']}",
+                                  accentColor: Colors.green,
+                                  onTap: () {
+                                    showDialog(
+                                      context: context,
+                                      builder: (context) => AlertDialog(
+                                        title: Row(
+                                          children: [
+                                            Icon(Icons.payments, color: Colors.green),
+                                            SizedBox(width: 8),
+                                            Text("Pricing Details"),
+                                          ],
+                                        ),
+                                        content: Column(
+                                          mainAxisSize: MainAxisSize.min,
+                                          crossAxisAlignment: CrossAxisAlignment.start,
+                                          children: [
+                                            Text(
+                                              "Price Range:",
+                                              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
                                             ),
-                                            actions: [
-                                              TextButton(
-                                                onPressed: () => Navigator.pop(context),
-                                                child: Text("Done"),
+                                            SizedBox(height: 8),
+                                            Text(
+                                              "Ug Shs ${widget.data['priceRange']}",
+                                              style: TextStyle(fontSize: 20, color: Colors.green[700]),
+                                            ),
+                                            SizedBox(height: 16),
+                                            Text(
+                                              "Contact the service provider for:",
+                                              style: TextStyle(fontSize: 14, color: Colors.grey[600]),
+                                            ),
+                                            SizedBox(height: 8),
+                                            Text("• Exact quotes"),
+                                            Text("• Custom packages"),
+                                            Text("• Bulk discounts"),
+                                            Text("• Payment plans"),
+                                          ],
+                                        ),
+                                        actions: [
+                                          TextButton(
+                                            onPressed: () => Navigator.pop(context),
+                                            child: Text("Close"),
+                                          ),
+                                        ],
+                                      ),
+                                    );
+                                  },
+                                ),
+
+                              // Location & Navigation Card
+                              Card(
+                                elevation: 4,
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                                child: Column(
+                                  children: [
+                                    Container(
+                                      height: 200,
+                                      child: ClipRRect(
+                                        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+                                        child: Stack(
+                                          children: [
+                                            GoogleMap(
+                                              initialCameraPosition: CameraPosition(
+                                                target: LatLng(
+                                                  widget.data['lat'] ?? 0.0,
+                                                  widget.data['long'] ?? 0.0,
+                                                ),
+                                                zoom: 14,
+                                              ),
+                                              markers: {
+                                                Marker(
+                                                  markerId: MarkerId('skill_location'),
+                                                  position: LatLng(
+                                                    widget.data['lat'] ?? 0.0,
+                                                    widget.data['long'] ?? 0.0,
+                                                  ),
+                                                  infoWindow: InfoWindow(
+                                                    title: firstName,
+                                                    snippet: location,
+                                                  ),
+                                                ),
+                                              },
+                                              zoomControlsEnabled: false,
+                                              myLocationButtonEnabled: false,
+                                            ),
+                                            // Overlay with navigation hint
+                                            Positioned(
+                                              top: 8,
+                                              right: 8,
+                                              child: Container(
+                                                padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                                                decoration: BoxDecoration(
+                                                  color: Colors.white.withOpacity(0.9),
+                                                  borderRadius: BorderRadius.circular(20),
+                                                  boxShadow: [
+                                                    BoxShadow(
+                                                      color: Colors.black26,
+                                                      blurRadius: 4,
+                                                      offset: Offset(0, 2),
+                                                    ),
+                                                  ],
+                                                ),
+                                                child: Row(
+                                                  mainAxisSize: MainAxisSize.min,
+                                                  children: [
+                                                    Icon(Icons.location_on, size: 16, color: Colors.red),
+                                                    SizedBox(width: 4),
+                                                    Text(
+                                                      'Tap to navigate',
+                                                      style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
+                                                    ),
+                                                  ],
+                                                ),
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                    ),
+                                    // Navigation buttons
+                                    Padding(
+                                      padding: EdgeInsets.all(16),
+                                      child: Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: [
+                                          Row(
+                                            children: [
+                                              Icon(Icons.location_on, color: BaseColors().customTheme.primaryColor),
+                                              SizedBox(width: 8),
+                                              Expanded(
+                                                child: Text(
+                                                  location,
+                                                  style: TextStyle(
+                                                    fontSize: 16,
+                                                    fontWeight: FontWeight.bold,
+                                                  ),
+                                                ),
                                               ),
                                             ],
                                           ),
-                                        );
-                                      },
-                                      child: Text("Calculate"),
-                                      style: ElevatedButton.styleFrom(backgroundColor: Colors.green),
+                                          SizedBox(height: 12),
+                                          Text(
+                                            'Get Directions:',
+                                            style: TextStyle(
+                                              fontSize: 14,
+                                              color: Colors.grey[600],
+                                              fontWeight: FontWeight.w500,
+                                            ),
+                                          ),
+                                          SizedBox(height: 8),
+                                          Row(
+                                            children: [
+                                              Expanded(
+                                                child: ElevatedButton.icon(
+                                                  onPressed: () async {
+                                                    final lat = widget.data['lat'] ?? 0.0;
+                                                    final lng = widget.data['long'] ?? 0.0;
+                                                    final url = 'https://www.google.com/maps/dir/?api=1&destination=$lat,$lng';
+                                                    if (await canLaunchUrl(Uri.parse(url))) {
+                                                      await launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication);
+                                                    } else {
+                                                      ScaffoldMessenger.of(context).showSnackBar(
+                                                        SnackBar(content: Text('Could not open Google Maps')),
+                                                      );
+                                                    }
+                                                  },
+                                                  icon: Icon(Icons.directions, size: 20),
+                                                  label: Text('Navigate'),
+                                                  style: ElevatedButton.styleFrom(
+                                                    backgroundColor: Colors.green,
+                                                    foregroundColor: Colors.white,
+                                                    shape: RoundedRectangleBorder(
+                                                      borderRadius: BorderRadius.circular(12),
+                                                    ),
+                                                  ),
+                                                ),
+                                              ),
+                                              SizedBox(width: 8),
+                                              Expanded(
+                                                child: OutlinedButton.icon(
+                                                  onPressed: () async {
+                                                    final lat = widget.data['lat'] ?? 0.0;
+                                                    final lng = widget.data['long'] ?? 0.0;
+                                                    final url = 'https://www.google.com/maps/search/?api=1&query=$lat,$lng';
+                                                    if (await canLaunchUrl(Uri.parse(url))) {
+                                                      await launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication);
+                                                    }
+                                                  },
+                                                  icon: Icon(Icons.map, size: 20),
+                                                  label: Text('View Map'),
+                                                  style: OutlinedButton.styleFrom(
+                                                    foregroundColor: BaseColors().customTheme.primaryColor,
+                                                    side: BorderSide(color: BaseColors().customTheme.primaryColor),
+                                                    shape: RoundedRectangleBorder(
+                                                      borderRadius: BorderRadius.circular(12),
+                                                    ),
+                                                  ),
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                          SizedBox(height: 8),
+                                          Container(
+                                            padding: EdgeInsets.all(12),
+                                            decoration: BoxDecoration(
+                                              color: Colors.blue[50],
+                                              borderRadius: BorderRadius.circular(8),
+                                            ),
+                                            child: Row(
+                                              children: [
+                                                Icon(Icons.info_outline, size: 18, color: Colors.blue[700]),
+                                                SizedBox(width: 8),
+                                                Expanded(
+                                                  child: Text(
+                                                    'Tap "Navigate" to open Google Maps with turn-by-turn directions to this exact location',
+                                                    style: TextStyle(
+                                                      fontSize: 12,
+                                                      color: Colors.blue[700],
+                                                    ),
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                                          ),
+                                        ],
+                                      ),
                                     ),
                                   ],
-                                ),
-                              ),
-
-                              // Mini Interactive Map
-                              Container(
-                                height: 200,
-                                margin: EdgeInsets.symmetric(vertical: 16),
-                                child: ClipRRect(
-                                  borderRadius: BorderRadius.circular(16),
-                                  child: GoogleMap(
-                                    initialCameraPosition: CameraPosition(
-                                      target: LatLng(37.7749, -122.4194), // Replace with actual lat/lng
-                                      zoom: 12,
-                                    ),
-                                    markers: {
-                                      Marker(
-                                        markerId: MarkerId('location'),
-                                        position: LatLng(37.7749, -122.4194), // Replace with actual lat/lng
-                                      ),
-                                    },
-                                  ),
                                 ),
                               ),
 

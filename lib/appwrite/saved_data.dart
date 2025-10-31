@@ -10,6 +10,7 @@ class SavedData {
   // Save user id on device
 
   static Future<void> saveUserId(String id) async {
+    if (preferences == null) await init();
     await preferences!.setString("userId", id);
   }
 

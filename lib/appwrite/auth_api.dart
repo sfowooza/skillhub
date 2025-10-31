@@ -4,6 +4,7 @@ import 'package:appwrite/enums.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter/material.dart';
 import 'package:skillhub/constants/constants.dart';
+import 'package:skillhub/appwrite/saved_data.dart';
 
 enum AuthStatus {
   uninitialized,
@@ -130,6 +131,13 @@ class AuthAPI extends ChangeNotifier {
       _currentUser = user;
       _userid = user.$id;
       _status = AuthStatus.authenticated;
+      
+      // Save user data to SharedPreferences
+      await SavedData.saveUserId(user.$id);
+      await SavedData.saveUserEmail(user.email);
+      await SavedData.saveUserName(user.name ?? 'User');
+      print('User data saved: ${user.name ?? "User"}, ${user.email}');
+      
       notifyListeners();
       return {'success': true, 'message': 'Login successful'};
     } catch (e) {

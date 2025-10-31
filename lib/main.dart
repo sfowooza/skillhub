@@ -4,9 +4,11 @@ import 'package:provider/provider.dart';
 import 'package:skillhub/appwrite/auth_api.dart';
 import 'package:skillhub/appwrite/database_api.dart';
 import 'package:skillhub/appwrite/storage_api.dart';
+import 'package:skillhub/appwrite/likes_api.dart';
 import 'package:skillhub/providers/registration_form_providers.dart';
 import 'package:skillhub/pages/Staggered/category_staggered_page.dart';
 import 'package:skillhub/pages/homePages/home_cards/category_homePage.dart';
+import 'package:skillhub/pages/homePages/skill_detail_loader.dart';
 import 'package:skillhub/routes/routes.dart';
 import 'package:app_links/app_links.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
@@ -38,6 +40,10 @@ void main() async {
         ChangeNotifierProxyProvider<AuthAPI, StorageAPI>(
           create: (context) => StorageAPI(auth: context.read<AuthAPI>()),
           update: (context, auth, previous) => previous ?? StorageAPI(auth: auth),
+        ),
+        ChangeNotifierProxyProvider<AuthAPI, LikesAPI>(
+          create: (context) => LikesAPI(auth: context.read<AuthAPI>()),
+          update: (context, auth, previous) => previous ?? LikesAPI(auth: auth),
         ),
       ],
       child: const MyApp(),
@@ -189,6 +195,16 @@ class _MyAppState extends State<MyApp> {
               // For now, redirect to home page instead of ResetPasswordPage
               return MaterialPageRoute(
                 builder: (context) => const CategoryHomePage(),
+              );
+            }
+          }
+          
+          // Handle shared skill detail links (/skill/:skillId)
+          if (settings.name?.startsWith('/skill/') ?? false) {
+            final skillId = settings.name!.substring('/skill/'.length);
+            if (skillId.isNotEmpty) {
+              return MaterialPageRoute(
+                builder: (context) => SkillDetailLoader(skillId: skillId),
               );
             }
           }

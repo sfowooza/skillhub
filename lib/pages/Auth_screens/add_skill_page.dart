@@ -35,7 +35,10 @@ class _AddSkillPageState extends State<AddSkillPage> {
   TextEditingController locationTextController = TextEditingController();
   final TextEditingController _gmaplocationController = TextEditingController();
   final TextEditingController _whatsappLinkController = TextEditingController();
+  final TextEditingController _priceRangeController = TextEditingController();
+  final TextEditingController _openingTimesController = TextEditingController();
   bool isAuthenticated = false;
+  bool isLoading = true;
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
   bool isUploading = false;
   double? latitude;
@@ -57,6 +60,7 @@ void initState() {
       isAuthenticated = authAPI.status == AuthStatus.authenticated;
       userName = authAPI.currentUser?.name ?? "User";
       userId = authAPI.userid ?? "";
+      isLoading = false;
     });
   });
 }
@@ -72,6 +76,10 @@ void initState() {
     phoneNumberTextController.dispose();
     locationTextController.dispose();
     _datetimeController.dispose();
+    _gmaplocationController.dispose();
+    _whatsappLinkController.dispose();
+    _priceRangeController.dispose();
+    _openingTimesController.dispose();
   }
 
   void _openFilePicker() async {
@@ -188,6 +196,9 @@ Future<void> _addSkill(String imageFileId) async {
       _gmaplocationController.text,
       _whatsappLinkController.text,
       registrationFields,
+      priceRange: _priceRangeController.text,
+      openingTimes: _openingTimesController.text,
+      businessStartDate: _datetimeController.text,
     );
 
     // Show success message
@@ -214,7 +225,7 @@ Future<void> _addSkill(String imageFileId) async {
     final provider = Provider.of<RegistrationFormProvider>(context);
     return Scaffold(
       appBar: AppBar(title: Text("Add Your Skill")),
-      floatingActionButton: ExpandableFab(),
+      floatingActionButton: isAuthenticated ? ExpandableFab() : null,
       body: Center(
         child: Padding(
           padding: const EdgeInsets.all(32.0),
@@ -225,8 +236,15 @@ Future<void> _addSkill(String imageFileId) async {
                 mainAxisAlignment: MainAxisAlignment.start,
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
-                  isAuthenticated
-                      ? Column(
+                  if (isLoading)
+                    Center(
+                      child: Padding(
+                        padding: const EdgeInsets.all(32.0),
+                        child: CircularProgressIndicator(),
+                      ),
+                    )
+                  else if (isAuthenticated)
+                    Column(
                           children: [
                             GestureDetector(
                               onTap: () => _openFilePicker(),
@@ -446,12 +464,13 @@ if (provider.selectedCategory != null)
                             TextFormField(
                               controller: _datetimeController,
                               decoration: const InputDecoration(
-                                labelText: 'Date Of Birth',
+                                labelText: 'Business Start Date',
+                                hintText: 'When did you start this business/service?',
                                 suffixIcon: Icon(Icons.calendar_today),
                               ),
                               validator: (value) {
                                 if (value == null || value.isEmpty) {
-                                  return 'Please enter DOB';
+                                  return 'Please enter business start date';
                                 }
                                 return null;
                               },
@@ -467,6 +486,39 @@ if (provider.selectedCategory != null)
                 validator: (value) {
                   if (value == null || value.isEmpty) {
                     return 'Please enter your WhatsApp Catalogue link';
+                  }
+                  return null;
+                },
+              ),
+                            const SizedBox(height: 20),
+              TextFormField(
+                controller: _priceRangeController,
+                decoration: InputDecoration(
+                  labelText: 'Price Range (Ug Shs)',
+                  hintText: 'e.g., 50,000 - 200,000',
+                  prefixText: 'Ug Shs ',
+                  helperText: 'Enter the price range for your service/product',
+                ),
+                validator: (value) {
+                  if (value == null || value.isEmpty) {
+                    return 'Please enter your price range';
+                  }
+                  return null;
+                },
+              ),
+                            const SizedBox(height: 20),
+              TextFormField(
+                controller: _openingTimesController,
+                decoration: InputDecoration(
+                  labelText: 'Business Hours',
+                  hintText: 'e.g., Mon-Fri: 8AM-6PM, Sat: 9AM-5PM',
+                  helperText: 'When are you available for business?',
+                  suffixIcon: Icon(Icons.access_time),
+                ),
+                maxLines: 2,
+                validator: (value) {
+                  if (value == null || value.isEmpty) {
+                    return 'Please enter your business hours';
                   }
                   return null;
                 },
@@ -526,7 +578,47 @@ if (provider.selectedCategory != null)
                             ),
                           ],
                         )
-                      : const Center(),
+                  else
+                    Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            Icons.lock_outline,
+                            size: 80,
+                            color: Colors.grey[400],
+                          ),
+                          SizedBox(height: 24),
+                          Text(
+                            'Please login to add a skill',
+                            style: TextStyle(
+                              fontSize: 20,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.grey[700],
+                            ),
+                          ),
+                          SizedBox(height: 16),
+                          Text(
+                            'You need to be authenticated to create skills',
+                            style: TextStyle(
+                              fontSize: 14,
+                              color: Colors.grey[600],
+                            ),
+                          ),
+                          SizedBox(height: 32),
+                          ElevatedButton.icon(
+                            onPressed: () {
+                              Navigator.pop(context);
+                            },
+                            icon: Icon(Icons.arrow_back),
+                            label: Text('Go Back'),
+                            style: ElevatedButton.styleFrom(
+                              padding: EdgeInsets.symmetric(horizontal: 32, vertical: 16),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
                 ],
               ),
             ),

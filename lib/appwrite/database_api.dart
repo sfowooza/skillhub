@@ -221,8 +221,11 @@ class DatabaseAPI extends ChangeNotifier {
     double? longitude,
     String gmaplocation,
     String whatsappLinkController,
-    RegistrationFields registrationFields,
-  ) async {
+    RegistrationFields registrationFields, {
+    String? priceRange,
+    String? openingTimes,
+    String? businessStartDate,
+  }) async {
     try {
       // Ensure lat/long are proper doubles
       final double lat = latitude?.toDouble() ?? 0.0;
@@ -256,6 +259,10 @@ class DatabaseAPI extends ChangeNotifier {
         'image': registrationFields.image,
         'datetime': DateTime.now().toIso8601String(),
         'user_id': auth.userid ?? '',
+        'priceRange': priceRange,
+        'openingTimes': openingTimes,
+        'businessStartDate': businessStartDate,
+        'likesCount': 0,
       };
 
       print('Creating skill document...');

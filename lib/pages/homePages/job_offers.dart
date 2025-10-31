@@ -117,15 +117,16 @@ class _JobOffersPageState extends State<JobOffersPage> {
         title: Row(
           mainAxisAlignment: MainAxisAlignment.end, // Aligns content to the right
           children: [
-            Text(
-              isAuthenticated ? "Hi $userName \u{1F44B}\u{FE0F}" : "Hi",
-              style: TextStyle(
-                color: Theme.of(context).primaryColor,
-                fontSize: 16,
-                fontWeight: FontWeight.w600,
+            if (isAuthenticated)
+              Text(
+                "Hi $userName \u{1F44B}\u{FE0F}",
+                style: TextStyle(
+                  color: Theme.of(context).primaryColor,
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                ),
               ),
-            ),
-            const SizedBox(width: 8), // Small spacing between "Hi" and "Login"
+            if (isAuthenticated) const SizedBox(width: 8),
             if (!isAuthenticated)
               TextButton(
                 onPressed: () {

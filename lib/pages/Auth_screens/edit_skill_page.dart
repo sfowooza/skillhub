@@ -250,7 +250,7 @@ Future<void> _updateSkill(String imageFileId) async {
     final provider = Provider.of<RegistrationFormProvider>(context);
     return Scaffold(
       appBar: AppBar(title: Text("Update Skills")),
-      floatingActionButton: ExpandableFab(),
+      floatingActionButton: isAuthenticated ? ExpandableFab() : null,
       body: Center(
         child: Padding(
           padding: const EdgeInsets.all(32.0),

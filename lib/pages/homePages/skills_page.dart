@@ -314,7 +314,7 @@ class _SkillsPageState extends State<SkillsPage> {
   Widget build(BuildContext context) {
     final provider = Provider.of<RegistrationFormProvider>(context);
     return Scaffold(
-      floatingActionButton: ExpandableFab(),
+      floatingActionButton: authStatus == AuthStatus.authenticated ? ExpandableFab() : null,
       body: Center(
         child: Padding(
           padding: const EdgeInsets.all(32.0),
