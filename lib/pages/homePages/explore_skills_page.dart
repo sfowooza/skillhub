@@ -47,18 +47,18 @@ class _ExploreSkillsPageState extends State<ExploreSkillsPage> {
     'Transport'
   ];
   
-  // Subcategories map
+  // Subcategories map - matches actual app subcategories
   Map<String, List<String>> subcategoriesMap = {
     'All': ['All'],
-    'Engineering': ['All', 'Civil', 'Electrical', 'Mechanical', 'Chemical', 'Software'],
-    'IT': ['All', 'Web Development', 'Mobile Apps', 'Data Science', 'Cybersecurity', 'Cloud Computing'],
-    'Design': ['All', 'Graphic Design', 'UI/UX', 'Interior Design', 'Fashion Design', '3D Modeling'],
-    'Medicine': ['All', 'General Practice', 'Surgery', 'Pediatrics', 'Dentistry', 'Nursing'],
-    'Health & Beauty': ['All', 'Spa & Massage', 'Hair Styling', 'Makeup', 'Nail Care', 'Skin Care'],
-    'Farming & Agriculture': ['All', 'Crop Farming', 'Animal Husbandry', 'Horticulture', 'Organic Farming', 'Agro-Processing'],
-    'Fashion': ['All', 'Tailoring', 'Fashion Design', 'Modeling', 'Accessories', 'Footwear'],
-    'Leisure & Hospitality': ['All', 'Hotels', 'Restaurants', 'Catering', 'Event Planning', 'Tourism'],
-    'Transport': ['All', 'Taxi Services', 'Delivery', 'Logistics', 'Car Rental', 'Bike Rental']
+    'Engineering': ['All', 'Civil', 'Mechanical', 'Electrical', 'Architecture', 'Painting', 'Plumbing', 'Interior Design', 'Exterior Design', 'Building & Construction'],
+    'IT': ['All', 'Software', 'Data Science', 'AI'],
+    'Design': ['All', 'Graphic Design', 'Illustration', 'Animation'],
+    'Medicine': ['All', 'General Medicine', 'Pediatrics', 'Cardiology'],
+    'Health & Beauty': ['All', 'Hair Salons', 'Saunas', 'Beauty Parlour', 'Pedicure', 'Manicure'],
+    'Farming & Agriculture': ['All', 'Poultry', 'Piggery', 'Goat Keeping', 'Cattle Keeping', 'Acquaculture', 'Bee Farming', 'Fish Farming', 'Bananas', 'Maize', 'Beans'],
+    'Fashion': ['All', 'Mens Ware', 'Womens Ware'],
+    'Leisure & Hospitality': ['All', 'Tours & Travel', 'Hotels', 'Rest Gardens', 'Game Parks', 'Game Reserves', 'Beaches', 'Camp Sites'],
+    'Transport': ['All', 'Buses', 'Car Hire & Rental', 'Boat Ride']
   };
 
   @override
@@ -477,6 +477,60 @@ class _ExploreSkillsPageState extends State<ExploreSkillsPage> {
                       ],
                     ],
                   ),
+                ),
+                SizedBox(height: 16),
+                // Quick subcategory search
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Icon(Icons.tune, size: 18, color: Colors.grey[600]),
+                        SizedBox(width: 8),
+                        Text(
+                          'Quick Filter by Subcategory',
+                          style: TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
+                            color: Colors.grey[700],
+                          ),
+                        ),
+                      ],
+                    ),
+                    SizedBox(height: 8),
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: _getAvailableSubcategories().where((sub) => sub != 'All').map((subcategory) {
+                        final isSelected = selectedSubcategory == subcategory;
+                        return FilterChip(
+                          label: Text(
+                            subcategory,
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: isSelected ? Colors.white : Colors.grey[700],
+                              fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+                            ),
+                          ),
+                          selected: isSelected,
+                          onSelected: (selected) {
+                            setState(() {
+                              selectedSubcategory = selected ? subcategory : 'All';
+                              _applyFilters();
+                            });
+                          },
+                          backgroundColor: Colors.white,
+                          selectedColor: BaseColors().customTheme.primaryColor,
+                          checkmarkColor: Colors.white,
+                          side: BorderSide(
+                            color: isSelected ? BaseColors().customTheme.primaryColor : Colors.grey[300]!,
+                            width: isSelected ? 2 : 1,
+                          ),
+                          padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                        );
+                      }).toList(),
+                    ),
+                  ],
                 ),
                 SizedBox(height: 12),
                 // Results count
