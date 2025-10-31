@@ -47,25 +47,36 @@ android {
         versionCode flutterVersionCode.toInteger()
         versionName flutterVersionName
     }
-       signingConfigs {
+    signingConfigs {
         release {
-            storeFile file('../release-keystore.jks')
-            storePassword System.getenv("STORE_PASSWORD")
-            keyAlias System.getenv("KEY_ALIAS")
-            keyPassword System.getenv("KEY_PASSWORD")
+            def keystoreFile = file('../release-keystore.jks')
+            if (keystoreFile.exists()) {
+                storeFile keystoreFile
+                storePassword System.getenv("STORE_PASSWORD") ?: "skillhub123"
+                keyAlias System.getenv("KEY_ALIAS") ?: "skillhub-key"
+                keyPassword System.getenv("KEY_PASSWORD") ?: "skillhub123"
+            }
         }
     }
 
     buildTypes {
         release {
-            signingConfig signingConfigs.release
+            // Use release signing if keystore exists, otherwise use debug signing
+            def keystoreFile = file('../release-keystore.jks')
+            if (keystoreFile.exists()) {
+                signingConfig signingConfigs.release
+            } else {
+                signingConfig signingConfigs.debug
+            }
             ndk {
                 debugSymbolLevel 'SYMBOL_TABLE'
             }
-            // Other release-specific configurations can go here
-            minifyEnabled true
-            shrinkResources true
-            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+            // Disable minification for easier debugging if no keystore
+            minifyEnabled keystoreFile.exists()
+            shrinkResources keystoreFile.exists()
+            if (keystoreFile.exists()) {
+                proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+            }
         }
     }
 }
