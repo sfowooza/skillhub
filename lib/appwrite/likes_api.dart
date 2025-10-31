@@ -108,7 +108,16 @@ class LikesAPI extends ChangeNotifier {
         documentId: skillId,
       );
 
-      final currentLikes = skill.data['likesCount'] ?? 0;
+      // Handle null and convert to int safely
+      final likesValue = skill.data['likesCount'];
+      int currentLikes = 0;
+      if (likesValue != null) {
+        if (likesValue is int) {
+          currentLikes = likesValue;
+        } else if (likesValue is double) {
+          currentLikes = likesValue.toInt();
+        }
+      }
       final newLikes = (currentLikes + increment).clamp(0, double.infinity).toInt();
 
       // Update likes count
@@ -134,7 +143,12 @@ class LikesAPI extends ChangeNotifier {
         documentId: skillId,
       );
 
-      return skill.data['likesCount'] ?? 0;
+      // Handle null and convert to int safely
+      final likesValue = skill.data['likesCount'];
+      if (likesValue == null) return 0;
+      if (likesValue is int) return likesValue;
+      if (likesValue is double) return likesValue.toInt();
+      return 0;
     } catch (e) {
       print('Error getting likes count: $e');
       return 0;

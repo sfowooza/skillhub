@@ -270,6 +270,38 @@ class _SkillDetailsState extends State<SkillDetails> with SingleTickerProviderSt
     }
   }
 
+  List<Widget> _buildBusinessNameWidgets() {
+    return [
+      Text(
+        widget.data["businessName"],
+        style: TextStyle(
+          fontSize: 18,
+          fontWeight: FontWeight.w600,
+          color: Colors.black87,
+        ),
+      ),
+      SizedBox(height: 2),
+    ];
+  }
+
+  // Format phone number to ensure it has country code
+  String _formatPhoneNumber(String? phoneNumber) {
+    if (phoneNumber == null || phoneNumber.isEmpty) return "1234567890";
+    
+    // If already has country code, return as is
+    if (phoneNumber.startsWith('+')) return phoneNumber;
+    
+    // If doesn't start with +, assume it needs Uganda country code
+    // Remove leading 0 if present
+    String cleanNumber = phoneNumber;
+    if (cleanNumber.startsWith('0')) {
+      cleanNumber = cleanNumber.substring(1);
+    }
+    
+    // Add Uganda country code by default
+    return '+256$cleanNumber';
+  }
+
   @override
   void dispose() {
     _controller.dispose();
@@ -337,31 +369,66 @@ class _SkillDetailsState extends State<SkillDetails> with SingleTickerProviderSt
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Text(
-                                firstName,
-                                style: TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 32,
-                                  fontWeight: FontWeight.bold,
-                                  shadows: [Shadow(color: Colors.black45, blurRadius: 5)],
-                                ),
+                              // Name and Business Name on same row
+                              Row(
+                                children: [
+                                  Text(
+                                    firstName,
+                                    style: TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 32,
+                                      fontWeight: FontWeight.bold,
+                                      shadows: [Shadow(color: Colors.black45, blurRadius: 5)],
+                                    ),
+                                  ),
+                                  if (widget.data["businessName"] != null && widget.data["businessName"].toString().isNotEmpty) ...[
+                                    SizedBox(width: 12),
+                                    Container(
+                                      padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                                      decoration: BoxDecoration(
+                                        color: Colors.white.withOpacity(0.3),
+                                        borderRadius: BorderRadius.circular(20),
+                                      ),
+                                      child: Text(
+                                        widget.data["businessName"],
+                                        style: TextStyle(
+                                          color: Colors.white,
+                                          fontSize: 18,
+                                          fontWeight: FontWeight.w600,
+                                          shadows: [Shadow(color: Colors.black45, blurRadius: 3)],
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ],
                               ),
                               SizedBox(height: 8),
-                              Row(
+                              Wrap(
+                                spacing: 8,
+                                runSpacing: 8,
                                 children: [
                                   Chip(
                                     label: Text(selectedCategory),
                                     avatar: Icon(Icons.category, size: 16, color: Colors.white),
                                     backgroundColor: Colors.white.withOpacity(0.2),
                                   ),
-                                  if (selectedSubcategory.isNotEmpty) ...[
-                                    SizedBox(width: 8),
+                                  if (selectedSubcategory.isNotEmpty)
                                     Chip(
                                       label: Text(selectedSubcategory),
                                       avatar: Icon(Icons.subdirectory_arrow_right, size: 16, color: Colors.white),
                                       backgroundColor: Colors.white.withOpacity(0.2),
                                     ),
-                                  ],
+                                  Chip(
+                                    label: Text(productOrService),
+                                    avatar: Icon(
+                                      productOrService == 'Product' ? Icons.shopping_bag : Icons.work,
+                                      size: 16,
+                                      color: Colors.white,
+                                    ),
+                                    backgroundColor: productOrService == 'Product' 
+                                        ? Colors.blue.withOpacity(0.6)
+                                        : Colors.green.withOpacity(0.6),
+                                  ),
                                 ],
                               ),
                             ],
@@ -390,35 +457,62 @@ class _SkillDetailsState extends State<SkillDetails> with SingleTickerProviderSt
                               Row(
                                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                 children: [
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          "Contact Info",
+                                          style: TextStyle(
+                                            fontSize: 20,
+                                            fontWeight: FontWeight.bold,
+                                            color: BaseColors().customTheme.primaryColor,
+                                          ),
+                                        ),
+                                        SizedBox(height: 4),
+                                        if (widget.data["businessName"] != null && widget.data["businessName"].toString().isNotEmpty) ..._buildBusinessNameWidgets(),
+                                        Text(firstName, style: TextStyle(fontSize: 16)),
+                                      ],
+                                    ),
+                                  ),
                                   Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
                                     children: [
-                                      Text(
-                                        "Contact Info",
-                                        style: TextStyle(
-                                          fontSize: 20,
-                                          fontWeight: FontWeight.bold,
-                                          color: BaseColors().customTheme.primaryColor,
+                                      OutlinedButton.icon(
+                                        onPressed: () {
+                                          final formattedPhone = _formatPhoneNumber(widget.data["phoneNumber"]);
+                                          _launchUrl('tel:$formattedPhone');
+                                        },
+                                        icon: Icon(Icons.phone, size: 18, color: BaseColors().customTheme.primaryColor),
+                                        label: Text(
+                                          "Call",
+                                          style: TextStyle(color: BaseColors().customTheme.primaryColor),
+                                        ),
+                                        style: OutlinedButton.styleFrom(
+                                          side: BorderSide(color: BaseColors().customTheme.primaryColor, width: 2),
+                                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                                          padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                                         ),
                                       ),
-                                      SizedBox(height: 4),
-                                      Text(firstName, style: TextStyle(fontSize: 16)),
+                                      SizedBox(height: 8),
+                                      OutlinedButton.icon(
+                                        onPressed: () {
+                                          final whatsappLink = widget.data["link"] ?? '';
+                                          if (whatsappLink.isNotEmpty) {
+                                            _launchUrl(whatsappLink);
+                                          }
+                                        },
+                                        icon: Icon(Icons.phone, size: 18, color: Colors.white),
+                                        label: Text(
+                                          "WhatsApp",
+                                          style: TextStyle(color: Colors.white),
+                                        ),
+                                        style: OutlinedButton.styleFrom(
+                                          backgroundColor: Color(0xFF25D366),
+                                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                                          padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                                        ),
+                                      ),
                                     ],
-                                  ),
-                                  OutlinedButton.icon(
-                                    onPressed: () {
-                                      _launchUrl('tel:${widget.data["phoneNumber"] ?? "1234567890"}');
-                                    },
-                                    icon: Icon(Icons.phone, size: 18, color: BaseColors().customTheme.primaryColor),
-                                    label: Text(
-                                      "Call Now",
-                                      style: TextStyle(color: BaseColors().customTheme.primaryColor),
-                                    ),
-                                    style: OutlinedButton.styleFrom(
-                                      side: BorderSide(color: BaseColors().customTheme.primaryColor, width: 2),
-                                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-                                      padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                                    ),
                                   ),
                                 ],
                               ),
@@ -450,6 +544,48 @@ class _SkillDetailsState extends State<SkillDetails> with SingleTickerProviderSt
                                 ],
                               ),
                               SizedBox(height: 12),
+                              
+                              // Offering Type Info
+                              Row(
+                                children: [
+                                  Icon(
+                                    productOrService == 'Product' ? Icons.shopping_bag : Icons.work,
+                                    color: BaseColors().customTheme.primaryColor,
+                                    size: 20,
+                                  ),
+                                  SizedBox(width: 8),
+                                  Text(
+                                    "Offering: ",
+                                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                                  ),
+                                  Container(
+                                    padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                    decoration: BoxDecoration(
+                                      color: productOrService == 'Product' 
+                                          ? Colors.blue.withOpacity(0.1)
+                                          : Colors.green.withOpacity(0.1),
+                                      borderRadius: BorderRadius.circular(12),
+                                      border: Border.all(
+                                        color: productOrService == 'Product' 
+                                            ? Colors.blue
+                                            : Colors.green,
+                                        width: 1,
+                                      ),
+                                    ),
+                                    child: Text(
+                                      productOrService,
+                                      style: TextStyle(
+                                        fontSize: 14,
+                                        fontWeight: FontWeight.w600,
+                                        color: productOrService == 'Product' 
+                                            ? Colors.blue[700]
+                                            : Colors.green[700],
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              SizedBox(height: 16),
                               
                               Text(
                                 "About",
@@ -876,14 +1012,18 @@ class _SkillDetailsState extends State<SkillDetails> with SingleTickerProviderSt
                                                       );
                                                     }
                                                   },
-                                                  icon: Icon(Icons.directions, size: 20),
-                                                  label: Text('Navigate'),
+                                                  icon: Icon(Icons.directions, size: 18),
+                                                  label: Text(
+                                                    'Navigate',
+                                                    style: TextStyle(fontSize: 13),
+                                                  ),
                                                   style: ElevatedButton.styleFrom(
                                                     backgroundColor: Colors.green,
                                                     foregroundColor: Colors.white,
                                                     shape: RoundedRectangleBorder(
                                                       borderRadius: BorderRadius.circular(12),
                                                     ),
+                                                    padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                                                   ),
                                                 ),
                                               ),
@@ -988,6 +1128,170 @@ class _SkillDetailsState extends State<SkillDetails> with SingleTickerProviderSt
                                   ],
                                 ),
 
+                              // Negotiation/Discount Info
+                              if (widget.data['isNegotiable'] == true) ...[
+                                SizedBox(height: 16),
+                                Container(
+                                  padding: EdgeInsets.all(16),
+                                  decoration: BoxDecoration(
+                                    color: Colors.orange.withOpacity(0.1),
+                                    borderRadius: BorderRadius.circular(12),
+                                    border: Border.all(color: Colors.orange, width: 2),
+                                  ),
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Row(
+                                        children: [
+                                          Icon(Icons.local_offer, color: Colors.orange, size: 24),
+                                          SizedBox(width: 8),
+                                          Text(
+                                            'Open to Negotiation',
+                                            style: TextStyle(
+                                              fontSize: 18,
+                                              fontWeight: FontWeight.bold,
+                                              color: Colors.orange[800],
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                      if (widget.data['discountConditions'] != null && 
+                                          widget.data['discountConditions'].toString().isNotEmpty) ...[
+                                        SizedBox(height: 8),
+                                        Text(
+                                          widget.data['discountConditions'],
+                                          style: TextStyle(
+                                            fontSize: 14,
+                                            color: Colors.black87,
+                                          ),
+                                        ),
+                                      ],
+                                    ],
+                                  ),
+                                ),
+                              ],
+
+                              // Social Links Section
+                              if ((widget.data['tiktokUrl'] != null && widget.data['tiktokUrl'].toString().isNotEmpty) ||
+                                  (widget.data['websiteUrl'] != null && widget.data['websiteUrl'].toString().isNotEmpty)) ...[
+                                SizedBox(height: 16),
+                                Card(
+                                  elevation: 4,
+                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                                  child: Padding(
+                                    padding: EdgeInsets.all(16),
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          'Connect Online',
+                                          style: TextStyle(
+                                            fontSize: 20,
+                                            fontWeight: FontWeight.bold,
+                                            color: BaseColors().customTheme.primaryColor,
+                                          ),
+                                        ),
+                                        SizedBox(height: 12),
+                                        if (widget.data['websiteUrl'] != null && 
+                                            widget.data['websiteUrl'].toString().isNotEmpty)
+                                          InkWell(
+                                            onTap: () {
+                                              _launchUrl(widget.data['websiteUrl']);
+                                            },
+                                            child: Container(
+                                              padding: EdgeInsets.all(12),
+                                              decoration: BoxDecoration(
+                                                color: Colors.blue.withOpacity(0.1),
+                                                borderRadius: BorderRadius.circular(12),
+                                                border: Border.all(color: Colors.blue, width: 1),
+                                              ),
+                                              child: Row(
+                                                children: [
+                                                  Icon(Icons.language, color: Colors.blue, size: 28),
+                                                  SizedBox(width: 12),
+                                                  Expanded(
+                                                    child: Column(
+                                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                                      children: [
+                                                        Text(
+                                                          'Visit Website',
+                                                          style: TextStyle(
+                                                            fontSize: 16,
+                                                            fontWeight: FontWeight.bold,
+                                                            color: Colors.blue[700],
+                                                          ),
+                                                        ),
+                                                        Text(
+                                                          widget.data['websiteUrl'],
+                                                          style: TextStyle(
+                                                            fontSize: 12,
+                                                            color: Colors.grey[600],
+                                                          ),
+                                                          maxLines: 1,
+                                                          overflow: TextOverflow.ellipsis,
+                                                        ),
+                                                      ],
+                                                    ),
+                                                  ),
+                                                  Icon(Icons.open_in_new, color: Colors.blue),
+                                                ],
+                                              ),
+                                            ),
+                                          ),
+                                        if (widget.data['tiktokUrl'] != null && 
+                                            widget.data['tiktokUrl'].toString().isNotEmpty) ...[
+                                          SizedBox(height: 12),
+                                          InkWell(
+                                            onTap: () {
+                                              _launchUrl(widget.data['tiktokUrl']);
+                                            },
+                                            child: Container(
+                                              padding: EdgeInsets.all(12),
+                                              decoration: BoxDecoration(
+                                                color: Colors.black.withOpacity(0.05),
+                                                borderRadius: BorderRadius.circular(12),
+                                                border: Border.all(color: Colors.black87, width: 1),
+                                              ),
+                                              child: Row(
+                                                children: [
+                                                  Icon(Icons.video_library, color: Colors.black87, size: 28),
+                                                  SizedBox(width: 12),
+                                                  Expanded(
+                                                    child: Column(
+                                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                                      children: [
+                                                        Text(
+                                                          'Follow on TikTok',
+                                                          style: TextStyle(
+                                                            fontSize: 16,
+                                                            fontWeight: FontWeight.bold,
+                                                            color: Colors.black87,
+                                                          ),
+                                                        ),
+                                                        Text(
+                                                          widget.data['tiktokUrl'],
+                                                          style: TextStyle(
+                                                            fontSize: 12,
+                                                            color: Colors.grey[600],
+                                                          ),
+                                                          maxLines: 1,
+                                                          overflow: TextOverflow.ellipsis,
+                                                        ),
+                                                      ],
+                                                    ),
+                                                  ),
+                                                  Icon(Icons.open_in_new, color: Colors.black87),
+                                                ],
+                                              ),
+                                            ),
+                                          ),
+                                        ],
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                              ],
+
                               // Rating Section
                               SizedBox(height: 16),
                               Text(
@@ -1033,16 +1337,24 @@ class _SkillDetailsState extends State<SkillDetails> with SingleTickerProviderSt
               children: [
                 FloatingActionButton(
                   heroTag: "call",
-                  onPressed: () => _launchUrl('tel:${widget.data["phoneNumber"] ?? "1234567890"}'),
+                  onPressed: () {
+                    final formattedPhone = _formatPhoneNumber(widget.data["phoneNumber"]);
+                    _launchUrl('tel:$formattedPhone');
+                  },
                   backgroundColor: Colors.green,
                   child: Icon(Icons.phone),
                 ),
                 SizedBox(height: 16),
                 FloatingActionButton(
                   heroTag: "chat",
-                  onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => ViewWhatsappLink())),
+                  onPressed: () {
+                    final whatsappLink = widget.data["link"] ?? '';
+                    if (whatsappLink.isNotEmpty) {
+                      _launchUrl(whatsappLink);
+                    }
+                  },
                   backgroundColor: Color(0xFF25D366),
-                  child: Icon(Icons.chat),
+                  child: Icon(Icons.phone, color: Colors.white),
                 ),
                 SizedBox(height: 16),
                 FloatingActionButton(

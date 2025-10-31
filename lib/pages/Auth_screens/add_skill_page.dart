@@ -37,6 +37,11 @@ class _AddSkillPageState extends State<AddSkillPage> {
   final TextEditingController _whatsappLinkController = TextEditingController();
   String? selectedPriceRange;
   final TextEditingController _openingTimesController = TextEditingController();
+  final TextEditingController _businessNameController = TextEditingController();
+  final TextEditingController _tiktokUrlController = TextEditingController();
+  final TextEditingController _websiteUrlController = TextEditingController();
+  final TextEditingController _discountConditionsController = TextEditingController();
+  bool isNegotiable = false;
   bool isAuthenticated = false;
   bool isLoading = true;
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
@@ -82,6 +87,10 @@ void initState() {
     _whatsappLinkController.dispose();
     // Price range is now dropdown, no controller to dispose
     _openingTimesController.dispose();
+    _businessNameController.dispose();
+    _tiktokUrlController.dispose();
+    _websiteUrlController.dispose();
+    _discountConditionsController.dispose();
   }
 
   void _openFilePicker() async {
@@ -267,6 +276,11 @@ Future<void> _addSkill(String imageFileId) async {
       businessStartDate: _datetimeController.text,
       productOrService: productOrService,
       photos: photoIds,
+      businessName: _businessNameController.text.isNotEmpty ? _businessNameController.text : null,
+      tiktokUrl: _tiktokUrlController.text.isNotEmpty ? _tiktokUrlController.text : null,
+      websiteUrl: _websiteUrlController.text.isNotEmpty ? _websiteUrlController.text : null,
+      isNegotiable: isNegotiable,
+      discountConditions: isNegotiable && _discountConditionsController.text.isNotEmpty ? _discountConditionsController.text : null,
     );
 
     // Show success message
@@ -337,10 +351,17 @@ Future<void> _addSkill(String imageFileId) async {
                                         Expanded(
                                           child: RadioListTile<String>(
                                             title: Row(
+                                              mainAxisSize: MainAxisSize.min,
                                               children: [
-                                                Icon(Icons.shopping_bag, color: Colors.blue),
-                                                SizedBox(width: 8),
-                                                Text('Product'),
+                                                Icon(Icons.shopping_bag, color: Colors.blue, size: 20),
+                                                SizedBox(width: 4),
+                                                Flexible(
+                                                  child: Text(
+                                                    'Product',
+                                                    style: TextStyle(fontSize: 14),
+                                                    overflow: TextOverflow.ellipsis,
+                                                  ),
+                                                ),
                                               ],
                                             ),
                                             value: 'Product',
@@ -351,15 +372,24 @@ Future<void> _addSkill(String imageFileId) async {
                                               });
                                             },
                                             activeColor: BaseColors().customTheme.primaryColor,
+                                            contentPadding: EdgeInsets.zero,
+                                            dense: true,
                                           ),
                                         ),
                                         Expanded(
                                           child: RadioListTile<String>(
                                             title: Row(
+                                              mainAxisSize: MainAxisSize.min,
                                               children: [
-                                                Icon(Icons.work, color: Colors.green),
-                                                SizedBox(width: 8),
-                                                Text('Service'),
+                                                Icon(Icons.work, color: Colors.green, size: 20),
+                                                SizedBox(width: 4),
+                                                Flexible(
+                                                  child: Text(
+                                                    'Service',
+                                                    style: TextStyle(fontSize: 14),
+                                                    overflow: TextOverflow.ellipsis,
+                                                  ),
+                                                ),
                                               ],
                                             ),
                                             value: 'Service',
@@ -370,6 +400,8 @@ Future<void> _addSkill(String imageFileId) async {
                                               });
                                             },
                                             activeColor: BaseColors().customTheme.primaryColor,
+                                            contentPadding: EdgeInsets.zero,
+                                            dense: true,
                                           ),
                                         ),
                                       ],
@@ -379,6 +411,17 @@ Future<void> _addSkill(String imageFileId) async {
                               ),
                             ),
                             SizedBox(height: 16),
+                            
+                            // Profile Photo title
+                            Text(
+                              'Profile Photo',
+                              style: TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                                color: BaseColors().customTheme.primaryColor,
+                              ),
+                            ),
+                            SizedBox(height: 8),
                             
                             // Main image upload
                             GestureDetector(
@@ -593,6 +636,17 @@ if (provider.selectedCategory != null)
       return null;
     },
   ),
+                            const SizedBox(height: 8),
+                            TextFormField(
+                              controller: _businessNameController,
+                              decoration: const InputDecoration(
+                                labelText: 'Business Name (Optional)',
+                                hintText: 'e.g., Frank\'s Electronics',
+                                prefixIcon: Icon(Icons.business),
+                              ),
+                              // No validator - this field is optional
+                            ),
+                            const SizedBox(height: 16),
                             TextFormField(
                               controller: firstNameTextController,
                               decoration: const InputDecoration(
@@ -653,7 +707,22 @@ if (provider.selectedCategory != null)
                                   prefixIcon: Icon(Icons.phone)),
                               initialCountryCode: 'UG',
                               onChanged: (phone) {
-                                provider.phoneNumber = phone.completeNumber;
+                                // Handle East African phone numbers (UG, KE, RW, TZ)
+                                String phoneNumber = phone.number;
+                                String countryCode = phone.countryCode;
+                                
+                                // For East African countries, ensure 8 digits
+                                if (['256', '254', '250', '255'].contains(countryCode)) {
+                                  // Remove leading 0 if phone has 9 digits
+                                  if (phoneNumber.length == 9 && phoneNumber.startsWith('0')) {
+                                    phoneNumber = phoneNumber.substring(1);
+                                  }
+                                }
+                                
+                                // Store complete number with country code
+                                String completeNumber = '+$countryCode$phoneNumber';
+                                provider.phoneNumber = completeNumber;
+                                phoneNumberTextController.text = phoneNumber;
                               },
                             ),
                             const SizedBox(height: 8),
@@ -738,10 +807,35 @@ if (provider.selectedCategory != null)
                                            SizedBox(height: 20),
                               TextFormField(
                 controller: _whatsappLinkController,
-                decoration: InputDecoration(labelText: 'WhatsApp Catalogue Link'), // WhatsApp link input field
+                decoration: InputDecoration(
+                  labelText: 'WhatsApp Business Link',
+                  hintText: 'wa.me/256712345678 or https://wa.me/256712345678',
+                  helperText: 'Enter your WhatsApp business link',
+                  prefixIcon: Icon(Icons.chat),
+                ),
+                onChanged: (value) {
+                  // Auto-format WhatsApp link
+                  if (value.isNotEmpty) {
+                    String formattedLink = value.trim();
+                    // Add https:// if not present
+                    if (!formattedLink.startsWith('http://') && !formattedLink.startsWith('https://')) {
+                      formattedLink = 'https://$formattedLink';
+                    }
+                    // Store formatted link
+                    if (formattedLink != value) {
+                      _whatsappLinkController.value = TextEditingValue(
+                        text: formattedLink,
+                        selection: TextSelection.collapsed(offset: formattedLink.length),
+                      );
+                    }
+                  }
+                },
                 validator: (value) {
                   if (value == null || value.isEmpty) {
-                    return 'Please enter your WhatsApp Catalogue link';
+                    return 'Please enter your WhatsApp Business link';
+                  }
+                  if (!value.contains('wa.me') && !value.contains('whatsapp.com')) {
+                    return 'Please enter a valid WhatsApp link (wa.me/...)';
                   }
                   return null;
                 },
@@ -752,7 +846,7 @@ if (provider.selectedCategory != null)
                 decoration: InputDecoration(
                   labelText: 'Price Range (Ug Shs)',
                   helperText: 'Select the price range for your service/product',
-                  prefixIcon: Icon(Icons.attach_money),
+                  prefixIcon: Icon(Icons.payments),
                   border: OutlineInputBorder(),
                 ),
                 items: [
@@ -795,6 +889,72 @@ if (provider.selectedCategory != null)
                   return null;
                 },
               ),
+                            const SizedBox(height: 20),
+              // TikTok URL (Optional)
+              TextFormField(
+                controller: _tiktokUrlController,
+                decoration: InputDecoration(
+                  labelText: 'TikTok URL (Optional)',
+                  hintText: 'e.g., https://www.tiktok.com/@yourhandle',
+                  prefixIcon: Icon(Icons.video_library),
+                ),
+              ),
+                            const SizedBox(height: 20),
+              // Website URL (Optional)
+              TextFormField(
+                controller: _websiteUrlController,
+                decoration: InputDecoration(
+                  labelText: 'Website URL (Optional)',
+                  hintText: 'e.g., https://www.yourwebsite.com',
+                  prefixIcon: Icon(Icons.language),
+                ),
+              ),
+                            const SizedBox(height: 20),
+              // Negotiation/Discount Toggle
+              Row(
+                children: [
+                  Icon(Icons.local_offer, color: BaseColors().customTheme.primaryColor),
+                  SizedBox(width: 8),
+                  Text(
+                    "Open to Negotiation/Discount",
+                    style: TextStyle(
+                      color: Theme.of(context).primaryColor,
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  Spacer(),
+                  Switch(
+                    value: isNegotiable,
+                    onChanged: (value) {
+                      setState(() {
+                        isNegotiable = value;
+                      });
+                    },
+                    activeColor: BaseColors().customTheme.primaryColor,
+                  ),
+                ],
+              ),
+              if (isNegotiable) ...[
+                const SizedBox(height: 12),
+                TextFormField(
+                  controller: _discountConditionsController,
+                  decoration: InputDecoration(
+                    labelText: 'Discount/Negotiation Conditions',
+                    hintText: 'e.g., 10% off for bulk orders, negotiable for long-term contracts',
+                    helperText: 'Describe your discount or negotiation terms',
+                    prefixIcon: Icon(Icons.info_outline),
+                    border: OutlineInputBorder(),
+                  ),
+                  maxLines: 3,
+                  validator: (value) {
+                    if (isNegotiable && (value == null || value.isEmpty)) {
+                      return 'Please describe your discount/negotiation conditions';
+                    }
+                    return null;
+                  },
+                ),
+              ],
                             const SizedBox(height: 16),
                             Row(
                               children: [

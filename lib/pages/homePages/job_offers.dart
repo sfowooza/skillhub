@@ -21,6 +21,7 @@ import 'package:skillhub/widgets/skill_display_card.dart';
 import 'package:skillhub/pages/nav_tabs/expendableFab.dart';
 import 'package:skillhub/widgets/skill_display_card.dart';
 import 'package:skillhub/utils/category_mappers.dart';
+import 'package:skillhub/pages/homePages/nearby_skills_page.dart';
 import 'package:skillhub/widgets/skill_display_card.dart';
 
 class JobOffersPage extends StatefulWidget {
@@ -170,6 +171,34 @@ class _JobOffersPageState extends State<JobOffersPage> {
                       ),
                     ),
                   ),
+                  SizedBox(height: 12),
+                  // Nearby search button
+                  Center(
+                    child: ElevatedButton.icon(
+                      onPressed: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => NearbySkillsPage(
+                              subcategory: selectedSubCategory,
+                              category: widget.title,
+                            ),
+                          ),
+                        );
+                      },
+                      icon: Icon(Icons.near_me, size: 20),
+                      label: Text('Find Nearby Providers'),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: BaseColors().customTheme.primaryColor,
+                        foregroundColor: Colors.white,
+                        padding: EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(24),
+                        ),
+                      ),
+                    ),
+                  ),
+                  SizedBox(height: 8),
                   if (!isLoading && skills.isNotEmpty)
                     CarouselSlider(
                       options: CarouselOptions(

@@ -227,6 +227,11 @@ class DatabaseAPI extends ChangeNotifier {
     String? businessStartDate,
     String? productOrService,
     List<String>? photos,
+    String? businessName,
+    String? tiktokUrl,
+    String? websiteUrl,
+    bool? isNegotiable,
+    String? discountConditions,
   }) async {
     try {
       // Ensure lat/long are proper doubles
@@ -267,6 +272,11 @@ class DatabaseAPI extends ChangeNotifier {
         'likesCount': 0,
         'productOrService': productOrService ?? 'Service',
         'photos': photos ?? [],
+        'businessName': businessName ?? '',
+        'tiktokUrl': tiktokUrl ?? '',
+        'websiteUrl': websiteUrl ?? '',
+        'isNegotiable': isNegotiable ?? false,
+        'discountConditions': discountConditions ?? '',
       };
 
       print('Creating skill document...');
