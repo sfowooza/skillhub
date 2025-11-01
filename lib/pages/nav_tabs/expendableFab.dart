@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import 'package:skillhub/appwrite/auth_api.dart';
 import 'package:skillhub/pages/Auth_screens/register_page.dart';
 import 'package:skillhub/pages/Auth_screens/rsvp_events.dart';
 import 'package:skillhub/pages/Auth_screens/manage_skills.dart';
 import 'package:skillhub/pages/Auth_screens/account_page.dart';
 import 'package:skillhub/pages/Auth_screens/add_skill_page.dart';
+import 'package:skillhub/pages/homePages/explore_skills_page.dart';
 
 class ExpandableFab extends StatefulWidget {
   @override
@@ -130,16 +133,35 @@ class _ExpandableFabState extends State<ExpandableFab> with SingleTickerProvider
     builder: (BuildContext context) {
       return AlertDialog(
         title: Text('Logout'),
-        content: Text('Please Click Button Below to Logout'),
+        content: Text('Are you sure you want to logout?'),
         actions: <Widget>[
+          TextButton(
+            child: Text('Cancel'),
+            onPressed: () {
+              Navigator.of(context).pop();
+            },
+          ),
           TextButton(
             child: Text('Logout'),
             onPressed: () async {
-              // Provide the BuildContext argument
-              // Simplified signout for standalone app
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(content: Text('Signed out successfully!')),
-              );
+              try {
+                final authAPI = Provider.of<AuthAPI>(context, listen: false);
+                await authAPI.signOut();
+                Navigator.of(context).pop(); // Close dialog
+                // Navigate to home page
+                Navigator.of(context).pushAndRemoveUntil(
+                  MaterialPageRoute(builder: (context) => ExploreSkillsPage()),
+                  (route) => false,
+                );
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text('Logged out successfully!')),
+                );
+              } catch (e) {
+                Navigator.of(context).pop(); // Close dialog
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text('Logout failed: $e')),
+                );
+              }
             },
           ),
         ],

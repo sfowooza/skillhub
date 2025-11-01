@@ -4,12 +4,15 @@ import 'package:flutter/material.dart';
 import 'package:skillhub/colors.dart';
 import 'package:skillhub/controllers/formart_datetime.dart';
 import 'package:skillhub/pages/Auth_screens/edit_skill_page.dart';
+import 'package:skillhub/pages/Auth_screens/register_page.dart';
+import 'package:skillhub/pages/Auth_screens/login_page.dart';
 import 'package:skillhub/pages/gmap/view_location.dart';
 import 'package:skillhub/pages/gmap/view_whatsapp_link.dart';
 import 'package:skillhub/pages/nav_tabs/expendableFab.dart';
 import 'package:skillhub/utils/category_mappers.dart';
 import 'package:skillhub/appwrite/likes_api.dart';
 import 'package:skillhub/appwrite/auth_api.dart';
+import 'package:skillhub/appwrite/database_api.dart';
 import 'package:skillhub/constants/constants.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_rating_bar/flutter_rating_bar.dart';
@@ -221,20 +224,122 @@ class _SkillDetailsState extends State<SkillDetails> with SingleTickerProviderSt
     }
   }
 
+  void _showAuthDialog() {
+    showDialog(
+      context: context,
+      barrierDismissible: true,
+      builder: (BuildContext context) {
+        return Dialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          elevation: 16,
+          child: Container(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [
+                  BaseColors().customTheme.primaryColor.withOpacity(0.95),
+                  BaseColors().kLightGreen.withOpacity(0.95),
+                ],
+              ),
+              borderRadius: BorderRadius.circular(20),
+            ),
+            child: Padding(
+              padding: EdgeInsets.all(24),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Container(
+                    padding: EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.2),
+                      shape: BoxShape.circle,
+                    ),
+                    child: Icon(Icons.favorite, size: 48, color: Colors.white),
+                  ),
+                  SizedBox(height: 20),
+                  Text(
+                    'Show Your Love!',
+                    style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.white),
+                    textAlign: TextAlign.center,
+                  ),
+                  SizedBox(height: 12),
+                  Text(
+                    'Create an account or sign in to like skills and show support to amazing providers!',
+                    style: TextStyle(fontSize: 15, color: Colors.white.withOpacity(0.9), height: 1.5),
+                    textAlign: TextAlign.center,
+                  ),
+                  SizedBox(height: 28),
+                  Column(
+                    children: [
+                      SizedBox(
+                        width: double.infinity,
+                        child: ElevatedButton(
+                          onPressed: () {
+                            Navigator.pop(context);
+                            Navigator.push(context, MaterialPageRoute(builder: (context) => RegisterPage()));
+                          },
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.white,
+                            foregroundColor: BaseColors().customTheme.primaryColor,
+                            padding: EdgeInsets.symmetric(vertical: 16),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                            elevation: 2,
+                          ),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(Icons.person_add, size: 20),
+                              SizedBox(width: 8),
+                              Text('Create Account', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                            ],
+                          ),
+                        ),
+                      ),
+                      SizedBox(height: 12),
+                      SizedBox(
+                        width: double.infinity,
+                        child: OutlinedButton(
+                          onPressed: () {
+                            Navigator.pop(context);
+                            Navigator.push(context, MaterialPageRoute(builder: (context) => LoginPage()));
+                          },
+                          style: OutlinedButton.styleFrom(
+                            foregroundColor: Colors.white,
+                            padding: EdgeInsets.symmetric(vertical: 16),
+                            side: BorderSide(color: Colors.white, width: 2),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                          ),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(Icons.login, size: 20),
+                              SizedBox(width: 8),
+                              Text('Sign In', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                            ],
+                          ),
+                        ),
+                      ),
+                      SizedBox(height: 12),
+                      TextButton(
+                        onPressed: () => Navigator.pop(context),
+                        child: Text('Maybe Later', style: TextStyle(color: Colors.white.withOpacity(0.8), fontSize: 14)),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
   Future<void> _toggleLike() async {
     final authAPI = context.read<AuthAPI>();
     if (authAPI.status != AuthStatus.authenticated) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Please login to like this skill'),
-          action: SnackBarAction(
-            label: 'Login',
-            onPressed: () {
-              // Navigate to login
-            },
-          ),
-        ),
-      );
+      _showAuthDialog();
       return;
     }
 
@@ -247,14 +352,21 @@ class _SkillDetailsState extends State<SkillDetails> with SingleTickerProviderSt
       final skillId = widget.data['\$id'] ?? '';
       
       if (skillId.isNotEmpty) {
+        // Toggle the like
         final newLikeStatus = await likesAPI.toggleLike(skillId);
+        
+        // Reload the actual count from database to ensure accuracy
+        final actualCount = await likesAPI.getLikesCount(skillId);
         
         if (mounted) {
           setState(() {
             isLiked = newLikeStatus;
-            likesCount = newLikeStatus ? likesCount + 1 : likesCount - 1;
+            likesCount = actualCount; // Use actual count from DB
             isLoadingLike = false;
           });
+          
+          // Update the widget data so it persists
+          widget.data['likesCount'] = actualCount;
         }
       }
     } catch (e) {
@@ -496,9 +608,15 @@ class _SkillDetailsState extends State<SkillDetails> with SingleTickerProviderSt
                                       SizedBox(height: 8),
                                       OutlinedButton.icon(
                                         onPressed: () {
-                                          final whatsappLink = widget.data["link"] ?? '';
-                                          if (whatsappLink.isNotEmpty) {
-                                            _launchUrl(whatsappLink);
+                                          final phoneNumber = widget.data["phoneNumber"] ?? '';
+                                          if (phoneNumber.isNotEmpty) {
+                                            final formattedNumber = _formatPhoneNumber(phoneNumber);
+                                            final whatsappUrl = 'https://wa.me/${formattedNumber.replaceAll('+', '')}';
+                                            _launchUrl(whatsappUrl);
+                                          } else {
+                                            ScaffoldMessenger.of(context).showSnackBar(
+                                              SnackBar(content: Text('No phone number available')),
+                                            );
                                           }
                                         },
                                         icon: Icon(Icons.phone, size: 18, color: Colors.white),
@@ -1318,6 +1436,164 @@ class _SkillDetailsState extends State<SkillDetails> with SingleTickerProviderSt
                                 "Current Rating: ${(userRating * 10).toStringAsFixed(0)} likes",
                                 style: TextStyle(color: Colors.grey[600]),
                               ),
+                              
+                              // Delete Skill Section (only for skill owners)
+                              if (isAuthenticated && widget.data['user_id'] == authAPI.userid) ...[
+                                SizedBox(height: 32),
+                                Divider(),
+                                SizedBox(height: 16),
+                                Text(
+                                  "Manage Skill",
+                                  style: TextStyle(
+                                    fontSize: 20,
+                                    fontWeight: FontWeight.bold,
+                                    color: BaseColors().customTheme.primaryColor,
+                                  ),
+                                ),
+                                SizedBox(height: 16),
+                                Container(
+                                  width: double.infinity,
+                                  decoration: BoxDecoration(
+                                    border: Border.all(color: Colors.red.withOpacity(0.3), width: 2),
+                                    borderRadius: BorderRadius.circular(12),
+                                    color: Colors.red.withOpacity(0.05),
+                                  ),
+                                  padding: EdgeInsets.all(16),
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Row(
+                                        children: [
+                                          Icon(Icons.warning, color: Colors.orange, size: 24),
+                                          SizedBox(width: 12),
+                                          Expanded(
+                                            child: Text(
+                                              "Danger Zone",
+                                              style: TextStyle(
+                                                fontSize: 18,
+                                                fontWeight: FontWeight.bold,
+                                                color: Colors.red[700],
+                                              ),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                      SizedBox(height: 12),
+                                      Text(
+                                        "Deleting this skill will permanently remove it from the platform. This action cannot be undone.",
+                                        style: TextStyle(fontSize: 14, color: Colors.grey[700]),
+                                      ),
+                                      SizedBox(height: 16),
+                                      SizedBox(
+                                        width: double.infinity,
+                                        child: ElevatedButton.icon(
+                                          onPressed: () async {
+                                            // Show confirmation dialog
+                                            final confirmed = await showDialog<bool>(
+                                              context: context,
+                                              builder: (context) => AlertDialog(
+                                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                                                title: Row(
+                                                  children: [
+                                                    Icon(Icons.delete_forever, color: Colors.red, size: 28),
+                                                    SizedBox(width: 12),
+                                                    Text('Delete Skill?'),
+                                                  ],
+                                                ),
+                                                content: Column(
+                                                  mainAxisSize: MainAxisSize.min,
+                                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                                  children: [
+                                                    Text(
+                                                      'This will permanently delete:',
+                                                      style: TextStyle(fontWeight: FontWeight.bold),
+                                                    ),
+                                                    SizedBox(height: 8),
+                                                    Text('• Skill listing'),
+                                                    Text('• All likes and ratings'),
+                                                    Text('• Skill images'),
+                                                    Text('• All associated data'),
+                                                    SizedBox(height: 12),
+                                                    Text(
+                                                      'This action cannot be undone!',
+                                                      style: TextStyle(fontWeight: FontWeight.bold, color: Colors.red),
+                                                    ),
+                                                  ],
+                                                ),
+                                                actions: [
+                                                  TextButton(
+                                                    onPressed: () => Navigator.pop(context, false),
+                                                    child: Text('Cancel', style: TextStyle(fontSize: 16)),
+                                                  ),
+                                                  ElevatedButton(
+                                                    onPressed: () => Navigator.pop(context, true),
+                                                    style: ElevatedButton.styleFrom(
+                                                      backgroundColor: Colors.red,
+                                                      padding: EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                                                    ),
+                                                    child: Text('Delete Forever', style: TextStyle(fontSize: 16)),
+                                                  ),
+                                                ],
+                                              ),
+                                            );
+
+                                            if (confirmed == true) {
+                                              try {
+                                                final databaseAPI = Provider.of<DatabaseAPI>(context, listen: false);
+                                                final skillId = widget.data['\$id'] ?? '';
+                                                
+                                                if (skillId.isNotEmpty) {
+                                                  await databaseAPI.deleteSkill(skillId);
+                                                  
+                                                  if (mounted) {
+                                                    Navigator.pop(context); // Go back to previous page
+                                                    ScaffoldMessenger.of(context).showSnackBar(
+                                                      SnackBar(
+                                                        content: Row(
+                                                          children: [
+                                                            Icon(Icons.check_circle, color: Colors.white),
+                                                            SizedBox(width: 8),
+                                                            Text('Skill deleted successfully'),
+                                                          ],
+                                                        ),
+                                                        backgroundColor: Colors.green,
+                                                        duration: Duration(seconds: 3),
+                                                      ),
+                                                    );
+                                                  }
+                                                }
+                                              } catch (e) {
+                                                if (mounted) {
+                                                  ScaffoldMessenger.of(context).showSnackBar(
+                                                    SnackBar(
+                                                      content: Text('Error deleting skill: ${e.toString()}'),
+                                                      backgroundColor: Colors.red,
+                                                    ),
+                                                  );
+                                                }
+                                              }
+                                            }
+                                          },
+                                          icon: Icon(Icons.delete_forever, size: 24),
+                                          label: Text(
+                                            'Delete This Skill',
+                                            style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                                          ),
+                                          style: ElevatedButton.styleFrom(
+                                            backgroundColor: Colors.red,
+                                            foregroundColor: Colors.white,
+                                            padding: EdgeInsets.symmetric(vertical: 16),
+                                            shape: RoundedRectangleBorder(
+                                              borderRadius: BorderRadius.circular(12),
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                SizedBox(height: 24),
+                              ],
                             ],
                           ),
                         ),
@@ -1348,13 +1624,19 @@ class _SkillDetailsState extends State<SkillDetails> with SingleTickerProviderSt
                 FloatingActionButton(
                   heroTag: "chat",
                   onPressed: () {
-                    final whatsappLink = widget.data["link"] ?? '';
-                    if (whatsappLink.isNotEmpty) {
-                      _launchUrl(whatsappLink);
+                    final phoneNumber = widget.data["phoneNumber"] ?? '';
+                    if (phoneNumber.isNotEmpty) {
+                      final formattedNumber = _formatPhoneNumber(phoneNumber);
+                      final whatsappUrl = 'https://wa.me/${formattedNumber.replaceAll('+', '')}';
+                      _launchUrl(whatsappUrl);
+                    } else {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(content: Text('No phone number available')),
+                      );
                     }
                   },
                   backgroundColor: Color(0xFF25D366),
-                  child: Icon(Icons.phone, color: Colors.white),
+                  child: Icon(Icons.chat, color: Colors.white),
                 ),
                 SizedBox(height: 16),
                 FloatingActionButton(

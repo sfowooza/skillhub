@@ -197,8 +197,12 @@ class DatabaseAPI extends ChangeNotifier {
 
   Future<List<Map<String, dynamic>>> manageSkills() async {
     try {
-      if (auth.userid == null) return [];
+      if (auth.userid == null) {
+        print('⚠️ manageSkills: No user ID available');
+        return [];
+      }
 
+      print('📥 Fetching skills for user: ${auth.userid}');
       final response = await databases.listDocuments(
         databaseId: Constants.databaseId,
         collectionId: Constants.skillsCollectionId,
@@ -207,9 +211,52 @@ class DatabaseAPI extends ChangeNotifier {
         ],
       );
 
+      print('✅ manageSkills SDK call successful! Retrieved ${response.documents.length} documents');
       return response.documents.map((doc) => doc.data).toList();
     } catch (e) {
-      print('Error getting user skills: $e');
+      print('❌ ERROR in manageSkills: $e');
+      // Try HTTP fallback if SDK fails with parsing bug
+      if (e.toString().contains("type 'Null' is not a subtype of type 'int'")) {
+        print('⚠️ SDK parsing bug in manageSkills - trying HTTP fallback...');
+        return await _manageSkillsHttp();
+      }
+      return [];
+    }
+  }
+
+  Future<List<Map<String, dynamic>>> _manageSkillsHttp() async {
+    try {
+      if (auth.userid == null) return [];
+      
+      print('🔄 Using HTTP fallback for manageSkills');
+      final url = 'https://skillhub.avodahsystems.com/v1/databases/68fbfa9400035f96086e/collections/68fbfb01002ca99ab18e/documents';
+      
+      final response = await http.get(
+        Uri.parse(url),
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Appwrite-Project': '68fbf8c7000da2a66231',
+          'X-Appwrite-Key': 'standard_a3a0efd7839e0ab111d146e1a5bdf05dbffce9c8ea2342721daa14f3ee57cf8b049710ac06db1ab7bb8ac54aff005e182332e6edd0049278821232deaf7524f0a43e770f5cead85372409b8aa317179985830072307c441ed65d58bb9714c8c7a35e3f72be74d78752db69744bb4285a50ae6bc8429c6374ff565fbc53ffb401',
+        },
+      );
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        final documents = data['documents'] as List?;
+        if (documents != null) {
+          // Filter by user_id client-side
+          final userSkills = documents
+              .where((doc) => doc['user_id'] == auth.userid)
+              .map((doc) => doc as Map<String, dynamic>)
+              .toList();
+          print('✅ HTTP fallback successful! Found ${userSkills.length} user skills');
+          return userSkills;
+        }
+      }
+      print('❌ HTTP fallback failed with status: ${response.statusCode}');
+      return [];
+    } catch (e) {
+      print('❌ HTTP fallback error: $e');
       return [];
     }
   }
